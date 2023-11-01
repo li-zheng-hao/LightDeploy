@@ -1,5 +1,7 @@
 ﻿using System.Windows;
+using System.Windows.Forms;
 using LightDeployApp.Tables;
+using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp;
 
@@ -12,19 +14,23 @@ public partial class AddService : Window
 
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
     {
-        var service = new TService()
+        if (string.IsNullOrWhiteSpace(Service.Text))
         {
-            Name = Service.Text
-        };
-        var exist=DBHelper.GetClient().Queryable<TService>()
-            .First(it => it.Name == service.Name);
-        if (exist != null)
-        {
-            MessageBox.Show("已存在同名服务");
+            MessageBox.Show("请输入服务名");
             return;
         }
+        var service = new TService()
+        {
+            Name = Service.Text,
+            DefaultMode = DeployMode.Text=="项目"?0:1,
+            DefaultTargetPath = TargetPath.Text,
+            IsSelfContained = SelfContained.IsChecked==true,
+            DefaultEnvironment=Environment.Text
+        };
+       
+        DBHelper.GetClient().Deleteable<TService>(it=>it.Name==service.Name).ExecuteCommand();
 
-        DBHelper.GetClient().Insertable<TService>(service).ExecuteCommand();
+        DBHelper.GetClient().Insertable(service).ExecuteCommand();
         Close();
     }
 
@@ -35,5 +41,25 @@ public partial class AddService : Window
             .ExecuteCommand();
         MessageBox.Show($"删除{num}条数据");
         Close();
+    }
+
+    private void SelectDirClick(object sender, RoutedEventArgs e)
+    {
+        if (DeployMode.Text == "项目")
+        {
+            var dialog = new OpenFileDialog();
+                
+            dialog.Filter="project|*.csproj;";//在对话框中显示的文件类型
+
+            dialog.ShowDialog();
+            TargetPath.Text  = dialog.FileName;
+               
+        }
+        else
+        {
+            var dialog = new FolderBrowserDialog();
+            dialog.ShowDialog();
+            TargetPath.Text = dialog.SelectedPath;
+        }
     }
 }

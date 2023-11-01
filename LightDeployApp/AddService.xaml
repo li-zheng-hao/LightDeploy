@@ -11,7 +11,20 @@
             <Label Width="70">服务名称</Label>
             <TextBox Name="Service" Width="200"></TextBox>
         </StackPanel> 
-        
+        <StackPanel Orientation="Horizontal" Margin="5">
+            <Label Width="70">默认环境名称</Label>
+            <TextBox Name="Environment" Width="200"></TextBox>
+        </StackPanel> 
+        <Label>发布方式</Label>
+        <ComboBox Name="DeployMode" >
+            <ComboBoxItem IsSelected="True">项目</ComboBoxItem>
+            <ComboBoxItem>指定文件夹</ComboBoxItem>
+        </ComboBox>
+        <Label>项目或文件夹目录</Label> 
+        <Button Click="SelectDirClick">选择目标</Button>
+        <TextBox Name="TargetPath"></TextBox>
+        <Label>编译参数</Label>
+        <CheckBox Name="SelfContained" Width="102" Content="包含运行环境"></CheckBox>
         <Button Click="ButtonBase_OnClick">新增</Button>
         <Button Click="ButtonBase_OnClick2">删除</Button>
     </StackPanel>

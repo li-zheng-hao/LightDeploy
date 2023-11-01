@@ -10,7 +10,7 @@
         <StackPanel>
             <StackPanel Margin="5">
                 <Label>服务名</Label>
-                <ComboBox Name="Service"></ComboBox>
+                <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"></ComboBox>
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>环境</Label>
@@ -31,12 +31,12 @@
             <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
             <Button Click="AddService" Margin="5">新增服务</Button>
             <Button Click="DeployClick" Margin="5">部署</Button>
-            <Button Click="RefreshClick" Margin="5">刷新数据</Button>
             <Label>日志</Label>
-                <TextBox IsReadOnly="True" Height="100" Name="LogBox" Margin="5"
+                <TextBox IsReadOnly="True" Height="300" Name="LogBox" Margin="5"
                          VerticalScrollBarVisibility="Auto"
                          TextWrapping="Wrap"
                          AcceptsReturn="True"
+                         TextChanged="LogBox_OnTextChanged"
                          ></TextBox>
         </StackPanel>
     </ScrollViewer>

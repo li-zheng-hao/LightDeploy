@@ -90,9 +90,12 @@ public class DeployService
                     continue;
                 }
             }
-            catch (Exception e)
+            catch (FlurlHttpException e)
             {
+                var body=await e.GetResponseStringAsync();
                 textBox.Text+=$"部署失败{environment.Host}:{environment.Port}\n";
+                textBox.Text+=$"返回消息 {e.Message}\n";
+                textBox.Text+=$"返回消息 {body}\n";
                 continue;
             }
          
@@ -105,7 +108,6 @@ public class DeployService
         var zipPath = AppDomain.CurrentDomain.BaseDirectory;
         var fileInfos=calculateNeedDeployFiles.Select(it => (Path.Combine(it.AbsoluteDirectory, it.FileName),Path.Combine(it.RelativeDirectory, it.FileName)));
         var memoryStream=FileHelper.CompressFiles(fileInfos.ToList());
-        memoryStream.Position = 0;
         return memoryStream;
     }
 

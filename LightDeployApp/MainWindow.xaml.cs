@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
 using MessageBox = System.Windows.MessageBox;
@@ -27,12 +29,11 @@ namespace LightDeployApp
         {
             var addEnvironment = new AddEnvironment();
             addEnvironment.Show();
+            addEnvironment.Closed+= (o, args) => { RefreshData(); };
         }
 
         private async void DeployClick(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("开始部署");
-            
             LogBox.Text= "";
             var deployParams= new DeployParams();
             deployParams.Environment = Environment.Text;
@@ -40,19 +41,39 @@ namespace LightDeployApp
             deployParams.TargetPath = TargetPath.Text;
             deployParams.IsSelfContained = SelfContained.IsChecked==true;
             deployParams.BuildMode = DeployMode.Text == "项目" ? 0 : 1;
+            
+            if(string.IsNullOrWhiteSpace(deployParams.Environment))
+            {
+                MessageBox.Show("请选择环境");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(deployParams.ServiceName))
+            {
+                MessageBox.Show("请选择服务");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(deployParams.TargetPath))
+            {
+                MessageBox.Show("请选择目标路径");
+                return;
+            }
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             await DeployService.Deploy(LogBox,deployParams);
+            MessageBox.Show("部署完成,耗时" + stopwatch.ElapsedMilliseconds + "ms");
         }
 
         private void AddService(object sender, RoutedEventArgs e)
         {
             var addService= new AddService();
             addService.Show();
+            addService.Closed+= (o, args) => { RefreshData(); };
         }
 
-        private void RefreshClick(object sender, RoutedEventArgs e)
-        {
-            RefreshData();
-        }
+           
 
         private void RefreshData()
         {
@@ -89,6 +110,22 @@ namespace LightDeployApp
                 TargetPath.Text = projectPath;
             }
           
+        }
+
+        private void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectService=_services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
+            DeployMode.SelectedIndex = selectService?.DefaultMode == 0 ? 0 : 1;
+            TargetPath.Text = selectService?.DefaultTargetPath;
+            SelfContained.IsChecked=selectService?.IsSelfContained;
+            var environment = _environments.FirstOrDefault(it => it.Name == selectService!.DefaultEnvironment);
+            if(environment!=null)
+                Environment.SelectedIndex = _environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environment.Name);
+        }
+
+        private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            LogBox.ScrollToEnd();
         }
     }
 }

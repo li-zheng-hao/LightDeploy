@@ -57,4 +57,10 @@ public class DeployController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+
+    [HttpGet]
+    public IActionResult Ping()
+    {
+        return Ok();
+    }
 }
