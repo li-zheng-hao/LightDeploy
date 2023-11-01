@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeploy.ClientAgent", "LightDeploy.ClientAgent\LightDeploy.ClientAgent.csproj", "{9812AD94-BDB9-4A5E-90D1-C5A360F753D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeployApp", "LightDeployApp\LightDeployApp.csproj", "{131A12F7-9A99-4CF0-93FB-1F106DA32884}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9812AD94-BDB9-4A5E-90D1-C5A360F753D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9812AD94-BDB9-4A5E-90D1-C5A360F753D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9812AD94-BDB9-4A5E-90D1-C5A360F753D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9812AD94-BDB9-4A5E-90D1-C5A360F753D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
