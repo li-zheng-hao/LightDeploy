@@ -124,4 +124,34 @@ public class DeployService
         }
         return fileInfoDtos;
     }
+
+    public List<FileInfoDto> CompareFileInfos(string serviceName, List<FileInfoDto> fileInfoDtos)
+    {
+        string exePath=WindowServiceHelper.GetWindowsServiceLocation(serviceName);
+
+        if(exePath == string.Empty)
+            throw new BusinessException("服务路径不存在");
+            
+        string exeDir=Path.GetDirectoryName(exePath)!;
+        List<FileInfoDto> result = new();
+        foreach (var fileInfoDto in fileInfoDtos)
+        {
+            var filePath=Path.Combine(exeDir, fileInfoDto.RelativeDirectory, fileInfoDto.FileName);
+            if (!File.Exists(filePath))
+            {
+                result.Add(fileInfoDto);
+            }
+            else
+            {
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length != fileInfoDto.FileSize || fileInfo.LastWriteTime != fileInfoDto.LastWriteTime)
+                {
+                    result.Add(fileInfoDto);
+                }
+            }
+        }
+        return result;
+
+    }
+    
 }

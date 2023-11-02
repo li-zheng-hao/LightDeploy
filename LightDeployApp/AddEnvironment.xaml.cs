@@ -16,6 +16,7 @@ public partial class AddEnvironment : Window
         environment.Host=Host.Text;
         environment.Name=EnvironmentName.Text;
         environment.Port=Port.Text;
+        environment.HealthCheckUrl = HealthCheckUrl.Text;
         var exist=DBHelper.GetClient().Queryable<TEnvironment>().Where(it=>it.Name==environment.Name&&it.Host==environment.Host).First();
         if (exist != null)
         {

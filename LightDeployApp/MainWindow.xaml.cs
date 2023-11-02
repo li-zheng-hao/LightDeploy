@@ -44,6 +44,7 @@ namespace LightDeployApp
             deployParams.ServiceName = Service.Text;
             deployParams.TargetPath = TargetPath.Text;
             deployParams.IsSelfContained = SelfContained.IsChecked==true;
+            deployParams.EnableHealthCheck = EnableHealthCheck.IsChecked==true;
             deployParams.BuildMode = DeployMode.Text == "项目" ? 0 : 1;
             
             if(string.IsNullOrWhiteSpace(deployParams.Environment))
@@ -66,7 +67,6 @@ namespace LightDeployApp
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            AppContext.GetAppDataContext().DeployResult.Clear();
             await DeployService.Deploy(LogBox,deployParams);
             MessageBox.Show("部署完成,耗时" + stopwatch.ElapsedMilliseconds + "ms");
         }
@@ -114,9 +114,21 @@ namespace LightDeployApp
             DeployMode.SelectedIndex = selectService?.DefaultMode == 0 ? 0 : 1;
             TargetPath.Text = selectService?.DefaultTargetPath;
             SelfContained.IsChecked=selectService?.IsSelfContained;
-            var environment = AppContext.GetAppDataContext().Environments.FirstOrDefault(it => it.Name == selectService!.DefaultEnvironment);
-            if(environment!=null)
-                Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environment.Name);
+            EnableHealthCheck.IsChecked = selectService.EnableHealthCheck;
+            var environments = AppContext.GetAppDataContext().Environments.Where(it => it.Name == selectService!.DefaultEnvironment).ToList();
+            if (environments != null&&environments.Any())
+            {
+                Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
+                AppContext.GetAppDataContext().SelectedEnvironments = environments.Select(it =>
+                    new SelectedEnvironment()
+                    {
+                        Name = it.Name,
+                        Host = it.Host,
+                        Port = it.Port,
+                        HealthCheckUrl = it.HealthCheckUrl
+                    }).ToList();
+            }
+            
         }
 
         private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)

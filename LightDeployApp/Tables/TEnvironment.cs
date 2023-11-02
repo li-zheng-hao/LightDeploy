@@ -8,4 +8,9 @@ public class TEnvironment
     
     public string Port { get; set; }
     
+    /// <summary>
+    /// 健康检查Url
+    /// </summary>
+    public string? HealthCheckUrl { get; set; }
+    
 }

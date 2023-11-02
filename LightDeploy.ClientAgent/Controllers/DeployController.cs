@@ -58,6 +58,20 @@ public class DeployController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+    [HttpPost()]
+    public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileInfoDto> fileInfoDtos)
+    {
+        try
+        {
+            List<FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
+            return Ok(newFileInfos);
+        }
+        catch (BusinessException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+   
 
     [HttpGet]
     public IActionResult Ping()

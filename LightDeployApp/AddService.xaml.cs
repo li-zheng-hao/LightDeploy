@@ -25,7 +25,8 @@ public partial class AddService : Window
             DefaultMode = DeployMode.Text=="项目"?0:1,
             DefaultTargetPath = TargetPath.Text,
             IsSelfContained = SelfContained.IsChecked==true,
-            DefaultEnvironment=Environment.Text
+            DefaultEnvironment=Service.Text,
+            EnableHealthCheck = EnableHealthCheck.IsChecked
         };
        
         DBHelper.GetClient().Deleteable<TService>(it=>it.Name==service.Name).ExecuteCommand();

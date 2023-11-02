@@ -56,27 +56,37 @@ public class DeployService
     
     private static async Task DeployToServer(TextBox textBox, DeployParams deployParams)
     {
+        var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
         var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
+        List<FileInfoDto> calculateNeedDeployFiles = null;
+        MemoryStream memoryStream = null;
         foreach (var environment in environments)
         {
             textBox.Text+=$"开始部署{environment.Host}:{environment.Port}\n";
-            
-            List<FileInfoDto> remoteFiles =await $"http://{environment.Host}:{environment.Port}/api/deploy/listfileinfo"
-                .SetQueryParam("serviceName", deployParams.ServiceName)
-                .GetJsonAsync<List<FileInfoDto>>();
+            selectedEnvironments.First(it => it.Host == environment.Host).Status = "开始部署";
 
+          
             var currentFileInfos=FileHelper.GetFileInfos(deployParams.TargetPath);
-
-            var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
+            
+            calculateNeedDeployFiles ??= await $"http://{environment.Host}:{environment.Port}/api/deploy/compare"
+                .SetQueryParam("serviceName", deployParams.ServiceName)
+                .PostJsonAsync(currentFileInfos)
+                .ReceiveJson<List<FileInfoDto>>();
+            
+            // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
+            
             textBox.Text+=$"需要复制文件:{calculateNeedDeployFiles.Count}个\n";
             if(calculateNeedDeployFiles.Count==0)
             {
                 textBox.Text+=$"无需部署{environment.Host}:{environment.Port}\n";
                 continue;
             }
+            
+            if(memoryStream==null)
+                memoryStream =
+                    await Task.Run(() => CreateZipFile(calculateNeedDeployFiles)); 
+            selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
 
-            var memoryStream =
-                await Task.Run(() => CreateZipFile(calculateNeedDeployFiles)); 
             try
             {
                 var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/deploy".PostMultipartAsync(mp =>
@@ -101,6 +111,30 @@ public class DeployService
             }
          
             textBox.Text+=$"部署完成{environment.Host}:{environment.Port}\n";
+            
+            selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
+            
+            if (deployParams.EnableHealthCheck)
+            {
+                int count = 0;
+                while (count<10&&!string.IsNullOrWhiteSpace(environment.HealthCheckUrl))
+                {
+                    try
+                    {
+                        var result=await environment.HealthCheckUrl.WithTimeout(3).GetAsync();
+                        result.ResponseMessage.EnsureSuccessStatusCode();
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        textBox.Text+=$"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)\n";
+                        await Task.Delay(3000);
+                        count++;
+                    }
+                }
+                selectedEnvironments.First(it => it.Host == environment.Host).Status = "健康检查通过";
+            }
+
         }
     }
 

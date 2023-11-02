@@ -1,4 +1,6 @@
-﻿namespace LightDeployApp;
+﻿using System.Collections.Generic;
+
+namespace LightDeployApp;
 
 public class DeployParams
 {
@@ -26,4 +28,7 @@ public class DeployParams
     /// 目标文件夹或者项目路径
     /// </summary>
     public string TargetPath { get; set; }
+    
+    public bool EnableHealthCheck { get; set; }
+    
 }

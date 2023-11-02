@@ -18,7 +18,7 @@
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>环境</Label>
-                <ComboBox Name="Environment" ItemsSource="{Binding EnvironmentNames}"></ComboBox>
+                <ComboBox Name="Environment" IsReadOnly="True" IsEnabled="False" ItemsSource="{Binding EnvironmentNames}"></ComboBox>
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>发布方式</Label>
@@ -30,11 +30,27 @@
                 <Button Click="SelectDirClick">选择目标</Button>
                 <TextBox Name="TargetPath"></TextBox>
                 <Label>编译参数</Label>
-                <CheckBox Name="SelfContained" Width="102" Content="包含运行环境"></CheckBox>
+                <CheckBox Name="SelfContained" Content="包含运行环境" Margin="0 5"></CheckBox>
+                <CheckBox Name="EnableHealthCheck"  Content="开启健康检查" Margin="0 5"></CheckBox>
             </StackPanel>
             <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
             <Button Click="AddService" Margin="5">新增服务</Button>
             <Button Click="DeployClick" Margin="5">部署</Button>
+            <Label>选择的环境</Label>
+            <ListBox ItemsSource="{Binding SelectedEnvironments}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="{Binding Host}"></Label>
+                            <Label Content="{Binding Port}"></Label>
+                            <Label>|</Label>
+                            <Label Content="{Binding HealthCheckUrl}"></Label>
+                            <Label>|</Label>
+                            <Label Content="{Binding Status}"></Label>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
             <Label>日志</Label>
                 <TextBox IsReadOnly="True" Height="300" Name="LogBox" Margin="5"
                          VerticalScrollBarVisibility="Auto"

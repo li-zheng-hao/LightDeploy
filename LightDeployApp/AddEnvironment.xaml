@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="AddEnvironment" Height="250" Width="500">
     <StackPanel>
+        <Label>环境名称必须和服务名称保持一致</Label>
         <StackPanel Orientation="Horizontal" Margin="5">
             <Label Width="70">环境名称</Label>
             <TextBox Name="EnvironmentName" Width="200"></TextBox>
@@ -18,6 +19,10 @@
         <StackPanel Orientation="Horizontal" Margin="5">
             <Label Width="70">端口</Label>
             <TextBox Name="Port" Width="200"></TextBox>
+        </StackPanel> 
+        <StackPanel Orientation="Horizontal" Margin="5">
+            <Label Width="100">健康检查Url</Label>
+            <TextBox Name="HealthCheckUrl" Width="200"></TextBox>
         </StackPanel> 
         <Button Click="ButtonBase_OnClick">新增</Button>
         <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>

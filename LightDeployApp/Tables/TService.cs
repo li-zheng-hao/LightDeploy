@@ -23,4 +23,9 @@ public class TService
     /// 默认环境名称
     /// </summary>
     public string DefaultEnvironment { get; set; }
+    
+    /// <summary>
+    /// 部署完成后进行健康检查
+    /// </summary>
+    public bool? EnableHealthCheck { get; set; }
 }

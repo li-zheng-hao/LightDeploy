@@ -11,10 +11,10 @@
             <Label Width="70">服务名称</Label>
             <TextBox Name="Service" Width="200"></TextBox>
         </StackPanel> 
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Label Width="70">默认环境名称</Label>
-            <TextBox Name="Environment" Width="200"></TextBox>
-        </StackPanel> 
+        <!-- <StackPanel Orientation="Horizontal" Margin="5"> -->
+            <!-- <Label >默认环境名称(已废弃)</Label> -->
+            <!-- <TextBox Name="Environment" IsEnabled="False" Width="200"></TextBox> -->
+        <!-- </StackPanel>  -->
         <Label>发布方式</Label>
         <ComboBox Name="DeployMode" >
             <ComboBoxItem IsSelected="True">项目</ComboBoxItem>
@@ -24,7 +24,8 @@
         <Button Click="SelectDirClick">选择目标</Button>
         <TextBox Name="TargetPath"></TextBox>
         <Label>编译参数</Label>
-        <CheckBox Name="SelfContained" Width="102" Content="包含运行环境"></CheckBox>
+        <CheckBox Margin="0 5" Name="SelfContained"  Content="包含运行环境"></CheckBox>
+        <CheckBox Margin="0 5" Name="EnableHealthCheck"  Content="开启健康检查(部署完成后进行健康检查)"></CheckBox>
         <Button Click="ButtonBase_OnClick">新增</Button>
         <Button Click="ButtonBase_OnClick2">删除</Button>
     </StackPanel>
