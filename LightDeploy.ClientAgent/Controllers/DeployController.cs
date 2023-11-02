@@ -1,8 +1,10 @@
+using System.Management;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LightDeploy.ClientAgent.Dto;
 using LightDeploy.ClientAgent.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Win32;
 
 namespace LightDeploy.ClientAgent.Controllers;
 
@@ -36,13 +38,12 @@ public class DeployController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult TestCopy()
+    public IActionResult TestDeploy()
     {
-        _deployService.CopyFilesRecursively("E:\\Test\\A","E:\\Test\\B");
-        
-        return Ok();
+        var location = WindowServiceHelper.GetWindowsServiceLocation("TestService");
+        return Ok(location);
     }
-
+ 
     [HttpGet]
     public IActionResult ListFileInfo([FromQuery] string serviceName)
     {

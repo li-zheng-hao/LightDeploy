@@ -10,11 +10,15 @@
         <StackPanel>
             <StackPanel Margin="5">
                 <Label>服务名</Label>
-                <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"></ComboBox>
+                <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged" ItemsSource="{Binding Services}"
+                          DisplayMemberPath="Name"
+                          SelectedValuePath="Name"
+                       >
+                </ComboBox>
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>环境</Label>
-                <ComboBox Name="Environment"></ComboBox>
+                <ComboBox Name="Environment" ItemsSource="{Binding EnvironmentNames}"></ComboBox>
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>发布方式</Label>

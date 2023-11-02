@@ -1,6 +1,7 @@
 ﻿using System.Management;
 using System.ServiceProcess;
 using LightDeploy.ClientAgent.Dto;
+using Polly;
 using SevenZipExtractor;
 
 namespace LightDeploy.ClientAgent.Services;
@@ -29,25 +30,21 @@ public class DeployService
                 throw new BusinessException("服务不存在");
             if(service.Status==ServiceControllerStatus.Running)
                 service.Stop(true);
-            // 获取服务执行路径
-            ManagementClass mc = new ManagementClass("Win32_Service");
-            string exePath = string.Empty;
-            foreach (ManagementObject mo in mc.GetInstances())
-            {
-                if (mo.GetPropertyValue("Name").ToString() == service.ServiceName)
-                {
-                    exePath = mo.GetPropertyValue("PathName").ToString().Trim('"');
-                    break;
-                }
-            }
+            service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 
+            string exePath=WindowServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
             if (exePath == string.Empty)
                 throw new BusinessException("服务路径不存在");
 
+            _logger.LogInformation($"服务路径:{exePath}");
             string exeDir = Path.GetDirectoryName(exePath)!;
-
-            CopyFilesRecursively(subDir, exeDir);
-
+           
+            Polly.Retry.RetryPolicy retryPolicy = Policy.Handle<Exception>().WaitAndRetry(3, i => TimeSpan.FromSeconds(2));
+            retryPolicy.Execute(() =>
+            {
+                CopyFilesRecursively(subDir, exeDir);
+            });
+           
             service.Start();
 
         }
@@ -90,14 +87,14 @@ public class DeployService
             if (exeFile is null)
             {
                 File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name));
-                _logger.LogInformation($"复制文件{sourceFile.Name}");
+                _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
             }
             else
             {
                 if (sourceFile.Length != exeFile.Length || sourceFile.LastWriteTime != exeFile.LastWriteTime)
                 {
                     File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name), true);
-                    _logger.LogInformation($"复制文件{sourceFile.Name}");
+                    _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
                 }
             }
         }
@@ -105,17 +102,8 @@ public class DeployService
 
     public List<FileInfoDto> GetFileInfos(string serviceName)
     {
-        string exePath = string.Empty;
-        // 获取服务执行路径
-        ManagementClass mc = new ManagementClass("Win32_Service");
-        foreach(ManagementObject mo in mc.GetInstances())
-        {
-            if(mo.GetPropertyValue("Name").ToString() == serviceName)
-            {
-                exePath=mo.GetPropertyValue("PathName").ToString().Trim('"');
-                break;
-            }
-        }
+        string exePath=WindowServiceHelper.GetWindowsServiceLocation(serviceName);
+
         if(exePath == string.Empty)
             throw new BusinessException("服务路径不存在");
             

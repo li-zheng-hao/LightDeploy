@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
+using Microsoft.Extensions.DependencyInjection;
 using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp
@@ -15,14 +16,17 @@ namespace LightDeployApp
     /// </summary>
     public partial class MainWindow : Window
     {
-        private List<TService> _services=new();
-        private List<TEnvironment> _environments=new();
         private string projectPath = "";
         public MainWindow()
         {
             InitializeComponent();
+            IServiceCollection serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<AppDataContext>();
+            AppContext.ServiceProvider=serviceCollection.BuildServiceProvider();
             DBHelper.Init();
             RefreshData();
+            this.DataContext = AppContext.GetAppDataContext();
+           
         }
 
         private void AddEnvironmentClick(object sender, RoutedEventArgs e)
@@ -62,6 +66,7 @@ namespace LightDeployApp
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
+            AppContext.GetAppDataContext().DeployResult.Clear();
             await DeployService.Deploy(LogBox,deployParams);
             MessageBox.Show("部署完成,耗时" + stopwatch.ElapsedMilliseconds + "ms");
         }
@@ -77,16 +82,7 @@ namespace LightDeployApp
 
         private void RefreshData()
         {
-            _services = DBHelper.GetClient()
-                .Queryable<TService>()
-                .ToList();
-            
-            _environments= DBHelper.GetClient()
-                .Queryable<TEnvironment>()
-                .ToList();
-            
-            Service.ItemsSource = _services.Select(it=>it.Name);
-            Environment.ItemsSource = _environments.Select(it=>it.Name).Distinct();
+            AppContext.RefreshData();
         }
 
         private void SelectDirClick(object sender, RoutedEventArgs e)
@@ -114,13 +110,13 @@ namespace LightDeployApp
 
         private void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectService=_services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
+            var selectService=AppContext.GetAppDataContext().Services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
             DeployMode.SelectedIndex = selectService?.DefaultMode == 0 ? 0 : 1;
             TargetPath.Text = selectService?.DefaultTargetPath;
             SelfContained.IsChecked=selectService?.IsSelfContained;
-            var environment = _environments.FirstOrDefault(it => it.Name == selectService!.DefaultEnvironment);
+            var environment = AppContext.GetAppDataContext().Environments.FirstOrDefault(it => it.Name == selectService!.DefaultEnvironment);
             if(environment!=null)
-                Environment.SelectedIndex = _environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environment.Name);
+                Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environment.Name);
         }
 
         private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)

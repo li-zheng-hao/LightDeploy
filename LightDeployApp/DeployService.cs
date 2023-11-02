@@ -68,6 +68,7 @@ public class DeployService
             var currentFileInfos=FileHelper.GetFileInfos(deployParams.TargetPath);
 
             var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
+            textBox.Text+=$"需要复制文件:{calculateNeedDeployFiles.Count}个\n";
             if(calculateNeedDeployFiles.Count==0)
             {
                 textBox.Text+=$"无需部署{environment.Host}:{environment.Port}\n";
