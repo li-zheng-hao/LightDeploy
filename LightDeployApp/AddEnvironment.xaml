@@ -6,25 +6,38 @@
                  xmlns:local="clr-namespace:LightDeployApp"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  mc:Ignorable="d"
-                 Title="新增环境" Height="250" Width="500">
+                 Title="新增环境" Height="600" Width="600">
     <StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Label Width="70">环境名称</Label>
-            <TextBox Name="EnvironmentName" Width="200"></TextBox>
-        </StackPanel> 
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Label Width="70">IP</Label>
-            <TextBox Name="Host" Width="200"></TextBox>
-        </StackPanel> 
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Label Width="70">端口</Label>
-            <TextBox Name="Port" Width="200"></TextBox>
-        </StackPanel> 
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Label Width="100">健康检查Url</Label>
-            <TextBox Name="HealthCheckUrl" Width="200"></TextBox>
-        </StackPanel> 
-        <Button Click="ButtonBase_OnClick">新增</Button>
-        <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
+        <GroupBox Header="新增">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="70">环境名称</Label>
+                    <TextBox Name="EnvironmentName" Width="200"></TextBox>
+                </StackPanel> 
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="70">IP</Label>
+                    <TextBox Name="Host" Width="200"></TextBox>
+                </StackPanel> 
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="70">端口</Label>
+                    <TextBox Name="Port" Width="200"></TextBox>
+                </StackPanel> 
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="100">健康检查Url</Label>
+                    <TextBox Name="HealthCheckUrl" Width="200"></TextBox>
+                </StackPanel> 
+                <Button Click="ButtonBase_OnClick">新增</Button>
+                <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
+            </StackPanel>
+        </GroupBox>
+       <GroupBox Header="修改">
+           <StackPanel>
+               <DataGrid ItemsSource="{Binding Environments,Mode=TwoWay}" MinHeight="200">
+               </DataGrid>
+               <Button Click="SaveClick">保存</Button>
+           </StackPanel>
+       </GroupBox>
+        
     </StackPanel>
+    
 </mah:MetroWindow>

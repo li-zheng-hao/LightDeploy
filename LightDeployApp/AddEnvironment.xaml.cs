@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using LightDeployApp.Tables;
 using MahApps.Metro.Controls;
 
@@ -9,6 +10,7 @@ public partial class AddEnvironment : MetroWindow
     public AddEnvironment()
     {
         InitializeComponent();
+        this.DataContext = AppContext.GetAppDataContext();
     }
 
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
@@ -27,7 +29,7 @@ public partial class AddEnvironment : MetroWindow
 
         DBHelper.GetClient().Insertable<TEnvironment>(environment).ExecuteCommand();
         MessageBox.Show("添加成功");
-        Close();
+        AppContext.RefreshData();
     }
 
 
@@ -37,6 +39,23 @@ public partial class AddEnvironment : MetroWindow
             .Where(it => it.Name == EnvironmentName.Text)
             .ExecuteCommand();
         MessageBox.Show($"删除{num}条数据");
-        Close();
+        AppContext.RefreshData();
+    }
+
+    private void SaveClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            AppContext.GetAppDataContext().Environments.ForEach(it =>
+            {
+                DBHelper.GetClient().Updateable(it).WhereColumns(it=>new{it.Host,it.Name}).ExecuteCommand();
+            });
+            MessageBox.Show("保存成功");
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message);
+        }
+        
     }
 }

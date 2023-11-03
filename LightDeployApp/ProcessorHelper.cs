@@ -42,7 +42,10 @@ public static class ProcessorHelper
             process.StartInfo.StandardErrorEncoding=         Encoding.GetEncoding(65001 );
             process.Start();
 
-            Task.Run(() =>
+            
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(waitSeconds * 1000);
+            var task1= Task.Run(() =>
             {
                 try
                 {
@@ -61,7 +64,7 @@ public static class ProcessorHelper
                 }
             });
 
-            Task.Run(() =>
+            var task2=Task.Run(() =>
             {
                 try
                 {
@@ -79,10 +82,8 @@ public static class ProcessorHelper
                 {
                 }
             });
-
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(waitSeconds * 1000);
-
-            await process.WaitForExitAsync(cancellationTokenSource.Token);
+            Task task3= process.WaitForExitAsync(cancellationTokenSource.Token);
+            await Task.WhenAll(task1, task2, task3);
         }
         catch (Exception ex)
         {
