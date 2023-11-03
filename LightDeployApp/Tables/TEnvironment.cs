@@ -16,6 +16,11 @@ public class TEnvironment:INotifyPropertyChanged
     /// 健康检查Url
     /// </summary>
     public string? HealthCheckUrl { get; set; }
+    
+    /// <summary>
+    /// Token
+    /// </summary>
+    public string? AuthKey { get; set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

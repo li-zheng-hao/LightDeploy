@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LightDeployApp.Dtos;
+﻿namespace LightDeploy.ClientAgent.Dto;
 
 public class FileInfoDto
 {

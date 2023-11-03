@@ -1,3 +1,4 @@
+using LightDeploy.ClientAgent.Auth;
 using LightDeploy.ClientAgent.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
@@ -29,6 +30,14 @@ builder.Services.Configure<FormOptions>(x =>
     x.MultipartBodyLengthLimit = int.MaxValue; 
 });
 builder.WebHost.ConfigureKestrel(it => it.Limits.MaxRequestBodySize =long.MaxValue);
+builder.Services.AddAuthentication(option =>
+    {
+        option.DefaultAuthenticateScheme = KeyAuthenticationOptions.Scheme;
+        option.DefaultChallengeScheme = KeyAuthenticationOptions.Scheme;
+ 
+    })
+    .AddKeyAuthentication(options => { });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

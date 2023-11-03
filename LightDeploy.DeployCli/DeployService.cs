@@ -1,17 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using Flurl;
-using Flurl.Http;
+﻿using Flurl.Http;
 using LightDeploy.ClientAgent.Dto;
-using LightDeployApp.Dtos;
-using LightDeployApp.Tables;
-using SevenZipExtractor;
-using SqlSugar;
-using SW.Core.Helper;
+using LightDeploy.DeployCli;
+using LightDeploy.DeployCli.Tables;
 
 namespace LightDeployApp;
 
@@ -19,36 +9,7 @@ public class DeployService
 {
     public static async Task Deploy(DeployParams deployParams)
     {
-        try
-        {
-            if(deployParams.BuildMode==0)
-                await DeployProject(deployParams);
-            else
-                await DeployFolder(deployParams);
-        }
-        catch (Exception e)
-        {
-            AppContext.GetAppDataContext().Log(e.Message);
-        }
-       
-    }
-
-    private static async Task DeployProject( DeployParams deployParams)
-    {
-        var tmpDir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tmp",Guid.NewGuid().ToString("N"));
-        var isSelfContained = deployParams.IsSelfContained?"--self-contained":string.Empty;
-        await ProcessorHelper.InvokeAsync("dotnet", $" publish {deployParams.TargetPath} -c Release -o {tmpDir} {isSelfContained} ", true);
-        await Task.Delay(2000);
-        AppContext.GetAppDataContext().Log("编译完成");
-        try
-        {
-            deployParams.TargetPath = tmpDir;
-            await DeployToServer(deployParams);
-        }
-        finally
-        {
-            Directory.Delete(tmpDir,true);
-        }
+        await DeployFolder(deployParams);
     }
 
     private static async Task DeployFolder( DeployParams deployParams)
@@ -58,17 +19,13 @@ public class DeployService
     
     private static async Task DeployToServer( DeployParams deployParams)
     {
-        var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
         var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
         List<FileInfoDto> calculateNeedDeployFiles = null;
         MemoryStream memoryStream = null;
         foreach (var environment in environments)
         {
-            AppContext.GetAppDataContext().Log($"==============================================================");
-            AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
-
-            selectedEnvironments.First(it => it.Host == environment.Host).Status = "开始部署";
-
+            Console.WriteLine($"==============================================================");
+            Console.WriteLine($"开始部署{environment.Host}:{environment.Port}");
           
             var currentFileInfos=FileHelper.GetFileInfos(deployParams.TargetPath);
             
@@ -80,21 +37,18 @@ public class DeployService
                 .ReceiveJson<List<FileInfoDto>>();
             
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
-            AppContext.GetAppDataContext().Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}");
+            Console.WriteLine($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}");
 
             if(calculateNeedDeployFiles.Count==0)
             {
-                AppContext.GetAppDataContext().Log($"无需部署{environment.Host}:{environment.Port}");
+                Console.WriteLine($"无需部署{environment.Host}:{environment.Port}");
 
-                selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
                 continue;
             }
             if(memoryStream==null)
                 memoryStream =
                     await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
             
-            selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
-
             try
             {
                
@@ -108,7 +62,7 @@ public class DeployService
                  
                 if (response.StatusCode != 200)
                 {
-                    AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
+                    Console.Error.WriteLine($"部署失败{environment.Host}:{environment.Port}");
 
                     continue;
                 }
@@ -116,15 +70,13 @@ public class DeployService
             catch (FlurlHttpException e)
             {
                 var body=await e.GetResponseStringAsync();
-                AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
-                AppContext.GetAppDataContext().Log($"返回消息 {e.Message}");
-                AppContext.GetAppDataContext().Log($"返回消息 {body}");
+                Console.Error.WriteLine($"部署失败{environment.Host}:{environment.Port}");
+                Console.Error.WriteLine($"返回消息 {e.Message}");
+                Console.Error.WriteLine($"返回消息 {body}");
                 continue;
             }
          
-            AppContext.GetAppDataContext().Log($"部署完成{environment.Host}:{environment.Port}");
-            
-            selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
+            Console.WriteLine($"部署完成{environment.Host}:{environment.Port}");
             
             if (deployParams.EnableHealthCheck)
             {
@@ -139,12 +91,11 @@ public class DeployService
                     }
                     catch (Exception)
                     {
-                        AppContext.GetAppDataContext().Log($"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)");
+                        Console.WriteLine($"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)");
                         await Task.Delay(3000);
                         count++;
                     }
                 }
-                selectedEnvironments.First(it => it.Host == environment.Host).Status = "健康检查通过";
             }
 
         }
@@ -157,6 +108,7 @@ public class DeployService
         var memoryStream=FileHelper.CompressFiles(fileInfos.ToList());
         return memoryStream;
     }
+    
 
     private static List<FileInfoDto> CalculateNeedDeployFiles(List<FileInfoDto> currentFileInfos, List<FileInfoDto> remoteFiles)
     {

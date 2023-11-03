@@ -3,12 +3,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using LightDeploy.ClientAgent.Dto;
 using LightDeploy.ClientAgent.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Win32;
 
 namespace LightDeploy.ClientAgent.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("/api/[controller]/[action]")]
 public class DeployController : ControllerBase
 {
@@ -73,13 +75,13 @@ public class DeployController : ControllerBase
     }
    
 
-    [HttpGet]
+    [HttpGet,AllowAnonymous]
     public IActionResult Ping()
     {
         return Ok();
     }
 
-    [HttpPost()]
+    [HttpPost(),Authorize]
     public IActionResult UpdateSelf()
     {
         var file=HttpContext.Request.Form.Files["file"];

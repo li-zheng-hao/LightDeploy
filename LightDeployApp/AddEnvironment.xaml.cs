@@ -21,6 +21,7 @@ public partial class AddEnvironment : MetroWindow
         environment.Name=EnvironmentName.Text;
         environment.Port=Port.Text;
         environment.HealthCheckUrl = HealthCheckUrl.Text;
+        environment.AuthKey = AuthKey.Text;
         var exist=DBHelper.GetClient().Queryable<TEnvironment>().Where(it=>it.Name==environment.Name&&it.Host==environment.Host).First();
         if (exist != null)
         {

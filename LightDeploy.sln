@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeployApp", "LightDepl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeploy.UpdateService", "LightDeploy.UpdateService\LightDeploy.UpdateService.csproj", "{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeploy.DeployCli", "LightDeploy.DeployCli\LightDeploy.DeployCli.csproj", "{B9679615-48D2-43BE-964C-F2BFE34F0CEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9679615-48D2-43BE-964C-F2BFE34F0CEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9679615-48D2-43BE-964C-F2BFE34F0CEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9679615-48D2-43BE-964C-F2BFE34F0CEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9679615-48D2-43BE-964C-F2BFE34F0CEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

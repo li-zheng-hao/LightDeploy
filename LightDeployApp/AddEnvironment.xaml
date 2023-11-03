@@ -26,6 +26,10 @@
                     <Label Width="100">健康检查Url</Label>
                     <TextBox Name="HealthCheckUrl" Width="200"></TextBox>
                 </StackPanel> 
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="100">认证Key</Label>
+                    <TextBox Name="AuthKey" Width="200"></TextBox>
+                </StackPanel> 
                 <Button Click="ButtonBase_OnClick">新增</Button>
                 <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
             </StackPanel>
