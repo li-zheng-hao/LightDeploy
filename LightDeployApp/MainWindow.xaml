@@ -58,6 +58,7 @@
                          TextWrapping="Wrap"
                          AcceptsReturn="True"
                          TextChanged="LogBox_OnTextChanged"
+                         Text="{Binding LogContext}"
                          ></TextBox>
         </StackPanel>
     </ScrollViewer>

@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using LightDeployApp;
 using Microsoft.VisualBasic.Logging;
+using AppContext = LightDeployApp.AppContext;
 
 namespace SW.Core.Helper;
 
@@ -22,7 +23,7 @@ public static class ProcessorHelper
     /// <param name="param"></param>
     /// <param name="ignoreException"></param>
     /// <param name="waitSeconds"></param>
-    public static async Task InvokeAsync(string exe, string param, bool ignoreException = false, TextBox textBox=null,int waitSeconds = 600)
+    public static async Task InvokeAsync(string exe, string param, bool ignoreException = false,int waitSeconds = 600)
     {
         try
         {
@@ -51,7 +52,7 @@ public static class ProcessorHelper
                         // do something with line
                         App.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            textBox.Text+=$"{line}\n";
+                            AppContext.GetAppDataContext().Log(line);
                         });
                     }
                 }
@@ -70,7 +71,7 @@ public static class ProcessorHelper
                         // do something with line
                         Dispatcher.CurrentDispatcher.Invoke(() =>
                         {
-                            textBox.Text+=$"{line}\n";
+                            AppContext.GetAppDataContext().Log(line);
                         });
                     }
                 }
@@ -89,14 +90,14 @@ public static class ProcessorHelper
             if (ignoreException)
             {    Dispatcher.CurrentDispatcher.Invoke(() =>
                 {
-                    textBox.Text+=$"{ex.Message}\n";
+                    AppContext.GetAppDataContext().Log($"此异常已被忽略 {ex.Message}");
                 });
 
                 return;
             }
             Dispatcher.CurrentDispatcher.Invoke(() =>
             {
-                textBox.Text+=$"{ex.Message}\n";
+                AppContext.GetAppDataContext().Log($"进程调用异常 {ex.Message}");
             });
 
             throw;

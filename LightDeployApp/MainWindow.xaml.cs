@@ -69,7 +69,7 @@ namespace LightDeployApp
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            await DeployService.Deploy(LogBox,deployParams);
+            await DeployService.Deploy(deployParams);
             MessageBox.Show("部署完成,耗时" + stopwatch.ElapsedMilliseconds + "ms");
         }
 

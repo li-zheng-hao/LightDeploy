@@ -16,32 +16,32 @@ namespace LightDeployApp;
 
 public class DeployService
 {
-    public static async Task Deploy(TextBox textBox, DeployParams deployParams)
+    public static async Task Deploy(DeployParams deployParams)
     {
         try
         {
             if(deployParams.BuildMode==0)
-                await DeployProject(textBox,deployParams);
+                await DeployProject(deployParams);
             else
-                await DeployFolder(textBox,deployParams);
+                await DeployFolder(deployParams);
         }
         catch (Exception e)
         {
-            textBox.Text += e.Message+"\n";
+            AppContext.GetAppDataContext().Log(e.Message);
         }
        
     }
 
-    private static async Task DeployProject(TextBox textBox, DeployParams deployParams)
+    private static async Task DeployProject( DeployParams deployParams)
     {
         var tmpDir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tmp",Guid.NewGuid().ToString("N"));
         var isSelfContained = deployParams.IsSelfContained?"--self-contained":string.Empty;
-        await ProcessorHelper.InvokeAsync("dotnet", $" publish {deployParams.TargetPath} -c Release -o {tmpDir} {isSelfContained} ", true, textBox);
-        textBox.Text+="编译完成\n";
+        await ProcessorHelper.InvokeAsync("dotnet", $" publish {deployParams.TargetPath} -c Release -o {tmpDir} {isSelfContained} ", true);
+        AppContext.GetAppDataContext().Log("编译完成");
         try
         {
             deployParams.TargetPath = tmpDir;
-            await DeployToServer(textBox,deployParams);
+            await DeployToServer(deployParams);
         }
         finally
         {
@@ -49,19 +49,20 @@ public class DeployService
         }
     }
 
-    private static async Task DeployFolder(TextBox textBox, DeployParams deployParams)
+    private static async Task DeployFolder( DeployParams deployParams)
     {
-        await DeployToServer(textBox,deployParams);
+        await DeployToServer(deployParams);
     }
     
-    private static async Task DeployToServer(TextBox textBox, DeployParams deployParams)
+    private static async Task DeployToServer( DeployParams deployParams)
     {
         var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
         var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
         List<FileInfoDto> calculateNeedDeployFiles = null;
         foreach (var environment in environments)
         {
-            textBox.Text+=$"开始部署{environment.Host}:{environment.Port}\n";
+            AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
+
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "开始部署";
 
           
@@ -73,10 +74,12 @@ public class DeployService
                 .ReceiveJson<List<FileInfoDto>>();
             
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
-            textBox.Text += $"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}\n";
+            AppContext.GetAppDataContext().Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}");
+
             if(calculateNeedDeployFiles.Count==0)
             {
-                textBox.Text+=$"无需部署{environment.Host}:{environment.Port}\n";
+                AppContext.GetAppDataContext().Log($"无需部署{environment.Host}:{environment.Port}");
+
                 selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
                 continue;
             }
@@ -96,20 +99,21 @@ public class DeployService
                  
                 if (response.StatusCode != 200)
                 {
-                    textBox.Text+=$"部署失败{environment.Host}:{environment.Port}\n";
+                    AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
+
                     continue;
                 }
             }
             catch (FlurlHttpException e)
             {
                 var body=await e.GetResponseStringAsync();
-                textBox.Text+=$"部署失败{environment.Host}:{environment.Port}\n";
-                textBox.Text+=$"返回消息 {e.Message}\n";
-                textBox.Text+=$"返回消息 {body}\n";
+                AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
+                AppContext.GetAppDataContext().Log($"返回消息 {e.Message}");
+                AppContext.GetAppDataContext().Log($"返回消息 {body}");
                 continue;
             }
          
-            textBox.Text+=$"部署完成{environment.Host}:{environment.Port}\n";
+            AppContext.GetAppDataContext().Log($"部署完成{environment.Host}:{environment.Port}");
             
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
             
@@ -126,7 +130,7 @@ public class DeployService
                     }
                     catch (Exception)
                     {
-                        textBox.Text+=$"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)\n";
+                        AppContext.GetAppDataContext().Log($"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)");
                         await Task.Delay(3000);
                         count++;
                     }

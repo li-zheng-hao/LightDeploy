@@ -19,6 +19,9 @@ public class AppDataContext:INotifyPropertyChanged
     
     public List<SelectedEnvironment> SelectedEnvironments { get; set; }
     
+    
+    public string LogContext { get; set; }
+    
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -32,6 +35,11 @@ public class AppDataContext:INotifyPropertyChanged
         field = value;
         OnPropertyChanged(propertyName);
         return true;
+    }
+
+    public void Log(string data)
+    {
+        LogContext+=data+"\n";
     }
 }
 
@@ -51,6 +59,7 @@ public class SelectedEnvironment:INotifyPropertyChanged
     public string? HealthCheckUrl { get; set; }
 
     public string Status { get; set; } = "未部署";
+    
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
