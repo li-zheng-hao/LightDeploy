@@ -18,7 +18,7 @@
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>环境</Label>
-                <ComboBox Name="Environment" IsReadOnly="True" IsEnabled="False" ItemsSource="{Binding EnvironmentNames}"></ComboBox>
+                <ComboBox Name="Environment"  ItemsSource="{Binding EnvironmentNames}" SelectionChanged="Environment_OnSelectionChanged"></ComboBox>
             </StackPanel>
             <StackPanel Margin="5">
                 <Label>发布方式</Label>

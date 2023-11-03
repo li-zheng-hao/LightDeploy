@@ -11,5 +11,11 @@
         <Button Click="SelectDirClick">选择目标</Button>
         <TextBox Name="FilePath" IsReadOnly="True"></TextBox>
         <Button Click="PublishUpdate">发布</Button>
+        <TextBox IsReadOnly="True" Height="300" Name="LogBox" Margin="5"
+                 VerticalScrollBarVisibility="Auto"
+                 TextWrapping="Wrap"
+                 AcceptsReturn="True"
+                 TextChanged="LogBox_OnTextChanged"
+        ></TextBox>
     </StackPanel>
 </Window>

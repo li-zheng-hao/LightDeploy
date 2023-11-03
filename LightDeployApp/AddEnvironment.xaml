@@ -7,7 +7,6 @@
         mc:Ignorable="d"
         Title="AddEnvironment" Height="250" Width="500">
     <StackPanel>
-        <Label>环境名称必须和服务名称保持一致</Label>
         <StackPanel Orientation="Horizontal" Margin="5">
             <Label Width="70">环境名称</Label>
             <TextBox Name="EnvironmentName" Width="200"></TextBox>

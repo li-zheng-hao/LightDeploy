@@ -141,5 +141,18 @@ namespace LightDeployApp
             var updateAgent = new UpdateAgent();
             updateAgent.Show();
         }
+
+        private void Environment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+           var currents=AppContext.GetAppDataContext().Environments.Where(it => it.Name == Environment.Text).ToList();
+            AppContext.GetAppDataContext().SelectedEnvironments = currents.Select(it =>
+                new SelectedEnvironment()
+                {
+                    Name = it.Name,
+                    Host = it.Host,
+                    Port = it.Port,
+                    HealthCheckUrl = it.HealthCheckUrl
+                }).ToList();
+        }
     }
 }

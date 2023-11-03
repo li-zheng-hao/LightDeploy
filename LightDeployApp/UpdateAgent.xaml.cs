@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using Flurl.Http;
 using MessageBox = System.Windows.MessageBox;
@@ -45,11 +47,19 @@ public partial class UpdateAgent : Window
             }
             catch (Exception exception)
             {
+                LogBox.Text+="发布失败:"+environment.Host+ $",异常：{exception.Message} \n";
                 Console.WriteLine(exception);
             }
-         
+            
+            LogBox.Text+="发布完成:"+environment.Host+ "\n";
+
         }
 
         MessageBox.Show("发布完成,稍后所有Agent将自动更新");
+    }
+
+    private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        LogBox.ScrollToEnd();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Management;
+using System.Security.Cryptography;
 using System.ServiceProcess;
 using LightDeploy.ClientAgent.Dto;
 using Polly;
@@ -100,8 +101,13 @@ public class DeployService
         }
     }
 
-    public List<FileInfoDto> GetFileInfos(string serviceName)
+    public List<FileInfoDto> GetFileInfos(string serviceName,string ignoreFileExtensions)
     {
+        string[] ignoreArr = new[] { ".log", ".db", ".db-shm", ".db-wal" };
+        if (!string.IsNullOrWhiteSpace(ignoreFileExtensions))
+        {
+            ignoreArr = ignoreFileExtensions.Split(",");
+        }
         string exePath=WindowServiceHelper.GetWindowsServiceLocation(serviceName);
 
         if(exePath == string.Empty)
@@ -154,5 +160,30 @@ public class DeployService
         return result;
 
     }
+    /// <summary>
+    /// 计算文件MD5
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public static string GetFileMd5(string path,params string[] ignoreExtensions)
+    {
+       
+        if(ignoreExtensions.Contains( Path.GetExtension(path),StringComparer.OrdinalIgnoreCase))
+            return string.Empty;
+        try
+        {
+        
+            using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var md5 = MD5.Create();
+            var hash = md5.ComputeHash(fileStream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+           
+        }
+        catch (Exception e)
+        {
+            return string.Empty;
+        }
+    }
+    
     
 }

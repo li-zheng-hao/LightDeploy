@@ -24,6 +24,6 @@ public static class AppContext
             .ToList();
         GetAppDataContext().Services = _services;
         GetAppDataContext().Environments= _environments;
-        GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).ToList();
+        GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();
     }
 }
