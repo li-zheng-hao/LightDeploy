@@ -38,7 +38,7 @@
                         </ComboBox>
                         <Label>项目或文件夹目录</Label>
                         <Button Click="SelectDirClick">选择目标</Button>
-                        <TextBox Name="TargetPath"></TextBox>
+                        <TextBox Name="TargetPath"  Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type StackPanel}}, Path=ActualWidth}"></TextBox>
                         <Label>编译参数</Label>
                         <CheckBox Name="SelfContained" Content="包含运行环境" Margin="0 5"></CheckBox>
                         <CheckBox Name="EnableHealthCheck" Content="开启健康检查" Margin="0 5"></CheckBox>
