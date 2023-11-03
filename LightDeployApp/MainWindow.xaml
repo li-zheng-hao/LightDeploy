@@ -48,10 +48,11 @@
 
             <GroupBox Header="操作" Margin="5">
                 <StackPanel>
-                    <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
-                    <Button Click="AddService" Margin="5">新增服务</Button>
+                    <Button Click="EditEnvironmentClick" Margin="5">配置环境</Button>
+                    <Button Click="EditService" Margin="5">配置服务</Button>
                     <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
                     <Button Click="DeployClick" Margin="5">部署</Button>
+                    <Button Click="RefreshClick" Margin="5">刷新配置</Button>
                 </StackPanel>
             </GroupBox>
           
@@ -60,7 +61,7 @@
         <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
             <DockPanel>
                 <Label DockPanel.Dock="Top">选择的环境</Label>
-                <DataGrid ItemsSource="{Binding SelectedEnvironments}" AutoGenerateColumns="False" MinHeight="50" DockPanel.Dock="Top">
+                <DataGrid ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" AutoGenerateColumns="False" MinHeight="50" DockPanel.Dock="Top">
                     <DataGrid.Columns>                
                         <DataGridTextColumn Header="IP" Binding="{Binding Host}"/>
                         <DataGridTextColumn Header="端口" Binding="{Binding Port}"/>

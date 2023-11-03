@@ -6,9 +6,9 @@
                  xmlns:local="clr-namespace:LightDeployApp"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  mc:Ignorable="d"
-                 Title="新增环境" Height="600" Width="600">
+                 Title="配置环境" Height="560" Width="600">
     <StackPanel>
-        <GroupBox Header="新增">
+        <GroupBox Header="新增" Margin="5">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5">
                     <Label Width="70">环境名称</Label>
@@ -30,9 +30,9 @@
                 <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
             </StackPanel>
         </GroupBox>
-       <GroupBox Header="修改">
+       <GroupBox Header="修改" Margin="5">
            <StackPanel>
-               <DataGrid ItemsSource="{Binding Environments,Mode=TwoWay}" MinHeight="200">
+               <DataGrid CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Environments,Mode=TwoWay}" Height="200">
                </DataGrid>
                <Button Click="SaveClick">保存</Button>
            </StackPanel>

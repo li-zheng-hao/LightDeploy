@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
 using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
 using MessageBox = System.Windows.MessageBox;
 
@@ -32,7 +33,7 @@ namespace LightDeployApp
 
         }
 
-        private void AddEnvironmentClick(object sender, RoutedEventArgs e)
+        private void EditEnvironmentClick(object sender, RoutedEventArgs e)
         {
             var addEnvironment = new AddEnvironment();
             addEnvironment.Show();
@@ -52,29 +53,33 @@ namespace LightDeployApp
             
             if(string.IsNullOrWhiteSpace(deployParams.Environment))
             {
-                MessageBox.Show("请选择环境");
+                this.ShowMessageAsync("消息",$"请选择环境");
+
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(deployParams.ServiceName))
             {
-                MessageBox.Show("请选择服务");
+                this.ShowMessageAsync("消息",$"请选择服务");
+
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(deployParams.TargetPath))
             {
-                MessageBox.Show("请选择目标路径");
+                this.ShowMessageAsync("消息",$"请选择目标路径");
+
                 return;
             }
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             await DeployService.Deploy(deployParams);
-            MessageBox.Show("部署完成,耗时" + stopwatch.ElapsedMilliseconds + "ms");
+            this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
+
         }
 
-        private void AddService(object sender, RoutedEventArgs e)
+        private void EditService(object sender, RoutedEventArgs e)
         {
             var addService= new AddService();
             addService.Show();
@@ -164,6 +169,10 @@ namespace LightDeployApp
             AppContext.GetAppDataContext().SelectedEnvironments=
                 data;
         }
-       
+
+        private void RefreshClick(object sender, RoutedEventArgs e)
+        {
+            RefreshData();
+        }
     }
 }

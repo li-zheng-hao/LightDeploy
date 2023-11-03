@@ -2,6 +2,7 @@
 using System.Windows;
 using LightDeployApp.Tables;
 using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
 
 namespace LightDeployApp;
 
@@ -23,12 +24,14 @@ public partial class AddEnvironment : MetroWindow
         var exist=DBHelper.GetClient().Queryable<TEnvironment>().Where(it=>it.Name==environment.Name&&it.Host==environment.Host).First();
         if (exist != null)
         {
-            MessageBox.Show("已存在相同环境");
+            this.ShowMessageAsync("消息",$"已存在相同环境");
+
             return;
         }
 
         DBHelper.GetClient().Insertable<TEnvironment>(environment).ExecuteCommand();
-        MessageBox.Show("添加成功");
+        this.ShowMessageAsync("消息",$"添加成功");
+
         AppContext.RefreshData();
     }
 

@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using Flurl.Http;
 using MahApps.Metro.Controls;
+using MahApps.Metro.Controls.Dialogs;
 using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp;
@@ -34,7 +35,7 @@ public partial class UpdateAgent : MetroWindow
 
     private async void PublishUpdate(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("开始发布");
+        await this.ShowMessageAsync("消息",$"开始发布");
 
         foreach (var environment in AppContext.GetAppDataContext().Environments)
         {
@@ -57,8 +58,8 @@ public partial class UpdateAgent : MetroWindow
             LogBox.Text+="发布完成:"+environment.Host+ "\n";
 
         }
+        this.ShowMessageAsync("消息","发布完成,稍后所有Agent将自动更新");
 
-        MessageBox.Show("发布完成,稍后所有Agent将自动更新");
     }
 
     private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)

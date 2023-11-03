@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:LightDeployApp"
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
-        Title="UpdateAgent" Height="450" Width="800">
+        Title="更新代理" Height="450" Width="800">
     <StackPanel>
         <Label>文件路径</Label>
         <Button Click="SelectDirClick">选择目标</Button>
