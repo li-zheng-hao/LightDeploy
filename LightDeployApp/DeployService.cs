@@ -60,6 +60,7 @@ public class DeployService
         var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
         var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
         List<FileInfoDto> calculateNeedDeployFiles = null;
+        MemoryStream memoryStream = null;
         foreach (var environment in environments)
         {
             AppContext.GetAppDataContext().Log($"==============================================================");
@@ -85,17 +86,18 @@ public class DeployService
                 selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
                 continue;
             }
-            
-            var memoryStream =
-                await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
+            if(memoryStream==null)
+                memoryStream =
+                    await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
             
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
 
             try
             {
+               
                 var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/deploy".PostMultipartAsync(mp =>
                 {
-                    mp.AddFile("File", memoryStream, "file.zip");
+                    mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
                     mp.AddString("ServiceName", deployParams.ServiceName);
                 });
                  

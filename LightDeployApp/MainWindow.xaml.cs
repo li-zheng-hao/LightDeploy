@@ -42,7 +42,7 @@ namespace LightDeployApp
 
         private async void DeployClick(object sender, RoutedEventArgs e)
         {
-            LogBox.Text= "";
+            AppContext.GetAppDataContext().LogContext=string.Empty;
             var deployParams= new DeployParams();
             deployParams.Environment = Environment.Text;
             deployParams.ServiceName = Service.Text;
