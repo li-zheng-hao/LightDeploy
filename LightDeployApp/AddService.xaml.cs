@@ -1,11 +1,12 @@
 ﻿using System.Windows;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
+using MahApps.Metro.Controls;
 using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp;
 
-public partial class AddService : Window
+public partial class AddService : MetroWindow
 {
     public AddService()
     {

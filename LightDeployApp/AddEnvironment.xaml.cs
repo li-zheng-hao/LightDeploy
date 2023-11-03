@@ -1,9 +1,10 @@
 ﻿using System.Windows;
 using LightDeployApp.Tables;
+using MahApps.Metro.Controls;
 
 namespace LightDeployApp;
 
-public partial class AddEnvironment : Window
+public partial class AddEnvironment : MetroWindow
 {
     public AddEnvironment()
     {

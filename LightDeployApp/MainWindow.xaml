@@ -1,66 +1,90 @@
-﻿<Window x:Class="LightDeployApp.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:LightDeployApp"
-        mc:Ignorable="d"
-        Title="LightDeployApp"  Width="800">
-    <ScrollViewer>
-        <StackPanel>
-            <StackPanel Margin="5">
-                <Label>服务名</Label>
-                <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged" ItemsSource="{Binding Services}"
-                          DisplayMemberPath="Name"
-                          SelectedValuePath="Name"
-                       >
-                </ComboBox>
-            </StackPanel>
-            <StackPanel Margin="5">
-                <Label>环境</Label>
-                <ComboBox Name="Environment"  ItemsSource="{Binding EnvironmentNames}" SelectionChanged="Environment_OnSelectionChanged"></ComboBox>
-            </StackPanel>
-            <StackPanel Margin="5">
-                <Label>发布方式</Label>
-                <ComboBox Name="DeployMode" >
-                    <ComboBoxItem IsSelected="True">项目</ComboBoxItem>
-                    <ComboBoxItem>指定文件夹</ComboBoxItem>
-                </ComboBox>
-                <Label>项目或文件夹目录</Label> 
-                <Button Click="SelectDirClick">选择目标</Button>
-                <TextBox Name="TargetPath"></TextBox>
-                <Label>编译参数</Label>
-                <CheckBox Name="SelfContained" Content="包含运行环境" Margin="0 5"></CheckBox>
-                <CheckBox Name="EnableHealthCheck"  Content="开启健康检查" Margin="0 5"></CheckBox>
-            </StackPanel>
-            <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
-            <Button Click="AddService" Margin="5">新增服务</Button>
-            <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
-            <Button Click="DeployClick" Margin="5">部署</Button>
-            <Label>选择的环境</Label>
-            <ListBox ItemsSource="{Binding SelectedEnvironments}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <Label Content="{Binding Host}"></Label>
-                            <Label Content="{Binding Port}"></Label>
-                            <Label>|</Label>
-                            <Label Content="{Binding HealthCheckUrl}"></Label>
-                            <Label>|</Label>
-                            <Label Content="{Binding Status}"></Label>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <Label>日志</Label>
-                <TextBox IsReadOnly="True" Height="300" Name="LogBox" Margin="5"
+﻿<mah:MetroWindow x:Class="LightDeployApp.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:local="clr-namespace:LightDeployApp"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 mc:Ignorable="d"
+                WindowStartupLocation="CenterScreen"
+                 Title="服务部署工具 by 李正浩" Width="1200" Height="650">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="300"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+         <DockPanel>
+            <GroupBox Header="参数配置" DockPanel.Dock="Top"  Margin="5">
+                <StackPanel>
+                    <StackPanel Margin="5">
+                        <Label>服务名</Label>
+                        <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"
+                                  ItemsSource="{Binding Services}"
+                                  DisplayMemberPath="Name"
+                                  SelectedValuePath="Name">
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Margin="5">
+                        <Label>环境</Label>
+                        <ComboBox Name="Environment" ItemsSource="{Binding EnvironmentNames}"
+                                  SelectionChanged="Environment_OnSelectionChanged">
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Margin="5">
+                        <Label>发布方式</Label>
+                        <ComboBox Name="DeployMode">
+                            <ComboBoxItem IsSelected="True">项目</ComboBoxItem>
+                            <ComboBoxItem>指定文件夹</ComboBoxItem>
+                        </ComboBox>
+                        <Label>项目或文件夹目录</Label>
+                        <Button Click="SelectDirClick">选择目标</Button>
+                        <TextBox Name="TargetPath"></TextBox>
+                        <Label>编译参数</Label>
+                        <CheckBox Name="SelfContained" Content="包含运行环境" Margin="0 5"></CheckBox>
+                        <CheckBox Name="EnableHealthCheck" Content="开启健康检查" Margin="0 5"></CheckBox>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="操作" Margin="5">
+                <StackPanel>
+                    <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
+                    <Button Click="AddService" Margin="5">新增服务</Button>
+                    <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
+                    <Button Click="DeployClick" Margin="5">部署</Button>
+                </StackPanel>
+            </GroupBox>
+          
+        </DockPanel>
+        
+        <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
+            <DockPanel>
+                <Label DockPanel.Dock="Top">选择的环境</Label>
+                <ListBox DockPanel.Dock="Top" ItemsSource="{Binding SelectedEnvironments}" MinHeight="20" BorderThickness="1" BorderBrush="Black">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="{Binding Host}"></Label>
+                                <Label Content="{Binding Port}"></Label>
+                                <Label>|</Label>
+                                <Label Content="{Binding HealthCheckUrl}"></Label>
+                                <Label>|</Label>
+                                <Label Content="{Binding Status}"></Label>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Label DockPanel.Dock="Top" >日志</Label>
+                <TextBox DockPanel.Dock="Top" IsReadOnly="True"  Name="LogBox" Margin="5"
                          VerticalScrollBarVisibility="Auto"
                          TextWrapping="Wrap"
                          AcceptsReturn="True"
                          TextChanged="LogBox_OnTextChanged"
-                         Text="{Binding LogContext}"
-                         ></TextBox>
-        </StackPanel>
-    </ScrollViewer>
-  
-</Window>
+                         Text="{Binding LogContext}">
+                </TextBox>
+            </DockPanel>
+        </GroupBox>
+    </Grid>
+   
+
+</mah:MetroWindow>

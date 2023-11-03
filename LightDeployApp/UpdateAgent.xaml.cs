@@ -6,11 +6,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using Flurl.Http;
+using MahApps.Metro.Controls;
 using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp;
 
-public partial class UpdateAgent : Window
+public partial class UpdateAgent : MetroWindow
 {
     public UpdateAgent()
     {
@@ -37,6 +38,8 @@ public partial class UpdateAgent : Window
 
         foreach (var environment in AppContext.GetAppDataContext().Environments)
         {
+            LogBox.Text+="开始发布:"+environment.Host+ "\n";
+
             try
             {
                 var url = $"http://{environment.Host}:{environment.Port}/api/deploy/updateself";

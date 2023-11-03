@@ -1,11 +1,12 @@
-﻿<Window x:Class="LightDeployApp.AddEnvironment"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:LightDeployApp"
-        mc:Ignorable="d"
-        Title="AddEnvironment" Height="250" Width="500">
+﻿<mah:MetroWindow x:Class="LightDeployApp.AddEnvironment"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:local="clr-namespace:LightDeployApp"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 mc:Ignorable="d"
+                 Title="新增环境" Height="250" Width="500">
     <StackPanel>
         <StackPanel Orientation="Horizontal" Margin="5">
             <Label Width="70">环境名称</Label>
@@ -26,4 +27,4 @@
         <Button Click="ButtonBase_OnClick">新增</Button>
         <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
     </StackPanel>
-</Window>
+</mah:MetroWindow>

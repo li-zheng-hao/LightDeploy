@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
+using MahApps.Metro.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MessageBox = System.Windows.MessageBox;
 
@@ -16,7 +17,7 @@ namespace LightDeployApp
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : MetroWindow
     {
         private string projectPath = "";
         public MainWindow()
@@ -28,8 +29,6 @@ namespace LightDeployApp
             DBHelper.Init();
             RefreshData();
             this.DataContext = AppContext.GetAppDataContext();
-            this.Height=SystemParameters.WorkArea.Height;
-            this.Top = 0;
 
         }
 
@@ -114,7 +113,10 @@ namespace LightDeployApp
 
         private void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (Service.SelectedValue == null) return;
             var selectService=AppContext.GetAppDataContext().Services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
+            if (selectService == null) return;
+
             DeployMode.SelectedIndex = selectService?.DefaultMode == 0 ? 0 : 1;
             TargetPath.Text = selectService?.DefaultTargetPath;
             SelfContained.IsChecked=selectService?.IsSelfContained;
