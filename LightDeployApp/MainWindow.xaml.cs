@@ -152,7 +152,7 @@ namespace LightDeployApp
 
         private void Environment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           var currents=AppContext.GetAppDataContext().Environments.Where(it => it.Name == Environment.Text).ToList();
+           var currents=AppContext.GetAppDataContext().Environments.Where(it => it.Name == Environment.SelectedValue.ToString()).ToList();
             var data= currents.Select(it =>
                 new SelectedEnvironment()
                 {
