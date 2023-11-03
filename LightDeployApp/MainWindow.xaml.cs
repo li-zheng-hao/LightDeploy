@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -119,7 +121,7 @@ namespace LightDeployApp
             if (environments != null&&environments.Any())
             {
                 Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
-                AppContext.GetAppDataContext().SelectedEnvironments = environments.Select(it =>
+                var data=environments.Select(it =>
                     new SelectedEnvironment()
                     {
                         Name = it.Name,
@@ -127,6 +129,8 @@ namespace LightDeployApp
                         Port = it.Port,
                         HealthCheckUrl = it.HealthCheckUrl
                     }).ToList();
+                AppContext.GetAppDataContext().SelectedEnvironments=
+                   data;
             }
             
         }
@@ -145,7 +149,7 @@ namespace LightDeployApp
         private void Environment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
            var currents=AppContext.GetAppDataContext().Environments.Where(it => it.Name == Environment.Text).ToList();
-            AppContext.GetAppDataContext().SelectedEnvironments = currents.Select(it =>
+            var data= currents.Select(it =>
                 new SelectedEnvironment()
                 {
                     Name = it.Name,
@@ -153,6 +157,9 @@ namespace LightDeployApp
                     Port = it.Port,
                     HealthCheckUrl = it.HealthCheckUrl
                 }).ToList();
+            AppContext.GetAppDataContext().SelectedEnvironments=
+                data;
         }
+       
     }
 }

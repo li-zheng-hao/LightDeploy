@@ -77,6 +77,7 @@ public class DeployService
             if(calculateNeedDeployFiles.Count==0)
             {
                 textBox.Text+=$"无需部署{environment.Host}:{environment.Port}\n";
+                selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
                 continue;
             }
             
