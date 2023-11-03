@@ -116,7 +116,8 @@ public class DeployService
             RelativeDirectory = Path.GetDirectoryName(it.FullName)!.Replace(exeDir, string.Empty),
             FileSize = it.Length,
             AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
-            LastWriteTime = it.LastWriteTime
+            LastWriteTime = it.LastWriteTime,
+            MD5=GetFileMd5(it.FullName,ignoreArr)
         }).ToList();
         foreach (var fileInfoDto in fileInfoDtos.Where(it=>it.RelativeDirectory.StartsWith("/")||it.RelativeDirectory.StartsWith("\\")))
         {

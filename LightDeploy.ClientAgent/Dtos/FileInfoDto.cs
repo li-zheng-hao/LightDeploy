@@ -22,4 +22,5 @@ public class FileInfoDto
     public DateTime LastWriteTime { get; set; }
 
     public string? AbsoluteDirectory { get; set; }
+    public string MD5 { get; set; }
 }

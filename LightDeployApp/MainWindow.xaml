@@ -35,6 +35,7 @@
             </StackPanel>
             <Button Click="AddEnvironmentClick" Margin="5">新增环境</Button>
             <Button Click="AddService" Margin="5">新增服务</Button>
+            <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
             <Button Click="DeployClick" Margin="5">部署</Button>
             <Label>选择的环境</Label>
             <ListBox ItemsSource="{Binding SelectedEnvironments}">

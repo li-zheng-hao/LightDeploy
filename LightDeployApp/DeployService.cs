@@ -74,8 +74,7 @@ public class DeployService
                 .ReceiveJson<List<FileInfoDto>>();
             
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
-            
-            textBox.Text+=$"需要复制文件:{calculateNeedDeployFiles.Count}个\n";
+            textBox.Text += $"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}\n";
             if(calculateNeedDeployFiles.Count==0)
             {
                 textBox.Text+=$"无需部署{environment.Host}:{environment.Port}\n";

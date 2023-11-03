@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeploy.ClientAgent", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeployApp", "LightDeployApp\LightDeployApp.csproj", "{131A12F7-9A99-4CF0-93FB-1F106DA32884}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightDeploy.UpdateService", "LightDeploy.UpdateService\LightDeploy.UpdateService.csproj", "{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{131A12F7-9A99-4CF0-93FB-1F106DA32884}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A47BCB90-D53B-4E2E-8FA6-5B52E0625664}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

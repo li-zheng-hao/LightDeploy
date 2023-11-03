@@ -23,4 +23,6 @@ public class FileInfoDto
     /// 最后修改时间
     /// </summary>
     public DateTime LastWriteTime { get; set; }
+
+    public string MD5 { get; set; }
 }

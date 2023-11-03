@@ -135,5 +135,11 @@ namespace LightDeployApp
         {
             LogBox.ScrollToEnd();
         }
+
+        private void UpdateAgent(object sender, RoutedEventArgs e)
+        {
+            var updateAgent = new UpdateAgent();
+            updateAgent.Show();
+        }
     }
 }

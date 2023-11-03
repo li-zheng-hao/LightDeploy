@@ -45,11 +45,11 @@ public class DeployController : ControllerBase
     }
  
     [HttpGet]
-    public IActionResult ListFileInfo([FromQuery] string serviceName)
+    public IActionResult ListFileInfo([FromQuery] string serviceName, [FromQuery] string ignoreFileExtensions="")
     {
         try
         {
-            List<FileInfoDto> fileInfoDtos = _deployService.GetFileInfos(serviceName);
+            List<FileInfoDto> fileInfoDtos = _deployService.GetFileInfos(serviceName,ignoreFileExtensions);
             
             return Ok(fileInfoDtos);
         }
@@ -76,6 +76,26 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult Ping()
     {
+        return Ok();
+    }
+
+    [HttpPost()]
+    public IActionResult UpdateSelf()
+    {
+        var file=HttpContext.Request.Form.Files["file"];
+        var parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory);
+        var targetPath=Path.Combine(parent!.Parent.FullName, "LightDeployUpdateService","UpdatePackages");
+        if (!Directory.Exists(targetPath))
+        {
+            Directory.CreateDirectory(targetPath);
+        }
+        var targetFile = Path.Combine(targetPath, file!.FileName);
+        if (System.IO.File.Exists(targetFile))
+        {
+            return BadRequest("更新文件已存在,请稍后再试");
+        }
+        using var stream = System.IO.File.Create(targetFile);
+        file.CopyTo(stream);
         return Ok();
     }
 }
