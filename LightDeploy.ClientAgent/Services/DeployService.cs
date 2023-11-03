@@ -150,8 +150,8 @@ public class DeployService
             }
             else
             {
-                var fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length != fileInfoDto.FileSize || fileInfo.LastWriteTime != fileInfoDto.LastWriteTime)
+                var md5=GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
+                if (md5!=fileInfoDto.MD5 )
                 {
                     result.Add(fileInfoDto);
                 }
@@ -172,7 +172,6 @@ public class DeployService
             return string.Empty;
         try
         {
-        
             using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             var md5 = MD5.Create();
             var hash = md5.ComputeHash(fileStream);

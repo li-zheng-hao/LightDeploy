@@ -59,7 +59,6 @@ public class DeployService
         var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
         var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
         List<FileInfoDto> calculateNeedDeployFiles = null;
-        MemoryStream memoryStream = null;
         foreach (var environment in environments)
         {
             textBox.Text+=$"开始部署{environment.Host}:{environment.Port}\n";
@@ -81,9 +80,9 @@ public class DeployService
                 continue;
             }
             
-            if(memoryStream==null)
-                memoryStream =
-                    await Task.Run(() => CreateZipFile(calculateNeedDeployFiles)); 
+            var memoryStream =
+                await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
+            
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
 
             try
