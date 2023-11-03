@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LightDeployApp"
         mc:Ignorable="d"
-        Title="LightDeployApp" Height="800" Width="800">
+        Title="LightDeployApp"  Width="800">
     <ScrollViewer>
         <StackPanel>
             <StackPanel Margin="5">

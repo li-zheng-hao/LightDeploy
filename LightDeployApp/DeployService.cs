@@ -37,6 +37,7 @@ public class DeployService
         var tmpDir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tmp",Guid.NewGuid().ToString("N"));
         var isSelfContained = deployParams.IsSelfContained?"--self-contained":string.Empty;
         await ProcessorHelper.InvokeAsync("dotnet", $" publish {deployParams.TargetPath} -c Release -o {tmpDir} {isSelfContained} ", true);
+        await Task.Delay(2000);
         AppContext.GetAppDataContext().Log("编译完成");
         try
         {
@@ -61,6 +62,7 @@ public class DeployService
         List<FileInfoDto> calculateNeedDeployFiles = null;
         foreach (var environment in environments)
         {
+            AppContext.GetAppDataContext().Log($"==============================================================");
             AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
 
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "开始部署";

@@ -9,6 +9,7 @@ namespace LightDeployApp;
 
 public class AppDataContext:INotifyPropertyChanged
 {
+    public object locker = new();
     public string UniqueId { get; set; }=Guid.NewGuid().ToString();
     
     public List<TService> Services { get; set; }
@@ -39,7 +40,10 @@ public class AppDataContext:INotifyPropertyChanged
 
     public void Log(string data)
     {
-        LogContext+=data+"\n";
+        lock (locker)
+        {
+            LogContext+=data+"\n";
+        }
     }
 }
 

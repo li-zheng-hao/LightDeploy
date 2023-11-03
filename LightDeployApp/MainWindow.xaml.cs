@@ -28,7 +28,9 @@ namespace LightDeployApp
             DBHelper.Init();
             RefreshData();
             this.DataContext = AppContext.GetAppDataContext();
-           
+            this.Height=SystemParameters.WorkArea.Height;
+            this.Top = 0;
+
         }
 
         private void AddEnvironmentClick(object sender, RoutedEventArgs e)
