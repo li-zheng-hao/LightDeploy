@@ -1,9 +1,9 @@
 ﻿using Flurl.Http;
 using LightDeploy.ClientAgent.Dto;
-using LightDeploy.DeployCli;
 using LightDeploy.DeployCli.Tables;
+using LightDeployApp;
 
-namespace LightDeployApp;
+namespace LightDeploy.DeployCli;
 
 public class DeployService
 {
@@ -109,21 +109,4 @@ public class DeployService
         return memoryStream;
     }
     
-
-    private static List<FileInfoDto> CalculateNeedDeployFiles(List<FileInfoDto> currentFileInfos, List<FileInfoDto> remoteFiles)
-    {
-        List<FileInfoDto> result = new();
-        foreach (var currentFileInfo in currentFileInfos)
-        {
-            var exist=remoteFiles.FirstOrDefault(it =>
-                it.FileName == currentFileInfo.FileName && it.RelativeDirectory == currentFileInfo.RelativeDirectory
-                &&it.FileSize==currentFileInfo.FileSize);
-            if (exist is null)
-            {
-                result.Add(currentFileInfo);
-            }
-        }
-
-        return result;
-    }
 }

@@ -4,7 +4,6 @@ using CommandLine;
 using LightDeploy.DeployCli;
 using LightDeployApp;
 using Masuit.Tools;
-using AppContext = LightDeployApp.AppContext;
 
 var parserResult = Parser.Default.ParseArguments<CommandParameters>(args);
 if (!parserResult.Errors.IsNullOrEmpty())
@@ -12,11 +11,11 @@ if (!parserResult.Errors.IsNullOrEmpty())
 
 var parameters = parserResult.Value;
 
+
+DBHelper.Init();
+
 if (parameters.Operation == "publish")
 {
-    var dataContext = AppContext.GetAppDataContext();
-    
-    var environments = dataContext.Environments.Where(it=>it.Name==parameters.Environment).ToList();
     var param = new DeployParams()
     {
         ServiceName = parameters.Service,
