@@ -53,10 +53,7 @@ public static class ProcessorHelper
                     {
                         string line = process.StandardOutput.ReadLine();
                         // do something with line
-                        App.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            AppContext.GetAppDataContext().Log(line);
-                        });
+                        AppContext.GetAppDataContext().Log(line);
                     }
                 }
                 catch (Exception)
@@ -72,10 +69,10 @@ public static class ProcessorHelper
                     {
                         string line = process.StandardError.ReadLine();
                         // do something with line
-                        Dispatcher.CurrentDispatcher.Invoke(() =>
-                        {
-                            AppContext.GetAppDataContext().Log(line);
-                        });
+                        // await Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+                        // {
+                        AppContext.GetAppDataContext().Log(line);
+                        // });
                     }
                 }
                 catch (Exception)
