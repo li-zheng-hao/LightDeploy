@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Windows.Data;
 using LightDeployApp.Tables;
 
 namespace LightDeployApp;
@@ -25,5 +26,7 @@ public static class AppContext
         GetAppDataContext().Services = _services;
         GetAppDataContext().Environments= _environments;
         GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();
+        GetAppDataContext().ServicesView = new ListCollectionView(_services);
+        GetAppDataContext().ServicesView.GroupDescriptions!.Add(new PropertyGroupDescription("GroupName"));
     }
 }

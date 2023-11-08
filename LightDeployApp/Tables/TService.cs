@@ -8,6 +8,10 @@ namespace LightDeployApp.Tables;
 
 public class TService:INotifyPropertyChanged
 {
+    /// <summary>
+    /// 分组名称
+    /// </summary>
+    public string? GroupName { get; set; }
     public string Name { get; set; }
     /// <summary>
     /// 0 项目 1 文件夹

@@ -14,7 +14,10 @@
         </Grid.RowDefinitions>
         <GroupBox Header="新增" Margin="5">
             <StackPanel>
-
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label >服务分组名称</Label>
+                    <TextBox Name="GroupName" Width="200"></TextBox>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5">
                     <Label Width="70">服务名称</Label>
                     <TextBox Name="Service" Width="200"></TextBox>

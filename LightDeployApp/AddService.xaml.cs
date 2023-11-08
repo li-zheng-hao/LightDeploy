@@ -26,6 +26,7 @@ public partial class AddService : MetroWindow
         }
         var service = new TService()
         {
+            GroupName=GroupName.Text,
             Name = Service.Text,
             DefaultMode = DeployMode.Text=="项目"?0:1,
             DefaultTargetPath = TargetPath.Text,

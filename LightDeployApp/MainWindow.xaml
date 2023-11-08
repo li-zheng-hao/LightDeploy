@@ -19,14 +19,27 @@
                     <StackPanel Margin="5">
                         <Label>服务名</Label>
                         <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"
-                                  ItemsSource="{Binding Services}"
+                                  ItemsSource="{Binding ServicesView}"
                                   DisplayMemberPath="Name"
-                                  SelectedValuePath="Name">
+                                  SelectedValuePath="Name"
+                                  MaxDropDownHeight="600"
+                                  IsEnabled="True"
+                                  >
+                            <ComboBox.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}" Background="LightSkyBlue" />
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ComboBox.GroupStyle>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Margin="5">
                         <Label>环境</Label>
                         <ComboBox Name="Environment" ItemsSource="{Binding EnvironmentNames}"
+                                  MaxDropDownHeight="600"
                                   SelectionChanged="Environment_OnSelectionChanged">
                         </ComboBox>
                     </StackPanel>

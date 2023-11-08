@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Data;
 using LightDeployApp.Tables;
 
 namespace LightDeployApp;
@@ -20,6 +21,7 @@ public class AppDataContext:INotifyPropertyChanged
     
     public List<SelectedEnvironment> SelectedEnvironments { get; set; }
     
+    public ListCollectionView ServicesView { get; set; }
     
     public string LogContext { get; set; }
     

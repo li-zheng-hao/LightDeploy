@@ -72,6 +72,15 @@ namespace LightDeployApp
                 return;
             }
 
+            if (deployParams.ServiceName.Contains("prod", StringComparison.OrdinalIgnoreCase))
+            {
+                var result=await this.ShowMessageAsync("警告","请确认是否部署到生产环境!!!!!!",MessageDialogStyle.AffirmativeAndNegative);
+                if (result != MessageDialogResult.Affirmative)
+                {
+                    await this.ShowMessageAsync("消息", $"取消部署");
+                    return ;
+                }
+            }
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             await DeployService.Deploy(deployParams);
