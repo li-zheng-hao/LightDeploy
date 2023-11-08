@@ -6,7 +6,7 @@
                  xmlns:local="clr-namespace:LightDeployApp"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  mc:Ignorable="d"
-                 Title="配置服务" Height="700" Width="800">
+                 Title="配置服务" Height="800" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
