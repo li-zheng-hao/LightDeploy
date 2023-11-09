@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -71,8 +72,13 @@ public class DeployService
 
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "开始部署";
 
-          
+
+            Stopwatch sw = new();
+            sw.Start();
             var currentFileInfos=FileHelper.GetFileInfos(deployParams.TargetPath);
+            AppContext.GetAppDataContext().Log($"获取文件信息耗时:{sw.ElapsedMilliseconds}ms");
+            sw.Restart();
+
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return false;
 
             calculateNeedDeployFiles ??= await $"http://{environment.Host}:{environment.Port}/api/deploy/compare"
@@ -81,7 +87,8 @@ public class DeployService
                 .WithHeader("Authorization", environment.AuthKey??"")
                 .PostJsonAsync(currentFileInfos,cancellationToken:AppContext.GetAppDataContext().StopToken!.Token)
                 .ReceiveJson<List<FileInfoDto>>();
-            
+            AppContext.GetAppDataContext().Log($"对比文件信息耗时:{sw.ElapsedMilliseconds}ms");
+            sw.Restart();
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
             AppContext.GetAppDataContext().Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => $"【{it.FileName}】"))}");
 
@@ -93,10 +100,11 @@ public class DeployService
                 return false;
             }
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return false;
-
+            sw.Restart();
             if(memoryStream==null)
                 memoryStream =
                     await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
+            AppContext.GetAppDataContext().Log($"打包文件耗时:{sw.ElapsedMilliseconds}ms");
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return false;
 
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
