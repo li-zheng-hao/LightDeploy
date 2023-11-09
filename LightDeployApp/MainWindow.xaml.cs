@@ -28,9 +28,7 @@ namespace LightDeployApp
             IServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<AppDataContext>();
             AppContext.ServiceProvider=serviceCollection.BuildServiceProvider();
-            DBHelper.Init();
-            RefreshData();
-            this.DataContext = AppContext.GetAppDataContext();
+         
 
         }
 
@@ -222,6 +220,9 @@ namespace LightDeployApp
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             SizeToContent = SizeToContent.Manual;
+            DBHelper.Init();
+            RefreshData();
+            this.DataContext = AppContext.GetAppDataContext();
         }
 
         private void DataGridSelectEnvironment_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
