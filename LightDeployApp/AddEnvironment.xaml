@@ -6,7 +6,8 @@
                  xmlns:local="clr-namespace:LightDeployApp"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  mc:Ignorable="d"
-                 Title="配置环境" Height="560" Width="600">
+                 SizeToContent="Height"
+                 Title="配置环境" Width="600">
     <StackPanel>
         <GroupBox Header="新增" Margin="5">
             <StackPanel>

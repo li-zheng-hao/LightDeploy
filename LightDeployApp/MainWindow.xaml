@@ -7,7 +7,9 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  mc:Ignorable="d"
                 WindowStartupLocation="CenterScreen"
-                 Title="服务部署工具 by 李正浩" Width="1200" Height="650">
+                 SizeToContent="Height"
+
+                 Title="服务部署工具 by 李正浩" Width="1200" >
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="300"></ColumnDefinition>
