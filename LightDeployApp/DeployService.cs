@@ -64,6 +64,7 @@ public class DeployService
         MemoryStream memoryStream = null;
         foreach (var environment in selectedEnvironments)
         {
+            if (AppContext.GetAppDataContext().StopToken!.IsCancellationRequested) return;
             AppContext.GetAppDataContext().Log($"==============================================================");
             AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
 
@@ -71,12 +72,13 @@ public class DeployService
 
           
             var currentFileInfos=FileHelper.GetFileInfos(deployParams.TargetPath);
-            
+            if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return;
+
             calculateNeedDeployFiles ??= await $"http://{environment.Host}:{environment.Port}/api/deploy/compare"
                 .WithHeader("Authorization", environment.AuthKey??"")
                 .SetQueryParam("serviceName", deployParams.ServiceName)
                 .WithHeader("Authorization", environment.AuthKey??"")
-                .PostJsonAsync(currentFileInfos)
+                .PostJsonAsync(currentFileInfos,cancellationToken:AppContext.GetAppDataContext().StopToken!.Token)
                 .ReceiveJson<List<FileInfoDto>>();
             
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
@@ -89,10 +91,13 @@ public class DeployService
                 selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
                 continue;
             }
+            if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return;
+
             if(memoryStream==null)
                 memoryStream =
                     await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
-            
+            if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return;
+
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "文件比较完毕";
 
             try
@@ -123,7 +128,8 @@ public class DeployService
             }
          
             AppContext.GetAppDataContext().Log($"部署完成{environment.Host}:{environment.Port}");
-            
+            if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return;
+
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
             
             if (deployParams.EnableHealthCheck)
@@ -131,6 +137,8 @@ public class DeployService
                 int count = 0;
                 while (count<10&&!string.IsNullOrWhiteSpace(environment.HealthCheckUrl))
                 {
+                    if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return;
+
                     try
                     {
                         var result=await environment.HealthCheckUrl.WithTimeout(3).GetAsync();

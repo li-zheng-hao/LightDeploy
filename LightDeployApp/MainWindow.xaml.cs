@@ -84,7 +84,11 @@ namespace LightDeployApp
             }
             var stopwatch = new Stopwatch();
             stopwatch.Start();
+            AppContext.GetAppDataContext().StartDeploy();
+            
             await DeployService.Deploy(deployParams);
+            
+            AppContext.GetAppDataContext().StopDeploy();
             this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
 
         }
@@ -198,6 +202,11 @@ namespace LightDeployApp
             {
                 e.Column.Header = att.Name;
             }
+        }
+
+        private void StopDeployClick(object sender, RoutedEventArgs e)
+        {
+            AppContext.GetAppDataContext().StopDeploy();
         }
     }
 }
