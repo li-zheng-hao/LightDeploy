@@ -82,11 +82,34 @@ namespace LightDeployApp
                     return ;
                 }
             }
+
+            var remark=await this.ShowInputAsync("提示", "请输入此次发布备注");
+            
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             AppContext.GetAppDataContext().StartDeploy();
             
-            await DeployService.Deploy(deployParams);
+            var deployResult=await DeployService.Deploy(deployParams);
+
+            if (deployResult)
+            {
+                var history = new TDeployHistory()
+                {
+                    CreateTime = DateTime.Now,
+                    Remark = remark,
+                    ServiceName = deployParams.ServiceName
+                };
+                await DBHelper.GetClient().Insertable(history).ExecuteCommandAsync();
+                if (await DBHelper.GetClient().Queryable<TDeployHistory>().Where(it=>it.ServiceName==deployParams.ServiceName).CountAsync() > 10)
+                {
+                    // 只保留10个
+                    var histories = await DBHelper.GetClient().Queryable<TDeployHistory>().OrderByDescending(it => it.CreateTime)
+                        .Take(10).ToListAsync();
+                    var oldestTime = histories.Min(it => it.CreateTime);
+                    await DBHelper.GetClient().Deleteable<TDeployHistory>(it=>it.CreateTime<oldestTime).ExecuteCommandAsync();
+                }
+                await AppContext.RefreshHistory(deployParams.ServiceName);
+            }            
             
             AppContext.GetAppDataContext().StopDeploy(true);
             this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
@@ -155,7 +178,14 @@ namespace LightDeployApp
                 AppContext.GetAppDataContext().SelectedEnvironments=
                    data;
             }
+
+            var histories = DBHelper.GetClient().Queryable<TDeployHistory>()
+                .Where(it => it.ServiceName == selectService.Name)
+                .OrderByDescending(it => it.CreateTime).ToList();
             
+            
+            AppContext.GetAppDataContext().DeployHistories = histories;
+
         }
 
         private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)

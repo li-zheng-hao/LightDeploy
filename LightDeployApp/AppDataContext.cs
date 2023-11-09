@@ -17,6 +17,7 @@ public class AppDataContext : ViewModelBase
 
     public List<TService> Services { get; set; }
 
+    public List<TDeployHistory> DeployHistories { get; set; }
     public List<TEnvironment> Environments { get; set; }
 
     public List<string> EnvironmentNames { get; set; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Data;
 using LightDeployApp.Tables;
 
@@ -28,5 +29,14 @@ public static class AppContext
         GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();
         GetAppDataContext().ServicesView = new ListCollectionView(_services);
         GetAppDataContext().ServicesView.GroupDescriptions!.Add(new PropertyGroupDescription("GroupName"));
+    }
+
+    public static async Task RefreshHistory(string deployParamsServiceName)
+    {
+        var data=await DBHelper.GetClient().Queryable<TDeployHistory>()
+            .Where(it => it.ServiceName == deployParamsServiceName)
+            .OrderByDescending(it => it.CreateTime)
+            .ToListAsync();
+        GetAppDataContext().DeployHistories = data;
     }
 }

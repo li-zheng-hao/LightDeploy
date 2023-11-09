@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using LightDeployApp.Tables;
 using SqlSugar;
 
@@ -13,7 +14,7 @@ public class DBHelper
         var db=GetClient();
         
         db.DbMaintenance.CreateDatabase();
-        db.CodeFirst.SetStringDefaultLength(255).InitTables(typeof(TEnvironment),typeof(TService));
+        db.CodeFirst.SetStringDefaultLength(255).InitTables(typeof(TEnvironment),typeof(TService),typeof(TDeployHistory));
     }
 
     public static SqlSugarClient GetClient()
@@ -29,6 +30,12 @@ public class DBHelper
                 SqliteCodeFirstEnableDefaultValue = true //启用默认值
             }
         });
+        db.Aop.OnLogExecuting = (sql, pars) =>
+        {
+            Console.WriteLine(sql + "\r\n" +
+                              db.Utilities.SerializeObject(pars.ToDictionary(it => it.ParameterName, it => it.Value)));
+            Console.WriteLine();
+        };
         return db;
     }
 }

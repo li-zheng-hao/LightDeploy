@@ -80,6 +80,10 @@
                 <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" MinHeight="50" DockPanel.Dock="Top">
                   
                 </DataGrid>
+                <Label DockPanel.Dock="Top">发布历史</Label>
+                <DataGrid  AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding DeployHistories}" CanUserAddRows="False" Height="100" DockPanel.Dock="Top">
+                  
+                </DataGrid>
                 <Label DockPanel.Dock="Top" >日志</Label>
                 <TextBox DockPanel.Dock="Top" IsReadOnly="True"  Name="LogBox" Margin="5"
                          VerticalScrollBarVisibility="Auto"

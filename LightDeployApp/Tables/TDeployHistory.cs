@@ -1,4 +1,5 @@
 ﻿using System;
+using SqlSugar;
 
 namespace LightDeployApp.Tables;
 
@@ -11,7 +12,8 @@ public class TDeployHistory:ViewModelBase
     public DateTime CreateTime { get; set; }
 
     [ColumnName("部署文件夹")]
-    public string DeployFilesDir { get; set; }
+    [SugarColumn(IsNullable = true)]
+    public string? DeployFilesDir { get; set; }
 
     [ColumnName("备注说明")]
     public string Remark { get; set; }
