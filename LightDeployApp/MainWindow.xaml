@@ -8,7 +8,7 @@
                  mc:Ignorable="d"
                 WindowStartupLocation="CenterScreen"
                  SizeToContent="Height"
-
+        Loaded="MainWindow_OnLoaded"
                  Title="服务部署工具 by 李正浩" Width="1200" >
     <Grid>
         <Grid.ColumnDefinitions>

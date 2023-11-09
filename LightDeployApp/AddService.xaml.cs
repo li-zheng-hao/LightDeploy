@@ -88,4 +88,9 @@ public partial class AddService : MetroWindow
             this.ShowMessageAsync("异常",exception.Message);
         }
     }
+
+    private void AddService_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        SizeToContent = SizeToContent.Manual;
+    }
 }

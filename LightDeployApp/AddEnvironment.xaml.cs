@@ -62,4 +62,9 @@ public partial class AddEnvironment : MetroWindow
         }
         
     }
+
+    private void AddEnvironment_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        SizeToContent = SizeToContent.Manual;
+    }
 }
