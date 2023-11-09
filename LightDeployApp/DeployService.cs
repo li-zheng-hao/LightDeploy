@@ -56,13 +56,13 @@ public class DeployService
         await DeployToServer(deployParams);
     }
     
-    private static async Task DeployToServer( DeployParams deployParams)
+    private static async Task DeployToServer(DeployParams deployParams)
     {
-        var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments;
-        var environments = DBHelper.GetClient().Queryable<TEnvironment>().Where(it => it.Name == deployParams.Environment).ToList();
+        var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments
+            .Where(it=>it.NeedDeploy).ToList();
         List<FileInfoDto> calculateNeedDeployFiles = null;
         MemoryStream memoryStream = null;
-        foreach (var environment in environments)
+        foreach (var environment in selectedEnvironments)
         {
             AppContext.GetAppDataContext().Log($"==============================================================");
             AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");

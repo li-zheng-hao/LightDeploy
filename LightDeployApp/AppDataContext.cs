@@ -49,36 +49,12 @@ public class AppDataContext:INotifyPropertyChanged
     }
 }
 
-public class SelectedEnvironment:INotifyPropertyChanged
+public class SelectedEnvironment:TEnvironment
 {
-    public string UniqueId { get; set; }=Guid.NewGuid().ToString();
-
-    public string Name { get; set; }
-    
-    public string Host { get; set; }
-    
-    public string Port { get; set; }
-    
-    /// <summary>
-    /// 健康检查Url
-    /// </summary>
-    public string? HealthCheckUrl { get; set; }
-
+    [ColumnName("处理状态")]
     public string Status { get; set; } = "未部署";
-    
-    public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
+    [ColumnName("是否需要部署")]
+    public bool NeedDeploy { get; set; } = true;
 }
 

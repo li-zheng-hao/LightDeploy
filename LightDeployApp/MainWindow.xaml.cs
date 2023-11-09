@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -187,6 +188,16 @@ namespace LightDeployApp
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             SizeToContent = SizeToContent.Manual;
+        }
+
+        private void DataGridSelectEnvironment_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            var desc = e.PropertyDescriptor as PropertyDescriptor;
+            var att = desc.Attributes[typeof(ColumnNameAttribute)] as ColumnNameAttribute;
+            if(att != null)
+            {
+                e.Column.Header = att.Name;
+            }
         }
     }
 }

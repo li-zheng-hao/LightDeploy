@@ -1,5 +1,7 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
 using MahApps.Metro.Controls;
@@ -92,5 +94,15 @@ public partial class AddService : MetroWindow
     private void AddService_OnLoaded(object sender, RoutedEventArgs e)
     {
         SizeToContent = SizeToContent.Manual;
+    }
+
+    private void DataGrid_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        var desc = e.PropertyDescriptor as PropertyDescriptor;
+        var att = desc.Attributes[typeof(ColumnNameAttribute)] as ColumnNameAttribute;
+        if(att != null)
+        {
+            e.Column.Header = att.Name;
+        }
     }
 }

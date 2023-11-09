@@ -38,7 +38,7 @@
         </GroupBox>
        <GroupBox Header="修改" Margin="5">
            <StackPanel>
-               <DataGrid CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Environments,Mode=TwoWay}" Height="200">
+               <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Environments,Mode=TwoWay}" Height="200">
                </DataGrid>
                <Button Click="SaveClick">保存</Button>
            </StackPanel>

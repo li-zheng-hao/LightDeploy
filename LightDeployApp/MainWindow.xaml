@@ -76,7 +76,7 @@
         <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
             <DockPanel>
                 <Label DockPanel.Dock="Top">选择的环境</Label>
-                <DataGrid ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" AutoGenerateColumns="False" MinHeight="50" DockPanel.Dock="Top">
+                <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" AutoGenerateColumns="False" MinHeight="50" DockPanel.Dock="Top">
                     <DataGrid.Columns>                
                         <DataGridTextColumn Header="IP" Binding="{Binding Host}"/>
                         <DataGridTextColumn Header="端口" Binding="{Binding Port}"/>
