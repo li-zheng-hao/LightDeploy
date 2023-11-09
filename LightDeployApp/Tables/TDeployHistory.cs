@@ -13,7 +13,7 @@ public class TDeployHistory:ViewModelBase
     [ColumnName("部署文件夹")]
     public string DeployFilesDir { get; set; }
 
-    [ColumnName("备注")]
+    [ColumnName("备注说明")]
     public string Remark { get; set; }
     
     [ColumnName("服务名称")]
