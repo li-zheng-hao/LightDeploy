@@ -82,7 +82,7 @@ public class DeployService
                 .ReceiveJson<List<FileInfoDto>>();
             
             // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
-            AppContext.GetAppDataContext().Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => it.FileName))}");
+            AppContext.GetAppDataContext().Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => $"【{it.FileName}】"))}");
 
             if(calculateNeedDeployFiles.Count==0)
             {
