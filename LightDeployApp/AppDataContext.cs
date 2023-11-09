@@ -52,10 +52,11 @@ public class AppDataContext : ViewModelBase
         IsIdle = false;
     }
 
-    public void StopDeploy()
+    public void StopDeploy(bool isSuccess=false)
     {
         StopToken?.Cancel();
-        Log("已取消部署");
+        if(!isSuccess)
+            Log("已取消部署");
         StopToken = null;
         IsIdle = true;
     }

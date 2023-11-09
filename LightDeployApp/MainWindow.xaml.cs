@@ -88,7 +88,7 @@ namespace LightDeployApp
             
             await DeployService.Deploy(deployParams);
             
-            AppContext.GetAppDataContext().StopDeploy();
+            AppContext.GetAppDataContext().StopDeploy(true);
             this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
 
         }
