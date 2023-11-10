@@ -32,9 +32,7 @@ public class DBHelper
         });
         db.Aop.OnLogExecuting = (sql, pars) =>
         {
-            Console.WriteLine(sql + "\r\n" +
-                              db.Utilities.SerializeObject(pars.ToDictionary(it => it.ParameterName, it => it.Value)));
-            Console.WriteLine();
+            Console.WriteLine(UtilMethods.GetNativeSql(sql,pars));
         };
         return db;
     }

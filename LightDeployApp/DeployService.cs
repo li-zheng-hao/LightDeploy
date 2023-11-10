@@ -10,6 +10,7 @@ using Flurl.Http;
 using LightDeploy.ClientAgent.Dto;
 using LightDeployApp.Dtos;
 using LightDeployApp.Tables;
+using Microsoft.AspNetCore.SignalR.Client;
 using SevenZipExtractor;
 using SqlSugar;
 using SW.Core.Helper;
@@ -18,6 +19,7 @@ namespace LightDeployApp;
 
 public class DeployService
 {
+    static HubConnection? connection;
     public static async Task<bool> Deploy(DeployParams deployParams)
     {
         try
@@ -66,6 +68,7 @@ public class DeployService
         MemoryStream memoryStream = null;
         foreach (var environment in selectedEnvironments)
         {
+            await ConnectSignalR($"http://{environment.Host}:{environment.Port}/agent");
             if (AppContext.GetAppDataContext().StopToken!.IsCancellationRequested) return false;
             AppContext.GetAppDataContext().Log($"==============================================================");
             AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
@@ -118,6 +121,9 @@ public class DeployService
                 {
                     mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
                     mp.AddString("ServiceName", deployParams.ServiceName);
+                    mp.AddJson("FileInfos", calculateNeedDeployFiles);
+                    mp.AddString("ConnectionId", connection?.ConnectionId??"");
+                    mp.AddString("HealthCheckUrl", environment.HealthCheckUrl);
                 });
                  
                 if (response.StatusCode != 200)
@@ -140,41 +146,33 @@ public class DeployService
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return false; 
 
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
-            
-            if (deployParams.EnableHealthCheck)
-            {
-                int count = 0;
-                bool healthCheckResult = false;
 
-                while (count<10&&!string.IsNullOrWhiteSpace(environment.HealthCheckUrl))
-                {
-                    if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested==true) return false;
-                    try
-                    {
-                        var result=await environment.HealthCheckUrl.WithTimeout(3).GetAsync();
-                        result.ResponseMessage.EnsureSuccessStatusCode();
-                        healthCheckResult = true;
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        AppContext.GetAppDataContext().Log($"{environment.HealthCheckUrl}健康检查失败{count+1}次,暂停5秒 (最多10次)");
-                        await Task.Delay(3000);
-                        count++;
-                    }
-                }
-
-                if (!healthCheckResult)
-                {
-                    AppContext.GetAppDataContext().Log($"{environment.HealthCheckUrl}健康检查失败,停止");
-                    return false;
-                }
-                selectedEnvironments.First(it => it.Host == environment.Host).Status = "健康检查通过";
-            }
+            await DisConnectSignalR();
 
         }
         return true;
 
+    }
+
+    private static async Task ConnectSignalR(string url)
+    {
+        connection=new HubConnectionBuilder()
+            .WithUrl(url)
+            .WithAutomaticReconnect()
+            .Build();
+        connection.On("Log", (string msg) =>
+        {
+            AppContext.GetAppDataContext().Log($"Agent消息: "+msg);
+        });
+        await connection.StartAsync();
+    }
+    private static async Task DisConnectSignalR()
+    {
+        if (connection != null)
+        {
+            await connection.StopAsync();
+            connection = null;
+        }
     }
 
     private static MemoryStream CreateZipFile(List<FileInfoDto> calculateNeedDeployFiles)

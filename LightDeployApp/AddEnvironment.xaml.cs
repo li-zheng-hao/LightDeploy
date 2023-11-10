@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -52,10 +53,11 @@ public partial class AddEnvironment : MetroWindow
     {
         try
         {
-            AppContext.GetAppDataContext().Environments.ForEach(it =>
+            EditedEnvironments.ForEach(it =>
             {
                 DBHelper.GetClient().Updateable(it).WhereColumns(it=>new{it.Host,it.Name}).ExecuteCommand();
             });
+            EditedEnvironments.Clear();
             MessageBox.Show("保存成功");
         }
         catch (Exception exception)
@@ -78,5 +80,13 @@ public partial class AddEnvironment : MetroWindow
         {
             e.Column.Header = att.Name;
         }
+    }
+    List<TEnvironment> EditedEnvironments=new List<TEnvironment>();
+    
+    private void DataGrid_OnRowEditEnding(object? sender, DataGridRowEditEndingEventArgs e)
+    {
+        var environment = e.Row.Item as TEnvironment;
+        if (environment == null) return;
+        EditedEnvironments.Add(environment);
     }
 }

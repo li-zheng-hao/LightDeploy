@@ -172,7 +172,7 @@ namespace LightDeploy.ClientAgent
             }
         }
 
-        public static string StartService(string serviceName, int timeouSeconds)
+        public static string StartService(string serviceName, int timeouSeconds=30000)
         {
             try
             {
@@ -208,7 +208,7 @@ namespace LightDeploy.ClientAgent
             }
         }
 
-        public static string StopService(string serviceName, int timeoutMilliseconds)
+        public static string StopService(string serviceName, int timeoutMilliseconds=30000)
         {
             try
             {

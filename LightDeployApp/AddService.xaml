@@ -46,7 +46,7 @@
         </GroupBox>
         <GroupBox Grid.Row="1" Header="修改" Margin="5">
             <StackPanel>
-                <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Services,Mode=TwoWay}" Height="200">
+                <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Services,Mode=TwoWay}" RowEditEnding="DataGrid_OnRowEditEnding" Height="200">
                 </DataGrid>
                 <Button Click="SaveClick">保存</Button>
             </StackPanel>

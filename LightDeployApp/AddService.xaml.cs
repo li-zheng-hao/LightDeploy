@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,10 +80,11 @@ public partial class AddService : MetroWindow
     {
         try
         {
-            AppContext.GetAppDataContext().Services.ForEach(it =>
+            EditedServices.ForEach(it =>
             {
                 DBHelper.GetClient().Updateable(it).WhereColumns(it=>new{it.Name}).ExecuteCommand();
             });
+            EditedServices.Clear();
             this.ShowMessageAsync("消息","保存成功");
         }
         catch (Exception exception)
@@ -104,5 +106,12 @@ public partial class AddService : MetroWindow
         {
             e.Column.Header = att.Name;
         }
+    }
+    List<TService> EditedServices=new List<TService>();
+    private void DataGrid_OnRowEditEnding(object? sender, DataGridRowEditEndingEventArgs e)
+    {
+        var service = e.Row.Item as TService;
+        if (service == null) return;
+        EditedServices.Add(service);
     }
 }

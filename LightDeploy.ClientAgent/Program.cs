@@ -1,4 +1,5 @@
 using LightDeploy.ClientAgent.Auth;
+using LightDeploy.ClientAgent.Hubs;
 using LightDeploy.ClientAgent.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
@@ -29,6 +30,7 @@ builder.Services.Configure<FormOptions>(x =>
     x.ValueLengthLimit = int.MaxValue;
     x.MultipartBodyLengthLimit = int.MaxValue; 
 });
+builder.Services.AddSignalR();
 builder.WebHost.ConfigureKestrel(it => it.Limits.MaxRequestBodySize =long.MaxValue);
 builder.Services.AddAuthentication(option =>
     {
@@ -47,7 +49,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+app.MapHub<DeployHub>("/agent");
 app.MapControllers();
-
 app.Run();
