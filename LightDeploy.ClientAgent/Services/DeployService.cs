@@ -259,6 +259,11 @@ public class DeployService
             }
             else
             {
+                FileInfo fileInfo=new FileInfo(filePath);
+                if (fileInfo.Length!=fileInfoDto.FileSize)
+                {
+                    result.Add(fileInfoDto);
+                }                
                 var md5=GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
                 if (md5!=fileInfoDto.MD5 )
                 {

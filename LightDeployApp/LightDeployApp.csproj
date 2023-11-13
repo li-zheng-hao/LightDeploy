@@ -36,5 +36,11 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Styles\HarmonyOS_Sans_Medium.ttf" />
+      <None Remove="Styles\MiSans-Normal.ttf" />
+      <Resource Include="Styles\MiSans-Normal.ttf" />
+    </ItemGroup>
+
 
 </Project>

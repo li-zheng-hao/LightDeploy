@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using Flurl.Http;
+using Flurl.Http.Configuration;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MessageBox = System.Windows.MessageBox;
@@ -37,22 +38,26 @@ public partial class UpdateAgent : MetroWindow
     {
         await this.ShowMessageAsync("消息",$"开始发布");
 
-        foreach (var environment in AppContext.GetAppDataContext().Environments)
+        foreach (var environment in AppContext.GetAppDataContext().Environments.DistinctBy(it=>it.Host))
         {
             LogBox.Text+="开始发布:"+environment.Host+ "\n";
 
             try
             {
                 var url = $"http://{environment.Host}:{environment.Port}/api/deploy/updateself";
-                await url.PostMultipartAsync(content =>
+                await url
+                    .PostMultipartAsync(content =>
                 {
                     content.AddFile("file", FilePath.Text);
                 });
             }
-            catch (Exception exception)
+            catch (FlurlHttpException ex)
             {
-                LogBox.Text+="发布失败:"+environment.Host+ $",异常：{exception.Message} \n";
-                Console.WriteLine(exception);
+                var body=await ex.GetResponseStringAsync();
+                LogBox.Text+=$"部署失败{environment.Host}:{environment.Port}";
+                LogBox.Text+=$"返回消息 {ex.Message}";
+                LogBox.Text+=$"返回消息 {body}";
+                
             }
             
             LogBox.Text+="发布完成:"+environment.Host+ "\n";

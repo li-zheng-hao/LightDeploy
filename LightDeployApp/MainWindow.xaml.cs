@@ -212,9 +212,10 @@ namespace LightDeployApp
                 data;
         }
 
-        private void RefreshClick(object sender, RoutedEventArgs e)
+        private async void RefreshClick(object sender, RoutedEventArgs e)
         {
             RefreshData();
+            await this.ShowMessageAsync("提示", "刷新完成");
         }
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)

@@ -123,7 +123,7 @@ public class DeployService
                     mp.AddString("ServiceName", deployParams.ServiceName);
                     mp.AddJson("FileInfos", calculateNeedDeployFiles);
                     mp.AddString("ConnectionId", connection?.ConnectionId??"");
-                    mp.AddString("HealthCheckUrl", environment.HealthCheckUrl);
+                    mp.AddString("HealthCheckUrl", environment.HealthCheckUrl??"");
                 });
                  
                 if (response.StatusCode != 200)

@@ -8,6 +8,8 @@
                  mc:Ignorable="d"
                 WindowStartupLocation="CenterScreen"
                  SizeToContent="Height"
+                 RenderOptions.ClearTypeHint="Enabled" 
+                 TextOptions.TextFormattingMode="Display"
         Loaded="MainWindow_OnLoaded"
                  Title="服务部署工具 by 李正浩" Width="1200" >
     <Grid>
@@ -52,7 +54,7 @@
                             <ComboBoxItem>指定文件夹</ComboBoxItem>
                         </ComboBox>
                         <Label>项目或文件夹目录</Label>
-                        <Button Click="SelectDirClick">选择目标</Button>
+                        <Button Click="SelectDirClick" >选择目标</Button>
                         <TextBox Name="TargetPath"  Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type StackPanel}}, Path=ActualWidth}"></TextBox>
                         <Label>编译参数</Label>
                         <CheckBox Name="SelfContained" Content="包含运行环境" Margin="0 5"></CheckBox>
