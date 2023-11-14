@@ -17,19 +17,19 @@ namespace LightDeploy.ClientAgent
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static bool RunAppCmd(string args, Action<string> log)
+        public static bool RunAppCmd(string args, Func<string,Task> log)
         {
             var expanded = Environment.ExpandEnvironmentVariables("%windir%\\System32\\inetsrv\\appcmd.exe");
             return ProcessHepler.RunExternalExe(expanded, args, log);
         }
 
-        public static bool RuSCCmd(string args, Action<string> log)
+        public static bool RuSCCmd(string args, Func<string,Task> log)
         {
             var expanded = Environment.ExpandEnvironmentVariables("%windir%\\System32\\sc.exe");
             return ProcessHepler.RunExternalExe(expanded, args, log);
         }
 
-        public static bool RunExternalExe(string projectPath, string arguments, Action<string> logger)
+        public static bool RunExternalExe(string projectPath, string arguments, Func<string,Task> logger)
         {
             Process process = null;
             try

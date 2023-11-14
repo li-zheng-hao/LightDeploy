@@ -48,10 +48,10 @@ public class DeployService
 
             await Log("正在停止服务...");
 
-            WindowServiceHelper.StopService(deployDto.ServiceName);
+            WindowsServiceHelper.StopService(deployDto.ServiceName);
             await Log("停止服务完成");
 
-            string exePath = WindowServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
+            string exePath = WindowsServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
             if (exePath == string.Empty)
                 throw new BusinessException("服务路径不存在");
 
@@ -66,7 +66,7 @@ public class DeployService
                 Policy.Handle<Exception>().WaitAndRetry(3, i => TimeSpan.FromSeconds(2));
             retryPolicy.Execute(() => { CopyFilesRecursively(subDir, exeDir); });
 
-            WindowServiceHelper.StartService(deployDto.ServiceName);
+            WindowsServiceHelper.StartService(deployDto.ServiceName);
             
             await Log("启动服务完成");
 
@@ -79,9 +79,9 @@ public class DeployService
                 if (result == false)
                 {
                     await Log("健康检查未通过,开始回滚");
-                    WindowServiceHelper.StopService(deployDto.ServiceName, 30000);
+                    WindowsServiceHelper.StopService(deployDto.ServiceName, 30000);
                     Restore(exeDir, backupDir);
-                    WindowServiceHelper.StartService(deployDto.ServiceName, 30000);
+                    WindowsServiceHelper.StartService(deployDto.ServiceName, 30000);
                     await Log("健康检查回滚完成,请手动检查服务是否正常");
                     throw new BusinessException("健康检查未通过");
                 }
@@ -217,7 +217,7 @@ public class DeployService
         {
             ignoreArr = ignoreFileExtensions.Split(",");
         }
-        string exePath=WindowServiceHelper.GetWindowsServiceLocation(serviceName);
+        string exePath=WindowsServiceHelper.GetWindowsServiceLocation(serviceName);
 
         if(exePath == string.Empty)
             throw new BusinessException("服务路径不存在");
@@ -243,7 +243,7 @@ public class DeployService
 
     public List<FileInfoDto> CompareFileInfos(string serviceName, List<FileInfoDto> fileInfoDtos)
     {
-        string exePath=WindowServiceHelper.GetWindowsServiceLocation(serviceName);
+        string exePath=WindowsServiceHelper.GetWindowsServiceLocation(serviceName);
 
         if(exePath == string.Empty)
             throw new BusinessException("服务路径不存在");
@@ -260,15 +260,15 @@ public class DeployService
             else
             {
                 FileInfo fileInfo=new FileInfo(filePath);
-                if (fileInfo.Length!=fileInfoDto.FileSize)
+                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime<fileInfoDto.LastWriteTime)
                 {
                     result.Add(fileInfoDto);
                 }                
-                var md5=GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
-                if (md5!=fileInfoDto.MD5 )
-                {
-                    result.Add(fileInfoDto);
-                }
+                // var md5=GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
+                // if (md5!=fileInfoDto.MD5 )
+                // {
+                    // result.Add(fileInfoDto);
+                // }
             }
         }
         return result;
@@ -297,6 +297,33 @@ public class DeployService
             return string.Empty;
         }
     }
-    
-    
+
+
+    public async Task<bool> InstallWindowsService(InstallWindowsServiceDto installWindowsServiceDto)
+    {
+        await Log("开始解压文件夹");
+
+        var targetDir = Path.GetDirectoryName(installWindowsServiceDto.ExeFullPath);
+        // 查看目录下是否有文件
+        if (Directory.Exists(targetDir))
+        {
+            var files = Directory.GetFiles(targetDir);
+            if (files.Length > 0)
+                throw new BusinessException("指定目录下已存在文件,请清空后再试");
+        }
+        else
+        {
+            Directory.CreateDirectory(targetDir);
+        }
+        var readStream =  installWindowsServiceDto.File.OpenReadStream();
+        using ArchiveFile archiveFile = new ArchiveFile(readStream);
+        archiveFile.Extract(targetDir); // extract all
+        await Log("解压完成,开始安装");
+        
+        // 安装服务
+        var rt = ServiceInstallerHelper.NssmInstall(installWindowsServiceDto.ServiceName, installWindowsServiceDto.Params
+            , installWindowsServiceDto.ExeFullPath, "Auto", installWindowsServiceDto.ServiceDescription, async log=> await Log(log));
+        await Log("处理完成");
+        return rt;
+    }
 }

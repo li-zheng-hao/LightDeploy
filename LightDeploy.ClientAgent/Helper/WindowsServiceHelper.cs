@@ -5,7 +5,7 @@ using Microsoft.Win32;
 
 namespace LightDeploy.ClientAgent
 {
-    public static class WindowServiceHelper
+    public static class WindowsServiceHelper
     {
 
        
@@ -64,43 +64,6 @@ namespace LightDeploy.ClientAgent
             return services.Any(s => s.ServiceName == serviceName);
         }
 
-        /// <summary>
-        /// 获取Windows服务的名称
-        /// </summary>
-        /// <param name="serviceFileName">文件路径</param>
-        /// <returns>服务名称</returns>
-        //public static string GetServiceNameByFile(string serviceFileName)
-        //{
-        //    try
-        //    {
-
-        //        Assembly assembly = Assembly.LoadFrom(serviceFileName);
-        //        Type[] types = assembly.GetTypes();
-        //        foreach (Type myType in types)
-        //        {
-        //            if (myType.IsClass && myType.BaseType == typeof(System.Configuration.Install.Installer))
-        //            {
-        //                FieldInfo[] fieldInfos = myType.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Default | BindingFlags.Instance | BindingFlags.Static);
-        //                foreach (FieldInfo myFieldInfo in fieldInfos)
-        //                {
-        //                    if (myFieldInfo.FieldType == typeof(System.ServiceProcess.ServiceInstaller))
-        //                    {
-        //                        using (ServiceInstaller serviceInstaller = (ServiceInstaller)myFieldInfo.GetValue(Activator.CreateInstance(myType)))
-        //                        {
-        //                            return serviceInstaller.ServiceName;
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        return "";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw ex;
-        //    }
-        //}
-
         public static Tuple<ServiceController,string> GetWindowServiceByName(string serviceName)
         {
             try
@@ -122,7 +85,7 @@ namespace LightDeploy.ClientAgent
             {
                 var _nssmOutput = "";
                 var rt = ProcessHepler.RunExternalExe(projectLocation, $"get {serviceName} Application",
-                    output => { _nssmOutput += Regex.Replace(output, @"\0", ""); });
+                    output => { _nssmOutput += Regex.Replace(output, @"\0", ""); return Task.CompletedTask; });
 
                 if (!rt || string.IsNullOrEmpty(_nssmOutput.Trim()))
                 {

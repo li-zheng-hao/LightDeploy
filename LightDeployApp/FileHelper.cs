@@ -22,7 +22,8 @@ public class FileHelper
             FileSize = it.Length,
             AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
             LastWriteTime = it.LastWriteTime,
-            MD5 = GetFileMd5(it.FullName)
+            MD5 = "none"
+            // MD5 = GetFileMd5(it.FullName)
         }).ToList();
         foreach (var fileInfoDto in fileInfoDtos.Where(it=>it.RelativeDirectory.StartsWith("/")||it.RelativeDirectory.StartsWith("\\")))
         {

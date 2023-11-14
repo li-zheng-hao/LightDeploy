@@ -55,7 +55,7 @@ public partial class AddEnvironment : MetroWindow
         {
             EditedEnvironments.ForEach(it =>
             {
-                DBHelper.GetClient().Updateable(it).WhereColumns(it=>new{it.Host,it.Name}).ExecuteCommand();
+                DBHelper.GetClient().Updateable(it).ExecuteCommand();
             });
             EditedEnvironments.Clear();
             MessageBox.Show("保存成功");

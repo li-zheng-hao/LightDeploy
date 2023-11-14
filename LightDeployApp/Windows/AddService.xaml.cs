@@ -35,7 +35,7 @@ public partial class AddService : MetroWindow
             DefaultTargetPath = TargetPath.Text,
             IsSelfContained = SelfContained.IsChecked==true,
             DefaultEnvironment=Environment.Text,
-            EnableHealthCheck = EnableHealthCheck.IsChecked
+            EnableHealthCheck = EnableHealthCheck.IsChecked??false
         };
        
         DBHelper.GetClient().Deleteable<TService>(it=>it.Name==service.Name).ExecuteCommand();
@@ -82,7 +82,7 @@ public partial class AddService : MetroWindow
         {
             EditedServices.ForEach(it =>
             {
-                DBHelper.GetClient().Updateable(it).WhereColumns(it=>new{it.Name}).ExecuteCommand();
+                DBHelper.GetClient().Updateable(it).ExecuteCommand();
             });
             EditedServices.Clear();
             this.ShowMessageAsync("消息","保存成功");

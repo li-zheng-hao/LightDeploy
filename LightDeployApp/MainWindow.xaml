@@ -64,14 +64,29 @@
             </GroupBox>
 
             <GroupBox Header="操作" Margin="5">
-                <StackPanel>
-                    <Button Click="EditEnvironmentClick" Margin="5">配置环境</Button>
-                    <Button Click="EditService" Margin="5">配置服务</Button>
-                    <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
-                    <Button Click="DeployClick" IsEnabled="{Binding IsIdle}"  Margin="5">部署</Button>
-                    <Button Click="StopDeployClick" Margin="5">停止部署</Button>
-                    <Button Click="RefreshClick" Margin="5">刷新配置</Button>
-                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <Button Click="EditEnvironmentClick" Margin="5">配置环境</Button>
+                            <Button Click="EditService" Margin="5">配置服务</Button>
+                            <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
+                            <Button Click="RefreshClick" Margin="5">刷新配置</Button>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <Button Click="DeployClick" IsEnabled="{Binding IsIdle}"  Margin="5">部署</Button>
+                            <Button Click="StopDeployClick" Margin="5">停止部署</Button>
+                            <Button Click="InstallServiceClick" Margin="5">服务安装</Button>
+                            <Button Click="StartServiceClick" Margin="5">启动服务</Button>
+                            <Button Click="StopServiceClick" Margin="5">停止服务</Button>
+                        </StackPanel>
+                    </Grid>
+                 
+                </ScrollViewer>
+             
             </GroupBox>
           
         </DockPanel>

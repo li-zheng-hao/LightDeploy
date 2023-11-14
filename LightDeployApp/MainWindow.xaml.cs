@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
+using LightDeployApp.Windows;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,36 +42,10 @@ namespace LightDeployApp
 
         private async void DeployClick(object sender, RoutedEventArgs e)
         {
-            AppContext.GetAppDataContext().LogContext=string.Empty;
-            var deployParams= new DeployParams();
-            deployParams.Environment = Environment.Text;
-            deployParams.ServiceName = Service.Text;
-            deployParams.TargetPath = TargetPath.Text;
-            deployParams.IsSelfContained = SelfContained.IsChecked==true;
-            deployParams.EnableHealthCheck = EnableHealthCheck.IsChecked==true;
-            deployParams.BuildMode = DeployMode.Text == "项目" ? 0 : 1;
+            var deployParams=GetDeployParams();
+        
+            if(deployParams==null)return;
             
-            if(string.IsNullOrWhiteSpace(deployParams.Environment))
-            {
-                this.ShowMessageAsync("消息",$"请选择环境");
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(deployParams.ServiceName))
-            {
-                this.ShowMessageAsync("消息",$"请选择服务");
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(deployParams.TargetPath))
-            {
-                this.ShowMessageAsync("消息",$"请选择目标路径");
-
-                return;
-            }
-
             if (deployParams.ServiceName.Contains("prod", StringComparison.OrdinalIgnoreCase))
             {
                 var result=await this.ShowMessageAsync("警告","请确认是否部署到生产环境!!!!!!",MessageDialogStyle.AffirmativeAndNegative);
@@ -81,7 +56,12 @@ namespace LightDeployApp
                 }
             }
 
-            var remark=await this.ShowInputAsync("提示", "请输入此次发布备注");
+            var remark=await this.ShowInputAsync("提示", "请输入此次发布说明");
+            if (string.IsNullOrWhiteSpace(remark))
+            {
+                AppContext.GetAppDataContext().Log("未输入发布说明，本次发布取消");
+                return;
+            }
             
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -95,7 +75,9 @@ namespace LightDeployApp
                 {
                     CreateTime = DateTime.Now,
                     Remark = remark,
-                    ServiceName = deployParams.ServiceName
+                    ServiceName = deployParams.ServiceName,
+                    EnvironmentInfo =string.Join( ",",AppContext.GetAppDataContext().SelectedEnvironments
+                        .Where(it=>it.NeedDeploy).Select(it=>$"{it.Host}"))
                 };
                 await DBHelper.GetClient().Insertable(history).ExecuteCommandAsync();
                 if (await DBHelper.GetClient().Queryable<TDeployHistory>().Where(it=>it.ServiceName==deployParams.ServiceName).CountAsync() > 10)
@@ -110,7 +92,7 @@ namespace LightDeployApp
             }            
             
             AppContext.GetAppDataContext().StopDeploy(true);
-            this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
+            await this.ShowMessageAsync("消息",$"部署完成,耗时" + stopwatch.ElapsedMilliseconds + "毫秒");
 
         }
 
@@ -239,6 +221,84 @@ namespace LightDeployApp
         private void StopDeployClick(object sender, RoutedEventArgs e)
         {
             AppContext.GetAppDataContext().StopDeploy();
+        }
+
+        private async void InstallServiceClick(object sender, RoutedEventArgs e)
+        {
+            (string ServiceName,string ServiceExe,string ServiceParams,string ServiceDescription) val = ("","","","");
+            var window = new InstallServiceParamsWindow();
+            window.Confirm += value =>
+            {
+                val = value;
+            };
+            window.ShowDialog();
+
+            var deployParams = GetDeployParams();
+            if (deployParams == null) return;
+            try
+            {
+                AppContext.GetAppDataContext().StartDeploy();
+                await DeployService.Install(val,deployParams);
+
+
+            }
+            catch (Exception exception)
+            {
+                AppContext.GetAppDataContext().Log(exception.Message);
+                if (exception.StackTrace != null) AppContext.GetAppDataContext().Log(exception.StackTrace);
+            }
+            AppContext.GetAppDataContext().StopDeploy( );
+
+        }
+
+        private DeployParams? GetDeployParams()
+        {
+            AppContext.GetAppDataContext().LogContext=string.Empty;
+            var deployParams= new DeployParams();
+            deployParams.Environment = Environment.Text;
+            deployParams.ServiceName = Service.Text;
+            deployParams.TargetPath = TargetPath.Text;
+            deployParams.IsSelfContained = SelfContained.IsChecked==true;
+            deployParams.EnableHealthCheck = EnableHealthCheck.IsChecked==true;
+            deployParams.BuildMode = DeployMode.Text == "项目" ? 0 : 1;
+            
+            if(string.IsNullOrWhiteSpace(deployParams.Environment))
+            {
+                this.ShowMessageAsync("消息",$"请选择环境");
+
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(deployParams.ServiceName))
+            {
+                this.ShowMessageAsync("消息",$"请选择服务");
+
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(deployParams.TargetPath))
+            {
+                this.ShowMessageAsync("消息",$"请选择目标路径");
+
+                return null;
+            }
+
+            return deployParams;
+        }
+
+        private async void StartServiceClick(object sender, RoutedEventArgs e)
+        {
+            var deployParams = GetDeployParams();
+            if(deployParams==null) return;
+            AppContext.Log("开始启动服务");
+            await DeployService.StartService(deployParams);
+        }
+
+        private async void StopServiceClick(object sender, RoutedEventArgs e)
+        {
+            var deployParams = GetDeployParams();
+            if(deployParams==null) return;
+            await DeployService.StopService(deployParams);
         }
     }
 }

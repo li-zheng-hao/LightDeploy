@@ -8,6 +8,9 @@ namespace LightDeployApp.Tables;
 /// </summary>
 public class TDeployHistory:ViewModelBase
 {
+    [ColumnName("编号")]
+    [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
+    public int Id { get; set; }
     [ColumnName("部署时间")]
     public DateTime CreateTime { get; set; }
 
@@ -16,8 +19,13 @@ public class TDeployHistory:ViewModelBase
     public string? DeployFilesDir { get; set; }
 
     [ColumnName("备注说明")]
-    public string Remark { get; set; }
+    [SugarColumn(IsNullable = true)]
+    public string? Remark { get; set; }
     
     [ColumnName("服务名称")]
     public string ServiceName { get; set; }
+    
+    [ColumnName("部署环境")]
+    [SugarColumn(IsNullable = true)]
+    public string? EnvironmentInfo { get; set; }
 }

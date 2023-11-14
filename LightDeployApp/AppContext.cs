@@ -39,4 +39,9 @@ public static class AppContext
             .ToListAsync();
         GetAppDataContext().DeployHistories = data;
     }
+
+    public static void Log(string msg)
+    {
+        GetAppDataContext().Log(msg);
+    }
 }

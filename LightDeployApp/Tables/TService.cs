@@ -8,6 +8,9 @@ namespace LightDeployApp.Tables;
 
 public class TService:ViewModelBase
 {
+    [ColumnName("编号")]
+    [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
+    public int Id { get; set; }
     /// <summary>
     /// 分组名称
     /// </summary>
@@ -36,11 +39,12 @@ public class TService:ViewModelBase
     /// 默认环境名称
     /// </summary>
     [ColumnName("默认环境名称")]
-    public string DefaultEnvironment { get; set; }
+    [SugarColumn(IsNullable = true)]
+    public string? DefaultEnvironment { get; set; }
     
     /// <summary>
     /// 部署完成后进行健康检查
     /// </summary>
     [ColumnName("是否进行健康检查")]
-    public bool? EnableHealthCheck { get; set; }
+    public bool EnableHealthCheck { get; set; }
 }

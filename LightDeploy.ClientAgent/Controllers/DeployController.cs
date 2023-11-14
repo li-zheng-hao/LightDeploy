@@ -39,27 +39,6 @@ public class DeployController : ControllerBase
         return Ok();
     }
 
-    [HttpPost]
-    public IActionResult TestDeploy()
-    {
-        var location = WindowServiceHelper.GetWindowsServiceLocation("TestService");
-        return Ok(location);
-    }
- 
-    [HttpGet]
-    public IActionResult ListFileInfo([FromQuery] string serviceName, [FromQuery] string ignoreFileExtensions="")
-    {
-        try
-        {
-            List<FileInfoDto> fileInfoDtos = _deployService.GetFileInfos(serviceName,ignoreFileExtensions);
-            
-            return Ok(fileInfoDtos);
-        }
-        catch (BusinessException e)
-        {
-            return BadRequest(e.Message);
-        }
-    }
     [HttpPost()]
     public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileInfoDto> fileInfoDtos)
     {
@@ -81,7 +60,7 @@ public class DeployController : ControllerBase
         return Ok();
     }
 
-    [HttpPost(),Authorize]
+    [HttpPost()]
     public IActionResult UpdateSelf()
     {
         var file=HttpContext.Request.Form.Files["file"];
@@ -99,5 +78,54 @@ public class DeployController : ControllerBase
         using var stream = System.IO.File.Create(targetFile);
         file.CopyTo(stream);
         return Ok();
+    }
+
+    /// <summary>
+    /// 检查Windows服务是否存在
+    /// </summary>
+    /// <param name="serviceName"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public IActionResult CheckServiceExist([FromQuery]string serviceName)
+    {
+        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
+        return Ok(exist);
+    }
+
+    /// <summary>
+    /// 安装windows服务
+    /// </summary>
+    /// <param name="installWindowsServiceDto"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public async Task<IActionResult> InstallWindowsService([FromForm] InstallWindowsServiceDto installWindowsServiceDto)
+    {
+        var exist=WindowsServiceHelper.ServiceIsExisted(installWindowsServiceDto.ServiceName);
+        if (exist)
+            return BadRequest("服务已存在");
+        var result=await _deployService.InstallWindowsService(installWindowsServiceDto);
+        if(result)
+            return Ok();
+        return BadRequest("安装失败"); 
+    }
+
+    [HttpPost]
+    public IActionResult StartService([FromQuery] string serviceName)
+    {
+        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
+        if (!exist)
+            return BadRequest("服务不存在");
+        WindowsServiceHelper.StartService(serviceName);
+        return Ok();
+    }
+    [HttpPost]
+    public IActionResult StopService([FromQuery] string serviceName)
+    {
+        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
+        if (!exist)
+            return BadRequest("服务不存在");
+        WindowsServiceHelper.StopService(serviceName);
+        return Ok();
+
     }
 }
