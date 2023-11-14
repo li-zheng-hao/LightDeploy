@@ -74,6 +74,7 @@ namespace LightDeployApp
                 var history = new TDeployHistory()
                 {
                     CreateTime = DateTime.Now,
+                    DeployFilesDir = TargetPath.Text,
                     Remark = remark,
                     ServiceName = deployParams.ServiceName,
                     EnvironmentInfo =string.Join( ",",AppContext.GetAppDataContext().SelectedEnvironments
