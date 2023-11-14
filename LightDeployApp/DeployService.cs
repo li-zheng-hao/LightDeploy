@@ -217,11 +217,12 @@ public class DeployService
                 AppContext.GetAppDataContext().Log("编译完成");
                 deployParams.TargetPath = tmpDir;
             }
-
+           
             var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments
                 .Where(it => it.NeedDeploy).ToList();
             MemoryStream memoryStream = null;
-            
+            AppContext.GetAppDataContext().Log("开始部署");
+
             foreach (var environment in selectedEnvironments)
             {
                 await ConnectSignalR($"http://{environment.Host}:{environment.Port}/agent");
@@ -255,6 +256,8 @@ public class DeployService
 
                 try
                 {
+                    AppContext.GetAppDataContext().Log($"开始通知Agent发布文件");
+
                     var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/installwindowsservice"
                         .WithHeader("Authorization", environment.AuthKey ?? "")
                         .PostMultipartAsync(mp =>
@@ -295,7 +298,8 @@ public class DeployService
         }
         finally
         {
-            Directory.Delete(tmpDir, true);
+            if(Directory.Exists(tmpDir))
+                Directory.Delete(tmpDir, true);
         }
     }
 

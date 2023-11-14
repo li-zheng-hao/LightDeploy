@@ -248,7 +248,7 @@ namespace LightDeployApp
                 AppContext.GetAppDataContext().Log(exception.Message);
                 if (exception.StackTrace != null) AppContext.GetAppDataContext().Log(exception.StackTrace);
             }
-            AppContext.GetAppDataContext().StopDeploy( );
+            AppContext.GetAppDataContext().StopDeploy(true);
 
         }
 

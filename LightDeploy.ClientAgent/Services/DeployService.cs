@@ -301,6 +301,8 @@ public class DeployService
 
     public async Task<bool> InstallWindowsService(InstallWindowsServiceDto installWindowsServiceDto)
     {
+        _connectionId=installWindowsServiceDto.ConnectionId;
+
         await Log("开始解压文件夹");
 
         var targetDir = Path.GetDirectoryName(installWindowsServiceDto.ExeFullPath);
