@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using Flurl.Http;
 using Flurl.Http.Configuration;
+using LightDeployApp.Dtos;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MessageBox = System.Windows.MessageBox;
@@ -18,6 +21,14 @@ public partial class UpdateAgent : MetroWindow
     public UpdateAgent()
     {
         InitializeComponent();
+        this.DataContext = AppContext.GetAppDataContext().Environments.DistinctBy(it=>it.Host)
+            .Select(it=>new UpdateDeployDto()
+            {
+                Name = it.Name,
+                Port = it.Port,
+                Host = it.Host,
+                NeedDeploy = true
+            }).ToList();
     }
 
     private void SelectDirClick(object sender, RoutedEventArgs e)
@@ -38,7 +49,8 @@ public partial class UpdateAgent : MetroWindow
     {
         await this.ShowMessageAsync("消息",$"开始发布");
 
-        foreach (var environment in AppContext.GetAppDataContext().Environments.DistinctBy(it=>it.Host))
+        var data=this.DataContext as List<UpdateDeployDto> ?? throw new InvalidOperationException();
+        foreach (var environment in data)
         {
             LogBox.Text+="开始发布:"+environment.Host+ "\n";
 
@@ -70,5 +82,15 @@ public partial class UpdateAgent : MetroWindow
     private void LogBox_OnTextChanged(object sender, TextChangedEventArgs e)
     {
         LogBox.ScrollToEnd();
+    }
+
+    private void DataGridSelectEnvironment_OnAutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+    {
+        var desc = e.PropertyDescriptor as PropertyDescriptor;
+        var att = desc.Attributes[typeof(ColumnNameAttribute)] as ColumnNameAttribute;
+        if(att != null)
+        {
+            e.Column.Header = att.Name;
+        }
     }
 }
