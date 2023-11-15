@@ -17,7 +17,7 @@
             </StackPanel>
         </GroupBox>
         <GroupBox Header="环境" DockPanel.Dock="Top" Margin="5">
-            <DataGrid  Height="200" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding .}" CanUserAddRows="False"  DockPanel.Dock="Top">
+            <DataGrid  Height="200" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding .,Mode=TwoWay}" CanUserAddRows="False"  DockPanel.Dock="Top">
             </DataGrid>
         </GroupBox>
        

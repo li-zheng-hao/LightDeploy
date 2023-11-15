@@ -50,7 +50,7 @@ public partial class UpdateAgent : MetroWindow
         await this.ShowMessageAsync("消息",$"开始发布");
 
         var data=this.DataContext as List<UpdateDeployDto> ?? throw new InvalidOperationException();
-        foreach (var environment in data)
+        foreach (var environment in data.Where(it=>it.NeedDeploy))
         {
             LogBox.Text+="开始发布:"+environment.Host+ "\n";
 
