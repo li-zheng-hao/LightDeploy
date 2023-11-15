@@ -62,8 +62,13 @@ public class DeployService
 
             await Backup(exeDir, backupDir, JsonSerializer.Deserialize<List<FileInfoDto>>(deployDto.FileInfos));
 
+            int retryCount=1;
             Polly.Retry.RetryPolicy retryPolicy =
-                Policy.Handle<Exception>().WaitAndRetry(3, i => TimeSpan.FromSeconds(2));
+                Policy.Handle<Exception>().WaitAndRetry(10, i => TimeSpan.FromSeconds(3), async (ex,context) =>
+                {
+                    await Log($"复制文件失败 {ex.Message} 重试次数: {retryCount++}/10");
+                });
+
             retryPolicy.Execute(() => { CopyFilesRecursively(subDir, exeDir); });
 
             WindowsServiceHelper.StartService(deployDto.ServiceName);
