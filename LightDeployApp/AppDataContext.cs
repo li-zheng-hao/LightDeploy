@@ -15,6 +15,7 @@ public class AppDataContext : ViewModelBase
 
     public string UniqueId { get; set; } = Guid.NewGuid().ToString();
 
+    public TGlobalSetting GlobalSetting { get; set; }
     public List<TService> Services { get; set; }
 
     public List<TDeployHistory> DeployHistories { get; set; }

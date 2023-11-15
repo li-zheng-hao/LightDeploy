@@ -153,6 +153,20 @@ public class DeployService
             await DisConnectSignalR();
         }
 
+        if (deployParams.EnableNotify&&!string.IsNullOrWhiteSpace(AppContext.GetAppDataContext().GlobalSetting.QiyeWeChatKey))
+        {
+            var description = AppContext.GetAppDataContext().Services.First(it => it.Name == deployParams.ServiceName).Description;
+            if (string.IsNullOrWhiteSpace(description))
+                return true;
+            string msg = $"# LightDeploy部署 \n" +
+                              $"{description} \n" +
+                              $"# 发布说明 \n" +
+                              $"{deployParams.Remark}";
+            var resp=await $"https://qyapi.weixin.qq.com//cgi-bin/webhook/send?key={AppContext.GetAppDataContext().GlobalSetting.QiyeWeChatKey}"
+                .PostAsync()
+                .ReceiveString();
+            AppContext.Log($"企业微信通知完成 {resp}");
+        }
         return true;
     }
 

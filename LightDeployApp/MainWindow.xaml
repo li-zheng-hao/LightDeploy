@@ -77,7 +77,7 @@
                             <Button Click="RefreshClick" Margin="5">刷新配置</Button>
                         </StackPanel>
                         <StackPanel Grid.Column="1">
-                            <Button Click="DeployClick" IsEnabled="{Binding IsIdle}"  Margin="5">部署</Button>
+                            <Button Click="DeployClick" Background="#3393df" IsEnabled="{Binding IsIdle}"  Margin="5">部署</Button>
                             <Button Click="StopDeployClick" Margin="5">停止部署</Button>
                             <Button Click="InstallServiceClick" Margin="5">服务安装</Button>
                             <Button Click="StartServiceClick" Margin="5">启动服务</Button>

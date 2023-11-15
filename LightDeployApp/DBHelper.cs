@@ -14,7 +14,8 @@ public class DBHelper
         var db=GetClient();
         
         db.DbMaintenance.CreateDatabase();
-        db.CodeFirst.SetStringDefaultLength(255).InitTables(typeof(TEnvironment),typeof(TService),typeof(TDeployHistory));
+        db.CodeFirst.SetStringDefaultLength(255).InitTables(typeof(TEnvironment),typeof(TService),typeof(TDeployHistory)
+        ,typeof(TGlobalSetting));
     }
 
     public static SqlSugarClient GetClient()

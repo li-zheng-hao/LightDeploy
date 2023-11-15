@@ -31,4 +31,9 @@ public class DeployParams
     
     public bool EnableHealthCheck { get; set; }
     
+    public bool EnableNotify { get; set; }
+    /// <summary>
+    /// 备注
+    /// </summary>
+    public string Remark { get; set; }
 }

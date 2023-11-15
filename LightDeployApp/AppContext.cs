@@ -24,6 +24,9 @@ public static class AppContext
         var _environments= DBHelper.GetClient()
             .Queryable<TEnvironment>()
             .ToList();
+        var globalSetting = DBHelper.GetClient().Queryable<TGlobalSetting>().First() ?? DBHelper.GetClient().Insertable(new TGlobalSetting()).ExecuteReturnEntity();
+        GetAppDataContext().GlobalSetting = globalSetting;
+        
         GetAppDataContext().Services = _services;
         GetAppDataContext().Environments= _environments;
         GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();

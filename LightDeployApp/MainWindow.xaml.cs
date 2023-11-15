@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using LightDeployApp.Tables;
 using LightDeployApp.Windows;
+using LightDeployApp.Windows.Dialogs;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,18 +56,45 @@ namespace LightDeployApp
                     return ;
                 }
             }
+            string remark = string.Empty;
+            
+            if (AppContext.GetAppDataContext().Services.First(it => it.Name == deployParams.ServiceName).EnableNotify==true)
+            {
+                var notifyDialog = new ShowNotifyDialog();
+                notifyDialog.Notify+=str =>
+                {
+                    remark = str;
+                };
+                notifyDialog.ShowDialog();
+                if (string.IsNullOrWhiteSpace(remark))
+                {
+                    await this.ShowMessageAsync("消息",$"未输入通知内容,跳过通知");
+                    deployParams.EnableNotify = false;
+                }
+                else
+                {
+                    deployParams.EnableNotify = true;
+                }
+            }
 
-            var remark=await this.ShowInputAsync("提示", "请输入此次发布说明");
             if (string.IsNullOrWhiteSpace(remark))
             {
-                AppContext.GetAppDataContext().Log("未输入发布说明，本次发布取消");
-                return;
-            }
+                remark=await this.ShowInputAsync("提示", "请输入此次发布说明");
             
+                if (string.IsNullOrWhiteSpace(remark))
+                {
+                    AppContext.GetAppDataContext().Log("未输入发布说明，本次发布取消");
+                    return;
+                }
+            }
+
+            deployParams.Remark = remark;
+          
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             AppContext.GetAppDataContext().StartDeploy();
             
+            // 部署
             var deployResult=await DeployService.Deploy(deployParams);
 
             if (deployResult)

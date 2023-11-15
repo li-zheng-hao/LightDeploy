@@ -19,7 +19,7 @@ public class TDeployHistory:ViewModelBase
     public string? DeployFilesDir { get; set; }
 
     [ColumnName("备注说明")]
-    [SugarColumn(IsNullable = true)]
+    [SugarColumn(IsNullable = true,Length = 2000)]
     public string? Remark { get; set; }
     
     [ColumnName("服务名称")]
