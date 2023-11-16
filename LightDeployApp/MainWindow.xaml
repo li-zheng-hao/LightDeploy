@@ -94,11 +94,11 @@
         <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
             <DockPanel>
                 <Label DockPanel.Dock="Top">选择的环境</Label>
-                <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" MinHeight="50" DockPanel.Dock="Top">
+                <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" MinHeight="50" MaxHeight="150" DockPanel.Dock="Top">
                   
                 </DataGrid>
                 <Label DockPanel.Dock="Top">发布历史</Label>
-                <DataGrid  AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding DeployHistories}" CanUserAddRows="False" Height="100" DockPanel.Dock="Top">
+                <DataGrid  AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding DeployHistories}" CanUserAddRows="False" Height="150" DockPanel.Dock="Top">
                   
                 </DataGrid>
                 <Label DockPanel.Dock="Top" >日志</Label>
