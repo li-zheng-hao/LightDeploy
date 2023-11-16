@@ -161,7 +161,9 @@ public class DeployService
             string msg = $"# LightDeploy部署 \n" +
                               $"{description} \n" +
                               $"# 发布说明 \n" +
-                              $"{deployParams.Remark}";
+                              $"{deployParams.Remark}"+
+                              $"# 发布时间 \n" +
+                              $"{DateTime.Now:yyyy-MM-dd hh:mm:ss}";;
             
             QiyeWeChatNotifyDto qiyeWeChatNotifyDto=new()
             {
