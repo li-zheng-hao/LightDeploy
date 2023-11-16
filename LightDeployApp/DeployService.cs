@@ -162,8 +162,16 @@ public class DeployService
                               $"{description} \n" +
                               $"# 发布说明 \n" +
                               $"{deployParams.Remark}";
+            
+            QiyeWeChatNotifyDto qiyeWeChatNotifyDto=new()
+            {
+                markdown = new()
+                {
+                    content = msg
+                }
+            };
             var resp=await $"https://qyapi.weixin.qq.com//cgi-bin/webhook/send?key={AppContext.GetAppDataContext().GlobalSetting.QiyeWeChatKey}"
-                .PostAsync()
+                .PostJsonAsync(qiyeWeChatNotifyDto)
                 .ReceiveString();
             AppContext.Log($"企业微信通知完成 {resp}");
         }
