@@ -9,8 +9,10 @@ using Flurl;
 using Flurl.Http;
 using LightDeploy.ClientAgent.Dto;
 using LightDeployApp.Dtos;
+using LightDeployApp.Services;
 using LightDeployApp.Tables;
 using LightDeployApp.Windows;
+using Masuit.Tools;
 using Microsoft.AspNetCore.SignalR.Client;
 using SevenZipExtractor;
 using SqlSugar;
@@ -66,11 +68,11 @@ public class DeployService
     {
         var selectedEnvironments = AppContext.GetAppDataContext().SelectedEnvironments
             .Where(it => it.NeedDeploy).ToList();
-        List<FileInfoDto> calculateNeedDeployFiles = null;
+        List<FileInfoDto>? calculateNeedDeployFiles = null;
         MemoryStream memoryStream = null;
         foreach (var environment in selectedEnvironments)
         {
-            await ConnectSignalR($"http://{environment.Host}:{environment.Port}/agent");
+            await using var agentHttpService = new AgentHttpService(environment);
             if (AppContext.GetAppDataContext().StopToken!.IsCancellationRequested) return false;
             AppContext.GetAppDataContext().Log($"==============================================================");
             AppContext.GetAppDataContext().Log($"开始部署{environment.Host}:{environment.Port}");
@@ -86,19 +88,16 @@ public class DeployService
 
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested == true) return false;
 
-            calculateNeedDeployFiles ??= await $"http://{environment.Host}:{environment.Port}/api/deploy/compare"
-                .WithHeader("Authorization", environment.AuthKey ?? "")
-                .SetQueryParam("serviceName", deployParams.ServiceName)
-                .WithHeader("Authorization", environment.AuthKey ?? "")
-                .PostJsonAsync(currentFileInfos, cancellationToken: AppContext.GetAppDataContext().StopToken!.Token)
-                .ReceiveJson<List<FileInfoDto>>();
+            calculateNeedDeployFiles ??=await  agentHttpService.Compare(currentFileInfos, deployParams.ServiceName,
+                AppContext.GetAppDataContext().StopToken?.Token??default);
             AppContext.GetAppDataContext().Log($"对比文件信息耗时:{sw.ElapsedMilliseconds}ms");
+            
             sw.Restart();
-            // var calculateNeedDeployFiles = CalculateNeedDeployFiles(currentFileInfos, remoteFiles);
+            
             AppContext.GetAppDataContext()
-                .Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles.Select(it => $"【{it.FileName}】"))}");
+                .Log($"需要复制文件:{string.Join(",", calculateNeedDeployFiles?.Select(it => $"【{it.FileName}】") ?? Array.Empty<string>())}");
 
-            if (calculateNeedDeployFiles.Count == 0)
+            if (calculateNeedDeployFiles.IsNullOrEmpty())
             {
                 AppContext.GetAppDataContext().Log($"无需部署{environment.Host}:{environment.Port}");
 
@@ -108,9 +107,9 @@ public class DeployService
 
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested == true) return false;
             sw.Restart();
-            if (memoryStream == null)
-                memoryStream =
-                    await Task.Run(() => CreateZipFile(calculateNeedDeployFiles));
+            
+            memoryStream ??= await Task.Run(() => CreateZipFile(calculateNeedDeployFiles!));
+            
             AppContext.GetAppDataContext().Log($"打包文件耗时:{sw.ElapsedMilliseconds}ms");
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested == true) return false;
 
@@ -118,30 +117,15 @@ public class DeployService
 
             try
             {
-                var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/deploy"
-                    .WithHeader("Authorization", environment.AuthKey ?? "")
-                    .PostMultipartAsync(mp =>
-                    {
-                        mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
-                        mp.AddString("ServiceName", deployParams.ServiceName);
-                        mp.AddJson("FileInfos", calculateNeedDeployFiles);
-                        mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
-                        mp.AddString("HealthCheckUrl", environment.HealthCheckUrl ?? "");
-                    });
-
-                if (response.StatusCode != 200)
-                {
-                    AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
-
-                    continue;
-                }
+                var result=await agentHttpService.Upload(memoryStream, deployParams.ServiceName, calculateNeedDeployFiles);
+                if(!result)
+                    return false;
             }
-            catch (FlurlHttpException e)
+            catch (Exception e)
             {
-                var body = await e.GetResponseStringAsync();
                 AppContext.GetAppDataContext().Log($"部署失败{environment.Host}:{environment.Port}");
-                AppContext.GetAppDataContext().Log($"返回消息 {e.Message}");
-                AppContext.GetAppDataContext().Log($"返回消息 {body}");
+                AppContext.GetAppDataContext().Log($"{e.Message}");
+                AppContext.GetAppDataContext().Log($"{e.StackTrace}");
                 return false;
             }
 
@@ -150,7 +134,6 @@ public class DeployService
 
             selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
 
-            await DisConnectSignalR();
         }
 
         if (deployParams.EnableNotify&&!string.IsNullOrWhiteSpace(AppContext.GetAppDataContext().GlobalSetting.QiyeWeChatKey))
@@ -335,20 +318,14 @@ public class DeployService
         {
             try
             {
-                var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/startservice"
-                    .WithHeader("Authorization", environment.AuthKey ?? "")
-                    .SetQueryParam("serviceName", deployParams.ServiceName)
-                    .PostAsync();
+                await using var agentService = new AgentHttpService(environment);
+                await agentService.StartService(deployParams.ServiceName);
             }
-            catch (FlurlHttpException e)
+            catch (Exception e)
             {
-                var body = await e.GetResponseStringAsync();
-                AppContext.GetAppDataContext().Log($"失败{environment.Host}:{environment.Port}");
-                AppContext.GetAppDataContext().Log($"返回消息 {e.Message}");
-                AppContext.GetAppDataContext().Log($"返回消息 {body}");
-                return ;
+                AppContext.Log(e.Message);
             }
-                
+           
         }
     }
 
@@ -360,20 +337,14 @@ public class DeployService
         {
             try
             {
-                var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/stopservice"
-                    .WithHeader("Authorization", environment.AuthKey ?? "")
-                    .SetQueryParam("serviceName", deployParams.ServiceName)
-                    .PostAsync();
+                await using var agentService = new AgentHttpService(environment);
+                await agentService.StopService(deployParams.ServiceName);
             }
-            catch (FlurlHttpException e)
+            catch (Exception e)
             {
-                var body = await e.GetResponseStringAsync();
-                AppContext.GetAppDataContext().Log($"失败{environment.Host}:{environment.Port}");
-                AppContext.GetAppDataContext().Log($"返回消息 {e.Message}");
-                AppContext.GetAppDataContext().Log($"返回消息 {body}");
-                return ;
+                AppContext.Log(e.Message);
             }
-                
+           
         }
     }
 
@@ -387,12 +358,9 @@ public class DeployService
         {
             try
             {
-                var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/getstatus"
-                    .WithTimeout(5)
-                    .WithHeader("Authorization", environment.AuthKey ?? "")
-                    .SetQueryParam("serviceName", serviceName)
-                    .GetStringAsync();
-                environment.ServiceStatus= response;
+                await using var agentService = new AgentHttpService(environment);
+                var data=await agentService.RefreshService(serviceName);
+                environment.ServiceStatus = data;
             }
             catch (Exception e)
             {

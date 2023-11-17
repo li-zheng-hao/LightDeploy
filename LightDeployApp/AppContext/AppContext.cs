@@ -43,7 +43,7 @@ public static class AppContext
         GetAppDataContext().DeployHistories = data;
     }
 
-    public static void Log(string msg)
+    public static void Log(string? msg)
     {
         GetAppDataContext().Log(msg);
     }

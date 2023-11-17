@@ -2,6 +2,9 @@ using System.Management;
 using System.ServiceProcess;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LightApi.Infra.Extension;
+using LightApi.Infra.InfraException;
+using LightApi.Infra.Unify;
 using LightDeploy.ClientAgent.Dto;
 using LightDeploy.ClientAgent.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -27,31 +30,17 @@ public class DeployController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Deploy([FromForm]DeployDto deployDto)
     {
-        try
-        {
-            _logger.LogInformation($"请求更新服务:{deployDto.ServiceName}");
-            await _deployService.Deploy(deployDto);
-        }
-        catch (BusinessException e)
-        {
-            _logger.LogError(e.Message);
-            return BadRequest(e.Message);
-        }
+        _logger.LogInformation($"请求更新服务:{deployDto.ServiceName}");
+        await _deployService.Deploy(deployDto);
+       
         return Ok();
     }
 
     [HttpPost()]
     public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileInfoDto> fileInfoDtos)
     {
-        try
-        {
-            List<FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
-            return Ok(newFileInfos);
-        }
-        catch (BusinessException e)
-        {
-            return BadRequest(e.Message);
-        }
+        List<FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
+        return Ok(newFileInfos);
     }
    
 
@@ -74,7 +63,7 @@ public class DeployController : ControllerBase
         var targetFile = Path.Combine(targetPath, file!.FileName);
         if (System.IO.File.Exists(targetFile))
         {
-            return BadRequest("更新文件已存在,请稍后再试");
+            throw new BusinessException("更新文件已存在,请稍后再试");
         }
         using var stream = System.IO.File.Create(targetFile);
         file.CopyTo(stream);
@@ -102,20 +91,17 @@ public class DeployController : ControllerBase
     public async Task<IActionResult> InstallWindowsService([FromForm] InstallWindowsServiceDto installWindowsServiceDto)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(installWindowsServiceDto.ServiceName);
-        if (exist)
-            return BadRequest("服务已存在");
+        Check.ThrowIf(exist,"服务已存在");
         var result=await _deployService.InstallWindowsService(installWindowsServiceDto);
-        if(result)
-            return Ok();
-        return BadRequest("安装失败"); 
+        Check.ThrowIf(result,"安装失败");
+        return Ok();
     }
 
     [HttpPost]
     public IActionResult StartService([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        if (!exist)
-            return BadRequest("服务不存在");
+        Check.ThrowIf(exist,"服务已存在");
         WindowsServiceHelper.StartService(serviceName);
         return Ok();
     }
@@ -123,8 +109,7 @@ public class DeployController : ControllerBase
     public IActionResult StopService([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        if (!exist)
-            return BadRequest("服务不存在");
+        Check.ThrowIf(exist,"服务不存在");
         WindowsServiceHelper.StopService(serviceName);
         return Ok();
 
@@ -139,8 +124,7 @@ public class DeployController : ControllerBase
     public IActionResult GetStatus([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        if (!exist)
-            return BadRequest("服务不存在");
+        Check.ThrowIf(exist,"服务不存在");
         return Ok(WindowsServiceHelper.GetStatus(serviceName));
 
     }

@@ -322,6 +322,7 @@ namespace LightDeployApp
             if(deployParams==null) return;
             AppContext.Log("开始启动服务");
             await DeployService.StartService(deployParams);
+            await this.ShowMessageAsync("消息",$"启动完成");
         }
 
         private async void StopServiceClick(object sender, RoutedEventArgs e)
@@ -329,6 +330,7 @@ namespace LightDeployApp
             var deployParams = GetDeployParams();
             if(deployParams==null) return;
             await DeployService.StopService(deployParams);
+            await this.ShowMessageAsync("消息",$"停止完成");
         }
     }
 }

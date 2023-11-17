@@ -17,5 +17,4 @@ public class InstallWindowsServiceDto
 
     public string? ServiceDescription { get; set; }
     
-    public string ConnectionId { get; set; }
 }

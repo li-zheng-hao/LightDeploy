@@ -3,10 +3,13 @@ using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text.Json;
 using Flurl.Http;
+using LightApi.Infra.InfraException;
+using LightApi.Infra.Unify;
 using LightDeploy.ClientAgent.Dto;
 using LightDeploy.ClientAgent.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Polly;
+using Serilog;
 using SevenZipExtractor;
 
 namespace LightDeploy.ClientAgent.Services;
@@ -14,17 +17,13 @@ namespace LightDeploy.ClientAgent.Services;
 public class DeployService
 {
     private readonly ILogger<DeployService> _logger;
-    private readonly IHubContext<DeployHub> _hub;
-    private string _connectionId;
 
-    public DeployService(ILogger<DeployService> logger,IHubContext<DeployHub> hub)
+    public DeployService(ILogger<DeployService> logger)
     {
         _logger = logger;
-        _hub = hub;
     }
     public async Task Deploy(DeployDto deployDto)
     {
-        _connectionId=deployDto.ConnectionId;
         var subDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tmp", Guid.NewGuid().ToString("N"));
         var backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tmp", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(subDir);
@@ -35,21 +34,21 @@ public class DeployService
             var readStream = deployDto.File.OpenReadStream();
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
             archiveFile.Extract(subDir); // extract all
-            await Log("解压完成");
+            Log.Information("解压完成");
             // 获取当前系统服务
             var services = ServiceController.GetServices();
             var service = services.FirstOrDefault(it => it.ServiceName == deployDto.ServiceName);
             if (service is null)
             {
-                await Log("服务不存在");
+                Log.Information("服务不存在");
                 throw new BusinessException("服务不存在");
 
             }
 
-            await Log("正在停止服务...");
+            Log.Information("正在停止服务...");
 
             WindowsServiceHelper.StopService(deployDto.ServiceName);
-            await Log("停止服务完成");
+            Log.Information("停止服务完成");
 
             string exePath = WindowsServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
             if (exePath == string.Empty)
@@ -58,7 +57,7 @@ public class DeployService
             _logger.LogInformation($"服务路径:{exePath}");
             exeDir = Path.GetDirectoryName(exePath)!;
 
-            await Log("开始备份文件");
+            Log.Information("开始备份文件");
 
             await Backup(exeDir, backupDir, JsonSerializer.Deserialize<List<FileInfoDto>>(deployDto.FileInfos));
 
@@ -66,37 +65,37 @@ public class DeployService
             Polly.Retry.RetryPolicy retryPolicy =
                 Policy.Handle<Exception>().WaitAndRetry(10, i => TimeSpan.FromSeconds(3), async (ex,context) =>
                 {
-                    await Log($"复制文件失败 {ex.Message} 重试次数: {retryCount++}/10");
+                    Log.Information($"复制文件失败 {ex.Message} 重试次数: {retryCount++}/10");
                 });
 
             retryPolicy.Execute(() => { CopyFilesRecursively(subDir, exeDir); });
 
             WindowsServiceHelper.StartService(deployDto.ServiceName);
             
-            await Log("启动服务完成");
+            Log.Information("启动服务完成");
 
             if (!string.IsNullOrWhiteSpace(deployDto.HealthCheckUrl))
             {
-                await Log("开始健康检查");
+                Log.Information("开始健康检查");
 
                 // 健康检查
                 var result = await HealthCheck(deployDto.HealthCheckUrl);
                 if (result == false)
                 {
-                    await Log("健康检查未通过,开始回滚");
+                    Log.Information("健康检查未通过,开始回滚");
                     WindowsServiceHelper.StopService(deployDto.ServiceName, 30000);
                     Restore(exeDir, backupDir);
                     WindowsServiceHelper.StartService(deployDto.ServiceName, 30000);
-                    await Log("健康检查回滚完成,请手动检查服务是否正常");
+                    Log.Information("健康检查回滚完成,请手动检查服务是否正常");
                     throw new BusinessException("健康检查未通过");
                 }
-                await Log("健康检查完成");
+                Log.Information("健康检查完成");
             }
 
         }
         catch (Exception e)
         {
-            await Log("发布出现未处理异常" + e.Message);
+            Log.Information("发布出现未处理异常" + e.Message);
             _logger.LogError(e,e.Message);
             throw;
         }
@@ -117,7 +116,7 @@ public class DeployService
                 var response=await deployDtoHealthCheckUrl.AllowAnyHttpStatus().WithTimeout(2).GetAsync();
                 if (response.ResponseMessage.IsSuccessStatusCode)
                 {
-                    await Log("健康检查通过,服务已启动");
+                    Log.Information("健康检查通过,服务已启动");
                     return true;
                 }
             }
@@ -126,7 +125,7 @@ public class DeployService
                 // ignored
             }
 
-            await Log($"健康检查失败,休息3秒再检查 第{i+1}次/10");
+            Log.Information($"健康检查失败,休息3秒再检查 第{i+1}次/10");
 
             await Task.Delay(3000);
         }
@@ -145,12 +144,6 @@ public class DeployService
         CopyFilesRecursively(backupDir, exeDir);
     }
 
-    private async Task Log(string message)
-    {
-        await _hub.Clients.Clients(_connectionId).SendAsync("Log", message);
-
-    }
-
     /// <summary>
     /// 备份文件
     /// </summary>
@@ -160,7 +153,7 @@ public class DeployService
     /// <exception cref="NotImplementedException"></exception>
     private async Task Backup(string exeDir, string backupDir, List<FileInfoDto> deployDtoFileInfos)
     {
-        await Log($"备份文件夹 {backupDir}");
+        Log.Information($"备份文件夹 {backupDir}");
         foreach (var deployDtoFileInfo in deployDtoFileInfos)
         {
             var filePath=Path.Combine(exeDir, deployDtoFileInfo.RelativeDirectory, deployDtoFileInfo.FileName);
@@ -168,7 +161,7 @@ public class DeployService
             if (File.Exists(filePath))
             {
                 Directory.CreateDirectory(targetDir);
-                await Log($"备份文件: {Path.Combine(targetDir, deployDtoFileInfo.FileName)}");
+                Log.Information($"备份文件: {Path.Combine(targetDir, deployDtoFileInfo.FileName)}");
                 File.Copy(filePath, Path.Combine(targetDir, deployDtoFileInfo.FileName));
             }
         }
@@ -202,7 +195,7 @@ public class DeployService
             if (exeFile is null)
             {
                 File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name));
-                Log($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}").Wait();
+                Log.Information($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
                 _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
             }
             else
@@ -210,7 +203,7 @@ public class DeployService
                
                 File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name), true);
                 _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
-                Log($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}").Wait();
+                Log.Information($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
             }
         }
     }
@@ -306,9 +299,7 @@ public class DeployService
 
     public async Task<bool> InstallWindowsService(InstallWindowsServiceDto installWindowsServiceDto)
     {
-        _connectionId=installWindowsServiceDto.ConnectionId;
-
-        await Log("开始解压文件夹");
+        Log.Information("开始解压文件夹");
 
         var targetDir = Path.GetDirectoryName(installWindowsServiceDto.ExeFullPath);
         // 查看目录下是否有文件
@@ -325,12 +316,12 @@ public class DeployService
         var readStream =  installWindowsServiceDto.File.OpenReadStream();
         using ArchiveFile archiveFile = new ArchiveFile(readStream);
         archiveFile.Extract(targetDir); // extract all
-        await Log("解压完成,开始安装");
+        Log.Information("解压完成,开始安装");
         
         // 安装服务
         var rt = ServiceInstallerHelper.NssmInstall(installWindowsServiceDto.ServiceName, installWindowsServiceDto.Params
-            , installWindowsServiceDto.ExeFullPath, "Auto", installWindowsServiceDto.ServiceDescription, async log=> await Log(log));
-        await Log("处理完成");
+            , installWindowsServiceDto.ExeFullPath, "Auto", installWindowsServiceDto.ServiceDescription, async log=> Log.Information(log));
+        Log.Information("处理完成");
         return rt;
     }
 }

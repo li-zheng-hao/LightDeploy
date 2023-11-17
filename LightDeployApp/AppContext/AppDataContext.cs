@@ -39,8 +39,9 @@ public class AppDataContext : ViewModelBase
     /// </summary>
     public bool IsIdle { get; set; } = true;
     
-    public void Log(string data)
+    public void Log(string? data)
     {
+        if(string.IsNullOrWhiteSpace(data)) return;
         lock (locker)
         {
             LogContext += data + "\n";
