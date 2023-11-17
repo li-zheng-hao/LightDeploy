@@ -189,5 +189,21 @@ namespace LightDeploy.ClientAgent
                 return e.Message;
             }
         }
+
+        public static string GetStatus(string serviceName)
+        {
+            try
+            {
+                using (var service = new ServiceController(serviceName))
+                {
+                    service.Refresh();
+                    return service.Status.ToString();
+                }
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
     }
 }

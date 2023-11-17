@@ -376,4 +376,30 @@ public class DeployService
                 
         }
     }
+
+    /// <summary>
+    /// 刷新当前选择服务对应环境的服务运行状态
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public static async Task RefreshSelectEnvironmentsStatus(string serviceName)
+    {
+        foreach (var environment in AppContext.GetAppDataContext().SelectedEnvironments)
+        {
+            try
+            {
+                var response = await $"http://{environment.Host}:{environment.Port}/api/deploy/getstatus"
+                    .WithTimeout(5)
+                    .WithHeader("Authorization", environment.AuthKey ?? "")
+                    .SetQueryParam("serviceName", serviceName)
+                    .GetStringAsync();
+                environment.ServiceStatus= response;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+          
+        }
+    }
 }

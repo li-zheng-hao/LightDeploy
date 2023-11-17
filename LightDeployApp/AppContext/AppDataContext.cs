@@ -69,4 +69,6 @@ public class SelectedEnvironment : TEnvironment
     [ColumnName("处理状态")] public string Status { get; set; } = "未部署";
 
     [ColumnName("是否需要部署")] public bool NeedDeploy { get; set; } = true;
+    
+    [ColumnName("服务运行状态")]public string ServiceStatus { get; set; }
 }

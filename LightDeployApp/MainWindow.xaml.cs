@@ -162,7 +162,7 @@ namespace LightDeployApp
           
         }
 
-        private void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
+        private async void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
         {
             if (Service.SelectedValue == null) return;
             var selectService=AppContext.GetAppDataContext().Services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
@@ -187,13 +187,14 @@ namespace LightDeployApp
                 AppContext.GetAppDataContext().SelectedEnvironments=
                    data;
             }
-
+            
             var histories = DBHelper.GetClient().Queryable<TDeployHistory>()
                 .Where(it => it.ServiceName == selectService.Name)
                 .OrderByDescending(it => it.CreateTime).ToList();
             
             
             AppContext.GetAppDataContext().DeployHistories = histories;
+            await DeployService.RefreshSelectEnvironmentsStatus(selectService.Name);
 
         }
 

@@ -1,4 +1,5 @@
 using System.Management;
+using System.ServiceProcess;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LightDeploy.ClientAgent.Dto;
@@ -126,6 +127,21 @@ public class DeployController : ControllerBase
             return BadRequest("服务不存在");
         WindowsServiceHelper.StopService(serviceName);
         return Ok();
+
+    }
+
+    /// <summary>
+    /// 获取服务状态
+    /// </summary>
+    /// <param name="serviceName"></param>
+    /// <returns></returns>
+    [HttpGet()]
+    public IActionResult GetStatus([FromQuery] string serviceName)
+    {
+        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
+        if (!exist)
+            return BadRequest("服务不存在");
+        return Ok(WindowsServiceHelper.GetStatus(serviceName));
 
     }
 }
