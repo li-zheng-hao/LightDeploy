@@ -162,7 +162,7 @@ namespace LightDeployApp
           
         }
 
-        private async void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
+        private  void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
         {
             if (Service.SelectedValue == null) return;
             var selectService=AppContext.GetAppDataContext().Services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
@@ -194,7 +194,7 @@ namespace LightDeployApp
             
             
             AppContext.GetAppDataContext().DeployHistories = histories;
-            await DeployService.RefreshSelectEnvironmentsStatus(selectService.Name);
+            Task.Run(()=>DeployService.RefreshSelectEnvironmentsStatus(selectService.Name));
 
         }
 

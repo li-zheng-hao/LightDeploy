@@ -364,8 +364,7 @@ public class DeployService
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                AppContext.Log($"【{environment.Host}】获取服务状态失败: "+e.Message);
             }
           
         }
