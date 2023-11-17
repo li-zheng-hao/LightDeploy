@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
             .WriteTo.File("logs/lightdeploy_.log"
                 , rollingInterval: RollingInterval.Day, outputTemplate: logTemplate);
         var logger = config.CreateLogger();
+        Log.Logger = logger;
         builder.Host.UseSerilog(logger, dispose: true);
         return builder;
     }

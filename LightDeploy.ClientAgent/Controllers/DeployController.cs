@@ -109,7 +109,7 @@ public class DeployController : ControllerBase
     public IActionResult StopService([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(exist,"服务不存在");
+        Check.ThrowIf(!exist,"服务不存在");
         WindowsServiceHelper.StopService(serviceName);
         return Ok();
 
@@ -124,7 +124,7 @@ public class DeployController : ControllerBase
     public IActionResult GetStatus([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(exist,"服务不存在");
+        Check.ThrowIf(!exist,"服务不存在");
         return Ok(WindowsServiceHelper.GetStatus(serviceName));
 
     }
