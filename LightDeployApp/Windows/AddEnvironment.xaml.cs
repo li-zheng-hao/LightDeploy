@@ -42,11 +42,19 @@ public partial class AddEnvironment : MetroWindow
 
     private void ButtonBase_OnClick2(object sender, RoutedEventArgs e)
     {
-        var num=DBHelper.GetClient().Deleteable<TEnvironment>()
-            .Where(it => it.Name == EnvironmentName.Text)
-            .ExecuteCommand();
-        MessageBox.Show($"删除{num}条数据");
-        AppContext.RefreshData();
+        if (int.TryParse(Id.Text,out var id))
+        {
+            var num=DBHelper.GetClient().Deleteable<TEnvironment>()
+                .Where(it => it.Id == id)
+                .ExecuteCommand();
+            MessageBox.Show($"删除{num}条数据");
+            AppContext.RefreshData();
+        }
+        else
+        {
+            MessageBox.Show("请输入编号数字");
+        }
+       
     }
 
     private void SaveClick(object sender, RoutedEventArgs e)

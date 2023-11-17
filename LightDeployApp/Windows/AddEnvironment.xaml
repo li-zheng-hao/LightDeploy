@@ -33,8 +33,18 @@
                     <TextBox Name="AuthKey" Width="200"></TextBox>
                 </StackPanel> 
                 <Button Click="ButtonBase_OnClick">新增</Button>
+              
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="删除" Margin="5" >
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Width="100">删除编号</Label>
+                    <TextBox Name="Id" Width="200"></TextBox>
+                </StackPanel> 
                 <Button Click="ButtonBase_OnClick2">删除(只需要填写环境名)</Button>
             </StackPanel>
+          
         </GroupBox>
        <GroupBox Header="修改" Margin="5">
            <StackPanel>
