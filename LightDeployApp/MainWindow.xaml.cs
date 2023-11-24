@@ -176,16 +176,17 @@ namespace LightDeployApp
             if (environments != null&&environments.Any())
             {
                 Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
-                var data=environments.Select(it =>
-                    new SelectedEnvironment()
-                    {
-                        Name = it.Name,
-                        Host = it.Host,
-                        Port = it.Port,
-                        HealthCheckUrl = it.HealthCheckUrl
-                    }).ToList();
-                AppContext.GetAppDataContext().SelectedEnvironments=
-                   data;
+                // var data=environments.Select(it =>
+                //     new SelectedEnvironment()
+                //     {
+                //         Name = it.Name,
+                //         Host = it.Host,
+                //         Port = it.Port,
+                //         HealthCheckUrl = it.HealthCheckUrl,
+                //         AuthKey = it.AuthKey
+                //     }).ToList();
+                // AppContext.GetAppDataContext().SelectedEnvironments=
+                //    data;
             }
             
             var histories = DBHelper.GetClient().Queryable<TDeployHistory>()
@@ -218,7 +219,8 @@ namespace LightDeployApp
                     Name = it.Name,
                     Host = it.Host,
                     Port = it.Port,
-                    HealthCheckUrl = it.HealthCheckUrl
+                    HealthCheckUrl = it.HealthCheckUrl,
+                    AuthKey = it.AuthKey
                 }).ToList();
             AppContext.GetAppDataContext().SelectedEnvironments=
                 data;
