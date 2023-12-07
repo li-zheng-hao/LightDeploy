@@ -114,8 +114,9 @@ namespace LightDeployApp
                     // 只保留10个
                     var histories = await DBHelper.GetClient().Queryable<TDeployHistory>().OrderByDescending(it => it.CreateTime)
                         .Take(10).ToListAsync();
-                    var oldestTime = histories.Min(it => it.CreateTime);
-                    await DBHelper.GetClient().Deleteable<TDeployHistory>(it=>it.CreateTime<oldestTime).ExecuteCommandAsync();
+                    // TODO 暂时不删除
+                    // var oldestTime = histories.Min(it => it.CreateTime);
+                    // await DBHelper.GetClient().Deleteable<TDeployHistory>(it=>it.CreateTime<oldestTime).ExecuteCommandAsync();
                 }
                 await AppContext.RefreshHistory(deployParams.ServiceName);
             }            
