@@ -101,7 +101,7 @@ public class DeployController : ControllerBase
     public IActionResult StartService([FromQuery] string serviceName)
     {
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(exist,"服务已存在");
+        Check.ThrowIf(!exist,"服务不存在");
         WindowsServiceHelper.StartService(serviceName);
         return Ok();
     }
