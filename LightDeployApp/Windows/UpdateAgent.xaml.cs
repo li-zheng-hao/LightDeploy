@@ -27,7 +27,8 @@ public partial class UpdateAgent : MetroWindow
                 Name = it.Name,
                 Port = it.Port,
                 Host = it.Host,
-                NeedDeploy = true
+                NeedDeploy = true,
+                AuthKey=it.AuthKey
             }).ToList();
     }
 
@@ -58,6 +59,7 @@ public partial class UpdateAgent : MetroWindow
             {
                 var url = $"http://{environment.Host}:{environment.Port}/api/deploy/updateself";
                 await url
+                    .WithHeader("Authorization",environment.AuthKey)
                     .PostMultipartAsync(content =>
                 {
                     content.AddFile("file", FilePath.Text);

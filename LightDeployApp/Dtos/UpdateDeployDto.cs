@@ -13,4 +13,6 @@ public class UpdateDeployDto:ViewModelBase
     
     [ColumnName("是否需要更新")]
     public bool NeedDeploy { get; set; } = true;
+    [ColumnName("AuthKey")]
+    public string? AuthKey { get; set; }
 }
