@@ -34,6 +34,7 @@
                         <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"
                                   ItemsSource="{Binding ServicesView}"
                                   SelectedValuePath="Name"
+                                  DisplayMemberPath="Name"
                                   MaxDropDownHeight="600"
                                   IsEnabled="True"
                                   >
@@ -48,7 +49,7 @@
                             </ComboBox.GroupStyle>
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Width="{Binding ActualWidth, ElementName=Service }">
+                                    <Grid MinWidth="300" >
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
