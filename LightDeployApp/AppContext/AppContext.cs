@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
@@ -28,9 +29,10 @@ public static class AppContext
         GetAppDataContext().GlobalSetting = globalSetting;
         
         GetAppDataContext().Services = _services;
+        GetAppDataContext().ServiceGroupNames = _services.Select(it => it.GroupName).Where(it=>!string.IsNullOrWhiteSpace(it)).Distinct().ToList()!;
         GetAppDataContext().Environments= _environments;
         GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();
-        GetAppDataContext().ServicesView = new ListCollectionView(_services);
+        GetAppDataContext().ServicesView = CollectionViewSource.GetDefaultView(_services);
         GetAppDataContext().ServicesView.GroupDescriptions!.Add(new PropertyGroupDescription("GroupName"));
     }
 

@@ -25,8 +25,10 @@ public class AppDataContext : ViewModelBase
 
     public List<SelectedEnvironment> SelectedEnvironments { get; set; }
 
-    public ListCollectionView ServicesView { get; set; }
-
+    public ICollectionView ServicesView { get; set; }
+    
+    public List<string> ServiceGroupNames { get; set; }
+    
     public string LogContext { get; set; }
 
     /// <summary>

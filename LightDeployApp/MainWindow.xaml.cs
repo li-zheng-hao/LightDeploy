@@ -177,17 +177,7 @@ namespace LightDeployApp
             if (environments != null&&environments.Any())
             {
                 Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
-                // var data=environments.Select(it =>
-                //     new SelectedEnvironment()
-                //     {
-                //         Name = it.Name,
-                //         Host = it.Host,
-                //         Port = it.Port,
-                //         HealthCheckUrl = it.HealthCheckUrl,
-                //         AuthKey = it.AuthKey
-                //     }).ToList();
-                // AppContext.GetAppDataContext().SelectedEnvironments=
-                //    data;
+               
             }
             
             var histories = DBHelper.GetClient().Queryable<TDeployHistory>()
@@ -334,6 +324,16 @@ namespace LightDeployApp
             if(deployParams==null) return;
             await DeployService.StopService(deployParams);
             await this.ShowMessageAsync("消息",$"停止完成");
+        }
+
+        private void SelectionServiceGroupChanged(object sender, SelectionChangedEventArgs e)
+        {
+            AppContext.GetAppDataContext().ServicesView.Filter = it =>
+            {
+                if (string.IsNullOrWhiteSpace(ServiceGroup.SelectedValue?.ToString())) return true;
+                var service = it as TService;
+                return service?.GroupName == ServiceGroup.SelectedValue.ToString();
+            };
         }
     }
 }

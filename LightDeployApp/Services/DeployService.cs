@@ -354,6 +354,8 @@ public class DeployService
     /// <exception cref="NotImplementedException"></exception>
     public static async Task RefreshSelectEnvironmentsStatus(string serviceName)
     {
+        if(AppContext.GetAppDataContext().SelectedEnvironments.IsNullOrEmpty())
+            return;
         foreach (var environment in AppContext.GetAppDataContext().SelectedEnvironments)
         {
             try

@@ -11,7 +11,7 @@
                  RenderOptions.ClearTypeHint="Enabled" 
                  TextOptions.TextFormattingMode="Display"
         Loaded="MainWindow_OnLoaded"
-                 Title="服务部署工具 by 李正浩" Width="1200" >
+                 Title="服务部署工具" Width="1200" >
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="300"></ColumnDefinition>
@@ -21,10 +21,18 @@
             <GroupBox Header="参数配置" DockPanel.Dock="Top"  Margin="5">
                 <StackPanel>
                     <StackPanel Margin="5">
+                        <Label>服务分组</Label>
+                        <ComboBox Name="ServiceGroup" SelectionChanged="SelectionServiceGroupChanged"
+                                  ItemsSource="{Binding ServiceGroupNames}"
+                                  MaxDropDownHeight="600"
+                                  IsEnabled="True"
+                        >
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Margin="5">
                         <Label>服务名</Label>
                         <ComboBox Name="Service" SelectionChanged="SelectionServiceChanged"
                                   ItemsSource="{Binding ServicesView}"
-                                  DisplayMemberPath="Name"
                                   SelectedValuePath="Name"
                                   MaxDropDownHeight="600"
                                   IsEnabled="True"
@@ -38,6 +46,20 @@
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
                             </ComboBox.GroupStyle>
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Width="{Binding ActualWidth, ElementName=Service }">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Left" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Description}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                  
+                                  
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Margin="5">
