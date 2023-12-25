@@ -47,20 +47,24 @@
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
                             </ComboBox.GroupStyle>
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid MinWidth="300" >
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Left" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Description}" HorizontalAlignment="Right" />
-                                    </Grid>
-                                  
-                                  
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource  MahApps.Styles.ComboBoxItem}">
+                                    <Setter Property="ContentTemplate">
+                                        <Setter.Value>
+                                            <DataTemplate>
+                                                <Grid MinWidth="300">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Left" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Description}" HorizontalAlignment="Right" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Margin="5">
