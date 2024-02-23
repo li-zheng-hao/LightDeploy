@@ -21,6 +21,16 @@
             <GroupBox Header="参数配置" DockPanel.Dock="Top"  Margin="5">
                 <StackPanel>
                     <StackPanel Margin="5">
+                        <Label>环境</Label>
+                        <ComboBox Name="Environment" 
+                                  SelectionChanged="DevelopEnvironment_OnSelectionChanged"
+                                  ItemsSource="{Binding Environments}"
+                                  MaxDropDownHeight="600"
+                                  IsEnabled="True"
+                        >
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Margin="5">
                         <Label>服务分组</Label>
                         <ComboBox Name="ServiceGroup" SelectionChanged="SelectionServiceGroupChanged"
                                   ItemsSource="{Binding ServiceGroupNames}"
@@ -67,9 +77,9 @@
                             </ComboBox.ItemContainerStyle>
                         </ComboBox>
                     </StackPanel>
-                    <StackPanel Margin="5">
-                        <Label>环境</Label>
-                        <ComboBox Name="Environment" ItemsSource="{Binding EnvironmentNames}"
+                    <StackPanel Margin="5" Visibility="Collapsed">
+                        <Label>目标</Label>
+                        <ComboBox Name="Target" ItemsSource="{Binding EnvironmentNames}"
                                   MaxDropDownHeight="600"
                                   SelectionChanged="Environment_OnSelectionChanged">
                         </ComboBox>
@@ -98,7 +108,7 @@
                             <ColumnDefinition></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <Button Click="EditEnvironmentClick" Margin="5">配置环境</Button>
+                            <Button Click="EditEnvironmentClick" Margin="5">配置目标</Button>
                             <Button Click="EditService" Margin="5">配置服务</Button>
                             <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
                             <Button Click="RefreshClick" Margin="5">刷新配置</Button>
@@ -120,7 +130,7 @@
         
         <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
             <DockPanel>
-                <Label DockPanel.Dock="Top">选择的环境</Label>
+                <Label DockPanel.Dock="Top">发布目标</Label>
                 <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" MinHeight="50" MaxHeight="150" DockPanel.Dock="Top">
                   
                 </DataGrid>

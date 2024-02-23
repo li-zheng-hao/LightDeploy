@@ -21,7 +21,7 @@ public partial class UpdateAgent : MetroWindow
     public UpdateAgent()
     {
         InitializeComponent();
-        this.DataContext = AppContext.GetAppDataContext().Environments.DistinctBy(it=>it.Host)
+        this.DataContext = AppContext.GetAppDataContext().Targets.DistinctBy(it=>it.Host)
             .Select(it=>new UpdateDeployDto()
             {
                 Name = it.Name,

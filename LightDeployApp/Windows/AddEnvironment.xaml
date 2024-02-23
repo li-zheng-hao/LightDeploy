@@ -13,7 +13,7 @@
         <GroupBox Header="新增" Margin="5">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="5">
-                    <Label Width="70">环境名称</Label>
+                    <Label Width="70">服务名称</Label>
                     <TextBox Name="EnvironmentName" Width="200"></TextBox>
                 </StackPanel> 
                 <StackPanel Orientation="Horizontal" Margin="5">
@@ -48,7 +48,7 @@
         </GroupBox>
        <GroupBox Header="修改" Margin="5">
            <StackPanel>
-               <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" RowEditEnding="DataGrid_OnRowEditEnding" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Environments,Mode=TwoWay}" Height="200">
+               <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" RowEditEnding="DataGrid_OnRowEditEnding" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Targets,Mode=TwoWay}" Height="200">
                </DataGrid>
                <Button Click="SaveClick">保存</Button>
            </StackPanel>

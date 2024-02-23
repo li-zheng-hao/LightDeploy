@@ -62,5 +62,12 @@ public class TService:ViewModelBase
     [ColumnName("服务描述")]
     [SugarColumn(IsNullable = true)]
     public string? Description { get; set; }
+    
+    /// <summary>
+    /// 环境名称
+    /// </summary>
+    [ColumnName("环境名称")]
+    [SugarColumn(IsNullable = true)]
+    public string? EnvironmentName { get; set; }
 
 }

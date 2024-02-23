@@ -19,7 +19,7 @@ public class AppDataContext : ViewModelBase
     public List<TService> Services { get; set; }
 
     public List<TDeployHistory> DeployHistories { get; set; }
-    public List<TEnvironment> Environments { get; set; }
+    public List<TEnvironment> Targets { get; set; }
 
     public List<string> EnvironmentNames { get; set; }
 
@@ -28,6 +28,8 @@ public class AppDataContext : ViewModelBase
     public ICollectionView ServicesView { get; set; }
     
     public List<string> ServiceGroupNames { get; set; }
+    
+    public List<string> Environments { get; set; }
     
     public string LogContext { get; set; }
 

@@ -24,10 +24,6 @@
                     <Label Width="70">服务名称</Label>
                     <TextBox Name="Service" Width="200"></TextBox>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="5">
-                    <Label>默认环境名称</Label>
-                    <TextBox Name="Environment" Width="200"></TextBox>
-                </StackPanel>
                 <Label>发布方式</Label>
                 <ComboBox Name="DeployMode">
                     <ComboBoxItem IsSelected="True">项目</ComboBoxItem>

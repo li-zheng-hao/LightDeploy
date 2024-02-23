@@ -13,7 +13,9 @@ using LightDeployApp.Windows;
 using LightDeployApp.Windows.Dialogs;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
+using Masuit.Tools;
 using Microsoft.Extensions.DependencyInjection;
+using SqlSugar;
 using MessageBox = System.Windows.MessageBox;
 
 namespace LightDeployApp
@@ -30,7 +32,7 @@ namespace LightDeployApp
             IServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<AppDataContext>();
             AppContext.ServiceProvider=serviceCollection.BuildServiceProvider();
-         
+          
 
         }
 
@@ -138,6 +140,15 @@ namespace LightDeployApp
         private void RefreshData()
         {
             AppContext.RefreshData();
+            AppContext.GetAppDataContext().ServicesView.Filter = it =>
+            {
+                var service = it as TService;
+                var data=new List<TService>(){service};
+                return data.WhereIf(!string.IsNullOrWhiteSpace(ServiceGroup.SelectedValue?.ToString()),
+                        it => it.GroupName == ServiceGroup.SelectedValue?.ToString())
+                    .WhereIf(!string.IsNullOrWhiteSpace(Environment.SelectedValue?.ToString()), it => it.EnvironmentName == Environment.SelectedValue!.ToString())
+                    .Any();
+            };
         }
 
         private void SelectDirClick(object sender, RoutedEventArgs e)
@@ -173,10 +184,10 @@ namespace LightDeployApp
             TargetPath.Text = selectService?.DefaultTargetPath;
             SelfContained.IsChecked=selectService?.IsSelfContained;
             EnableHealthCheck.IsChecked = selectService.EnableHealthCheck;
-            var environments = AppContext.GetAppDataContext().Environments.Where(it => it.Name == selectService!.DefaultEnvironment).ToList();
+            var environments = AppContext.GetAppDataContext().Targets.Where(it => it.Name == selectService!.DefaultEnvironment).ToList();
             if (environments != null&&environments.Any())
             {
-                Environment.SelectedIndex = AppContext.GetAppDataContext().Environments.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
+                Target.SelectedIndex = AppContext.GetAppDataContext().Targets.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
                
             }
             
@@ -203,7 +214,7 @@ namespace LightDeployApp
 
         private void Environment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           var currents=AppContext.GetAppDataContext().Environments.Where(it => it.Name == Environment.SelectedValue.ToString()).ToList();
+           var currents=AppContext.GetAppDataContext().Targets.Where(it => it.Name == Target.SelectedValue.ToString()).ToList();
             var data= currents.Select(it =>
                 new SelectedEnvironment()
                 {
@@ -278,7 +289,7 @@ namespace LightDeployApp
         {
             AppContext.GetAppDataContext().LogContext=string.Empty;
             var deployParams= new DeployParams();
-            deployParams.Environment = Environment.Text;
+            deployParams.Environment = Target.Text;
             deployParams.ServiceName = Service.Text;
             deployParams.TargetPath = TargetPath.Text;
             deployParams.IsSelfContained = SelfContained.IsChecked==true;
@@ -328,12 +339,13 @@ namespace LightDeployApp
 
         private void SelectionServiceGroupChanged(object sender, SelectionChangedEventArgs e)
         {
-            AppContext.GetAppDataContext().ServicesView.Filter = it =>
-            {
-                if (string.IsNullOrWhiteSpace(ServiceGroup.SelectedValue?.ToString())) return true;
-                var service = it as TService;
-                return service?.GroupName == ServiceGroup.SelectedValue.ToString();
-            };
+            AppContext.GetAppDataContext().ServicesView.Refresh();
+        }
+
+
+        private void DevelopEnvironment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            AppContext.GetAppDataContext().ServicesView.Refresh();
         }
     }
 }

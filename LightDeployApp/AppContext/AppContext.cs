@@ -30,10 +30,11 @@ public static class AppContext
         
         GetAppDataContext().Services = _services;
         GetAppDataContext().ServiceGroupNames = _services.Select(it => it.GroupName).Where(it=>!string.IsNullOrWhiteSpace(it)).Distinct().ToList()!;
-        GetAppDataContext().Environments= _environments;
+        GetAppDataContext().Targets= _environments;
         GetAppDataContext().EnvironmentNames= _environments.Select(it=>it.Name).Distinct().ToList();
         GetAppDataContext().ServicesView = CollectionViewSource.GetDefaultView(_services);
         GetAppDataContext().ServicesView.GroupDescriptions!.Add(new PropertyGroupDescription("GroupName"));
+        GetAppDataContext().Environments = _services.Where(it=>!string.IsNullOrWhiteSpace(it.EnvironmentName)).Select(it => it.EnvironmentName!).Distinct().ToList() ;
     }
 
     public static async Task RefreshHistory(string deployParamsServiceName)

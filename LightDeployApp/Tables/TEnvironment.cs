@@ -5,14 +5,18 @@ using SqlSugar;
 
 namespace LightDeployApp.Tables;
 
+/// <summary>
+/// 发布环境
+/// </summary>
 public class TEnvironment:ViewModelBase
 {
     [ColumnName("编号")]
     [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
     public int Id { get; set; }
     
-    [ColumnName("环境名称")]
+    [ColumnName("服务名称")]
     public string Name { get; set; }
+    
     [ColumnName("主机")]
     public string Host { get; set; }
     [ColumnName("端口")]
