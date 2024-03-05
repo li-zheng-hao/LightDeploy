@@ -14,6 +14,7 @@ public partial class AddEnvironment : MetroWindow
     public AddEnvironment()
     {
         InitializeComponent();
+        AppContext.RefreshData();
         this.DataContext = AppContext.GetAppDataContext();
     }
 

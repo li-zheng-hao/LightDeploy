@@ -16,6 +16,7 @@ public partial class AddService : MetroWindow
     public AddService()
     {
         InitializeComponent();
+        AppContext.RefreshData();
         this.DataContext = AppContext.GetAppDataContext();
     }
 
