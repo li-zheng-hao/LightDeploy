@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Input;
 using LightDeployApp.Tables;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
@@ -18,9 +19,10 @@ public partial class AddService : MetroWindow
         InitializeComponent();
         AppContext.RefreshData();
         this.DataContext = AppContext.GetAppDataContext();
+       
     }
 
-    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+    private void Add_OnClick(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(Service.Text))
         {
@@ -38,9 +40,13 @@ public partial class AddService : MetroWindow
             DefaultEnvironment=Service.Text,
             EnableHealthCheck = EnableHealthCheck.IsChecked??false
         };
-       
-        DBHelper.GetClient().Deleteable<TService>(it=>it.Name==service.Name).ExecuteCommand();
-
+        var exist=DBHelper.GetClient().Queryable<TService>()
+            .Any(it => it.Name == service.Name && it.EnvironmentName == service.EnvironmentName);
+        if (exist)
+        {
+            this.ShowMessageAsync("消息", "已存在服务名、环境相同的服务");
+            return;
+        }
         DBHelper.GetClient().Insertable(service).ExecuteCommand();
         AppContext.RefreshData();
 
@@ -114,5 +120,20 @@ public partial class AddService : MetroWindow
         var service = e.Row.Item as TService;
         if (service == null) return;
         EditedServices.Add(service);
+    }
+
+   
+
+    private void EditEnvironmentClick(object sender, RoutedEventArgs e)
+    {
+        var service = ServiceGrid.SelectedItem as TService;
+        if (service == null)
+        {
+            this.ShowMessageAsync("错误", "未选择对应的服务");
+            return;
+        }
+
+        var addEnvironment = new AddEnvironment(service);
+        addEnvironment.ShowDialog();
     }
 }

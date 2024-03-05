@@ -88,7 +88,7 @@ public class DeployService
 
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested == true) return false;
 
-            calculateNeedDeployFiles ??=await  agentHttpService.Compare(currentFileInfos, deployParams.ServiceName,
+            calculateNeedDeployFiles ??=await  agentHttpService.Compare(currentFileInfos, deployParams.Service.Name,
                 AppContext.GetAppDataContext().StopToken?.Token??default);
             AppContext.GetAppDataContext().Log($"对比文件信息耗时:{sw.ElapsedMilliseconds}ms");
             
@@ -102,7 +102,8 @@ public class DeployService
                 AppContext.GetAppDataContext().Log($"无需部署{environment.Host}:{environment.Port}");
 
                 selectedEnvironments.First(it => it.Host == environment.Host).Status = "部署完成";
-                return false;
+                
+                continue;
             }
 
             if (AppContext.GetAppDataContext().StopToken?.IsCancellationRequested == true) return false;
@@ -117,7 +118,7 @@ public class DeployService
 
             try
             {
-                var result=await agentHttpService.Upload(memoryStream, deployParams.ServiceName, calculateNeedDeployFiles);
+                var result=await agentHttpService.Upload(memoryStream, deployParams.Service.Name, calculateNeedDeployFiles);
                 if(!result)
                     return false;
             }
@@ -138,7 +139,7 @@ public class DeployService
 
         if (deployParams.EnableNotify&&!string.IsNullOrWhiteSpace(AppContext.GetAppDataContext().GlobalSetting.QiyeWeChatKey))
         {
-            var description = AppContext.GetAppDataContext().Services.First(it => it.Name == deployParams.ServiceName).Description;
+            var description = AppContext.GetAppDataContext().Services.First(it => it.Id == deployParams.Service.Id).Description;
             if (string.IsNullOrWhiteSpace(description))
                 return true;
             string msg = $"# LightDeploy部署 \n" +
@@ -270,7 +271,7 @@ public class DeployService
                         .PostMultipartAsync(mp =>
                         {
                             mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
-                            mp.AddString("ServiceName", deployParams.ServiceName);
+                            mp.AddString("ServiceName", deployParams.Service.Name);
                             mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
                             mp.AddString("Params", serviceParams.ServiceParams ?? "");
                             mp.AddString("ExeFullPath", serviceParams.ServiceExe ?? "");
@@ -319,7 +320,7 @@ public class DeployService
             try
             {
                 await using var agentService = new AgentHttpService(environment);
-                await agentService.StartService(deployParams.ServiceName);
+                await agentService.StartService(deployParams.Service.Name);
             }
             catch (Exception e)
             {
@@ -338,7 +339,7 @@ public class DeployService
             try
             {
                 await using var agentService = new AgentHttpService(environment);
-                await agentService.StopService(deployParams.ServiceName);
+                await agentService.StopService(deployParams.Service.Name);
             }
             catch (Exception e)
             {

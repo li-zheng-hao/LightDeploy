@@ -77,13 +77,6 @@
                             </ComboBox.ItemContainerStyle>
                         </ComboBox>
                     </StackPanel>
-                    <StackPanel Margin="5" Visibility="Collapsed">
-                        <Label>目标</Label>
-                        <ComboBox Name="Target" ItemsSource="{Binding EnvironmentNames}"
-                                  MaxDropDownHeight="600"
-                                  SelectionChanged="Environment_OnSelectionChanged">
-                        </ComboBox>
-                    </StackPanel>
                     <StackPanel Margin="5">
                         <Label>发布方式</Label>
                         <ComboBox Name="DeployMode">
@@ -108,7 +101,6 @@
                             <ColumnDefinition></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <Button Click="EditEnvironmentClick" Margin="5">配置目标</Button>
                             <Button Click="EditService" Margin="5">配置服务</Button>
                             <Button Click="UpdateAgent" Margin="5">更新Agent</Button>
                             <Button Click="RefreshClick" Margin="5">刷新配置</Button>
@@ -131,7 +123,8 @@
         <GroupBox Header="监控台" Margin="5" Grid.Column="1" >
             <DockPanel>
                 <Label DockPanel.Dock="Top">发布目标</Label>
-                <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments}" CanUserAddRows="False" MinHeight="50" MaxHeight="150" DockPanel.Dock="Top">
+                <DataGrid Name="DataGridSelectEnvironment" AutoGeneratingColumn="DataGridSelectEnvironment_OnAutoGeneratingColumn" ItemsSource="{Binding SelectedEnvironments,Mode=TwoWay}" 
+                          CanUserAddRows="False" MinHeight="50" MaxHeight="150" DockPanel.Dock="Top">
                   
                 </DataGrid>
                 <Label DockPanel.Dock="Top">发布历史</Label>

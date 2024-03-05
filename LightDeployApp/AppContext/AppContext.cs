@@ -37,10 +37,10 @@ public static class AppContext
         GetAppDataContext().Environments = _services.Where(it=>!string.IsNullOrWhiteSpace(it.EnvironmentName)).Select(it => it.EnvironmentName!).Distinct().ToList() ;
     }
 
-    public static async Task RefreshHistory(string deployParamsServiceName)
+    public static async Task RefreshHistory(int id)
     {
         var data=await DBHelper.GetClient().Queryable<TDeployHistory>()
-            .Where(it => it.ServiceName == deployParamsServiceName)
+            .Where(it => it.ServiceId == id)
             .OrderByDescending(it => it.CreateTime)
             .ToListAsync();
         GetAppDataContext().DeployHistories = data;

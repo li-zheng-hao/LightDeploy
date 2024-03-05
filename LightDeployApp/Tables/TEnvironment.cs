@@ -35,6 +35,13 @@ public class TEnvironment:ViewModelBase
     [ColumnName("认证Token")]
     [SugarColumn(IsNullable = true)]
     public string? AuthKey { get; set; }
+    
+    /// <summary>
+    /// 服务Id
+    /// </summary>
+    [ColumnName("服务ID")]
+    [SugarColumn(IsNullable = true)]
+    public int? ServiceId { get; set; }
 
     
 }

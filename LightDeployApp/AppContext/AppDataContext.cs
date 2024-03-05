@@ -23,12 +23,18 @@ public class AppDataContext : ViewModelBase
 
     public List<string> EnvironmentNames { get; set; }
 
-    public List<SelectedEnvironment> SelectedEnvironments { get; set; }
+    public ObservableCollection<SelectedEnvironment>? SelectedEnvironments { get; set; }
 
+    /// <summary>
+    /// 服务
+    /// </summary>
     public ICollectionView ServicesView { get; set; }
     
     public List<string> ServiceGroupNames { get; set; }
     
+    /// <summary>
+    /// 环境  测试 开发 预览 生产等
+    /// </summary>
     public List<string> Environments { get; set; }
     
     public string LogContext { get; set; }

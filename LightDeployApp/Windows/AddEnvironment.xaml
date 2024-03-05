@@ -48,9 +48,10 @@
         </GroupBox>
        <GroupBox Header="修改" Margin="5">
            <StackPanel>
-               <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" RowEditEnding="DataGrid_OnRowEditEnding" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Targets,Mode=TwoWay}" Height="400">
+               <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" RowEditEnding="DataGrid_OnRowEditEnding" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Environments,Mode=TwoWay}" Height="400">
                </DataGrid>
                <Button Click="SaveClick">保存</Button>
+               <Button Click="UpGradeClick">初始化旧版未带服务ID的目标</Button>
            </StackPanel>
        </GroupBox>
         

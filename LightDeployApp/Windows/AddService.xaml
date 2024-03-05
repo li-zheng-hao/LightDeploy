@@ -35,16 +35,20 @@
                 <Label>编译参数</Label>
                 <CheckBox Margin="0 5" Name="SelfContained" Content="包含运行环境"></CheckBox>
                 <CheckBox Margin="0 5" Name="EnableHealthCheck" Content="开启健康检查(部署完成后进行健康检查)"></CheckBox>
-                <Button Click="ButtonBase_OnClick">新增</Button>
+                <Button Click="Add_OnClick">新增</Button>
                 <Button Click="ButtonBase_OnClick2">删除</Button>
             </StackPanel>
 
         </GroupBox>
         <GroupBox Grid.Row="1" Header="修改" Margin="5">
             <StackPanel>
-                <DataGrid AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" CanUserAddRows="False" VerticalScrollBarVisibility="Auto" ItemsSource="{Binding Services,Mode=TwoWay}" RowEditEnding="DataGrid_OnRowEditEnding" Height="400">
+                <DataGrid 
+                    Name="ServiceGrid"
+                    AutoGeneratingColumn="DataGrid_OnAutoGeneratingColumn" CanUserAddRows="False" VerticalScrollBarVisibility="Auto"
+                          ItemsSource="{Binding Services,Mode=TwoWay}" RowEditEnding="DataGrid_OnRowEditEnding" Height="400">
                 </DataGrid>
                 <Button Click="SaveClick">保存</Button>
+                <Button Click="EditEnvironmentClick">编辑服务目标</Button>
             </StackPanel>
         </GroupBox>
     </Grid>

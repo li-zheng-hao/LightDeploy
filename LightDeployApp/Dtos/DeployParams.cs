@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using LightDeployApp.Tables;
 
 namespace LightDeployApp;
 
@@ -12,12 +13,12 @@ public class DeployParams
     /// <summary>
     /// 服务名
     /// </summary>
-    public string ServiceName { get; set; }
+    public TService Service { get; set; }
     
     /// <summary>
-    /// 环境名
+    /// 需要发布的环境
     /// </summary>
-    public string Environment { get; set; }
+    public List<TEnvironment> Environments { get; set; }
     
     /// <summary>
     /// 

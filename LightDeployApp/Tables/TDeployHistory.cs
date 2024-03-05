@@ -25,6 +25,10 @@ public class TDeployHistory:ViewModelBase
     [ColumnName("服务名称")]
     public string ServiceName { get; set; }
     
+    [ColumnName("服务编号")]
+    [SugarColumn(IsNullable = true)]
+    public int? ServiceId { get; set; }
+    
     [ColumnName("部署环境")]
     [SugarColumn(IsNullable = true)]
     public string? EnvironmentInfo { get; set; }

@@ -13,6 +13,7 @@ using LightDeployApp.Windows;
 using LightDeployApp.Windows.Dialogs;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
+using Mapster;
 using Masuit.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
@@ -36,20 +37,13 @@ namespace LightDeployApp
 
         }
 
-        private void EditEnvironmentClick(object sender, RoutedEventArgs e)
-        {
-            var addEnvironment = new AddEnvironment();
-            addEnvironment.Show();
-            addEnvironment.Closed+= (o, args) => { RefreshData(); };
-        }
-
         private async void DeployClick(object sender, RoutedEventArgs e)
         {
             var deployParams=GetDeployParams();
         
             if(deployParams==null)return;
             
-            if (deployParams.ServiceName.Contains("prod", StringComparison.OrdinalIgnoreCase))
+            if (deployParams.Service.Name.Contains("prod", StringComparison.OrdinalIgnoreCase))
             {
                 var result=await this.ShowMessageAsync("警告","请确认是否部署到生产环境!!!!!!",MessageDialogStyle.AffirmativeAndNegative);
                 if (result != MessageDialogResult.Affirmative)
@@ -60,7 +54,7 @@ namespace LightDeployApp
             }
             string remark = string.Empty;
             
-            if (AppContext.GetAppDataContext().Services.First(it => it.Name == deployParams.ServiceName).EnableNotify==true)
+            if (AppContext.GetAppDataContext().Services.First(it => it.Id == deployParams.Service.Id).EnableNotify==true)
             {
                 var notifyDialog = new ShowNotifyDialog();
                 notifyDialog.Notify+=str =>
@@ -106,12 +100,13 @@ namespace LightDeployApp
                     CreateTime = DateTime.Now,
                     DeployFilesDir = TargetPath.Text,
                     Remark = remark,
-                    ServiceName = deployParams.ServiceName,
+                    ServiceName = deployParams.Service.Name,
+                    ServiceId = deployParams.Service.Id,
                     EnvironmentInfo =string.Join( ",",AppContext.GetAppDataContext().SelectedEnvironments
                         .Where(it=>it.NeedDeploy).Select(it=>$"{it.Host}"))
                 };
                 await DBHelper.GetClient().Insertable(history).ExecuteCommandAsync();
-                if (await DBHelper.GetClient().Queryable<TDeployHistory>().Where(it=>it.ServiceName==deployParams.ServiceName).CountAsync() > 10)
+                if (await DBHelper.GetClient().Queryable<TDeployHistory>().Where(it=>it.ServiceId==deployParams.Service.Id).CountAsync() > 10)
                 {
                     // 只保留10个
                     var histories = await DBHelper.GetClient().Queryable<TDeployHistory>().OrderByDescending(it => it.CreateTime)
@@ -120,7 +115,7 @@ namespace LightDeployApp
                     // var oldestTime = histories.Min(it => it.CreateTime);
                     // await DBHelper.GetClient().Deleteable<TDeployHistory>(it=>it.CreateTime<oldestTime).ExecuteCommandAsync();
                 }
-                await AppContext.RefreshHistory(deployParams.ServiceName);
+                await AppContext.RefreshHistory(deployParams.Service.Id);
             }            
             
             AppContext.GetAppDataContext().StopDeploy(true);
@@ -176,25 +171,26 @@ namespace LightDeployApp
 
         private  void SelectionServiceChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (Service.SelectedValue == null) return;
-            var selectService=AppContext.GetAppDataContext().Services.FirstOrDefault(it => it.Name == Service.SelectedValue.ToString());
+            var selectService=Service.SelectedItem as TService;
+            AppContext.GetAppDataContext().SelectedEnvironments?.Clear();
             if (selectService == null) return;
 
             DeployMode.SelectedIndex = selectService?.DefaultMode == 0 ? 0 : 1;
-            TargetPath.Text = selectService?.DefaultTargetPath;
+            TargetPath.Text = selectService?.DefaultTargetPath??"";
             SelfContained.IsChecked=selectService?.IsSelfContained;
-            EnableHealthCheck.IsChecked = selectService.EnableHealthCheck;
-            var environments = AppContext.GetAppDataContext().Targets.Where(it => it.Name == selectService!.DefaultEnvironment).ToList();
-            if (environments != null&&environments.Any())
+            EnableHealthCheck.IsChecked = selectService!.EnableHealthCheck;
+           
+            var environments = AppContext.GetAppDataContext().Targets.Where(it => it.ServiceId == selectService!.Id).ToList();
+            if (environments.Any())
             {
-                Target.SelectedIndex = AppContext.GetAppDataContext().Targets.Select(it=>it.Name).Distinct().ToList().IndexOf(environments.First().Name);
-               
+                AppContext.GetAppDataContext().SelectedEnvironments = new ObservableCollection<SelectedEnvironment>();
+                var selectedEnvironments = environments.Adapt<List<SelectedEnvironment>>();
+                    AppContext.GetAppDataContext().SelectedEnvironments.AddRange(selectedEnvironments);
             }
             
             var histories = DBHelper.GetClient().Queryable<TDeployHistory>()
-                .Where(it => it.ServiceName == selectService.Name)
+                .Where(it => it.ServiceId == selectService.Id)
                 .OrderByDescending(it => it.CreateTime).ToList();
-            
             
             AppContext.GetAppDataContext().DeployHistories = histories;
             Task.Run(()=>DeployService.RefreshSelectEnvironmentsStatus(selectService.Name));
@@ -210,22 +206,6 @@ namespace LightDeployApp
         {
             var updateAgent = new UpdateAgent();
             updateAgent.Show();
-        }
-
-        private void Environment_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-           var currents=AppContext.GetAppDataContext().Targets.Where(it => it.Name == Target.SelectedValue.ToString()).ToList();
-            var data= currents.Select(it =>
-                new SelectedEnvironment()
-                {
-                    Name = it.Name,
-                    Host = it.Host,
-                    Port = it.Port,
-                    HealthCheckUrl = it.HealthCheckUrl,
-                    AuthKey = it.AuthKey
-                }).ToList();
-            AppContext.GetAppDataContext().SelectedEnvironments=
-                data;
         }
 
         private async void RefreshClick(object sender, RoutedEventArgs e)
@@ -288,22 +268,16 @@ namespace LightDeployApp
         private DeployParams? GetDeployParams()
         {
             AppContext.GetAppDataContext().LogContext=string.Empty;
-            var deployParams= new DeployParams();
-            deployParams.Environment = Target.Text;
-            deployParams.ServiceName = Service.Text;
-            deployParams.TargetPath = TargetPath.Text;
-            deployParams.IsSelfContained = SelfContained.IsChecked==true;
-            deployParams.EnableHealthCheck = EnableHealthCheck.IsChecked==true;
-            deployParams.BuildMode = DeployMode.Text == "项目" ? 0 : 1;
-            
-            if(string.IsNullOrWhiteSpace(deployParams.Environment))
+            var deployParams= new DeployParams
             {
-                this.ShowMessageAsync("消息",$"请选择环境");
+                Service = Service.SelectedItem as TService,
+                TargetPath = TargetPath.Text,
+                IsSelfContained = SelfContained.IsChecked==true,
+                EnableHealthCheck = EnableHealthCheck.IsChecked==true,
+                BuildMode = DeployMode.Text == "项目" ? 0 : 1
+            };
 
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(deployParams.ServiceName))
+            if (deployParams.Service==null)
             {
                 this.ShowMessageAsync("消息",$"请选择服务");
 
