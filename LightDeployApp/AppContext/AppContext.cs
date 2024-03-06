@@ -20,6 +20,8 @@ public static class AppContext
     {
         var _services = DBHelper.GetClient()
             .Queryable<TService>()
+            .OrderBy(it=>it.GroupName)
+            .OrderBy(it=>it.Name)
             .ToList();
             
         var _environments= DBHelper.GetClient()
