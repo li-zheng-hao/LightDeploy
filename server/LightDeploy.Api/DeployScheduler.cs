@@ -26,6 +26,7 @@ public class DeployScheduler:BackgroundService
 
                 if (_deployContext.NeedDeploy())
                 {
+                    Log.Information("开始执行任务");
                     try
                     {
                         if(_deployContext.TaskType==DeployTaskType.Install)
@@ -56,7 +57,6 @@ public class DeployScheduler:BackgroundService
                 }
                 else
                 {
-                    Log.Debug("无任务执行，休息");
                     await Task.Delay(2000, stoppingToken);
                 }
             }
