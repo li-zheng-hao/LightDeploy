@@ -26,20 +26,32 @@ public class DeployScheduler:BackgroundService
 
                 if (_deployContext.NeedDeploy())
                 {
-                    if(_deployContext.TaskType==DeployTaskType.Install)
-                        await Install();
-                    else if(_deployContext.TaskType==DeployTaskType.Deploy)
-                        await Deploy();
-                    else if(_deployContext.TaskType==DeployTaskType.UpdateAgent)
+                    try
                     {
-                        await UpdateAgent();
+                        if(_deployContext.TaskType==DeployTaskType.Install)
+                            await Install();
+                        else if(_deployContext.TaskType==DeployTaskType.Deploy)
+                            await Deploy();
+                        else if(_deployContext.TaskType==DeployTaskType.UpdateAgent)
+                        {
+                            await UpdateAgent();
+                        }
+                        else
+                        {
+                            Log.Warning("未知的任务类型");
+                        }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        Log.Warning("未知的任务类型");
+                        Log.Error(e, e.Message);
+                        await _notifyService.NotifyMessageToUser($"部署失败 {e.Message}");
                     }
+                    finally
+                    {
+                        _deployContext.Release();
+                    }
+                  
                     
-                    _deployContext.Release();
 
                 }
                 else

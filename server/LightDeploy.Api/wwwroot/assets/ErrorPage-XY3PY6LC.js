@@ -1,0 +1,1 @@
+import{T as e}from"./TabPage-7jt19OsU.js";import{d as a,O as t,P as r,X as o,S as s}from"./index-1XSuJy-d.js";import"./_plugin-vue_export-helper-x3n3nnut.js";const i=a({__name:"ErrorPage",setup(n){return(c,p)=>(t(),r(e,null,{default:o(()=>[s(" 系统错误 ")]),_:1}))}});export{i as default};

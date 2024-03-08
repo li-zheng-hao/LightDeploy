@@ -221,6 +221,7 @@ async function changeService(val) {
   }))
   deployTargets.value.forEach(it => checkedRowKeysRef.value.push(it.id))
 
+  
   deployHistory.value = (await apiClient.request({
     url: '/history/query',
     method: 'get',
@@ -228,6 +229,8 @@ async function changeService(val) {
       serviceId: val
     }
   }))
+
+  checkedRowKeysRef.value = deployTargets.value.map(it => it.id)
 }
 
 function deployService() {

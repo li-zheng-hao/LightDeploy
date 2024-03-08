@@ -40,8 +40,14 @@ onMounted(()=>{
     method: 'get',
 
   }).then(res => {
-    deployTargets.value = res
-    checkedRowKeysRef.value = res.map(it => it.id)
+    const items=[]
+    res.forEach(it=>{
+      if(items.findIndex(i=>i.host===it.host)===-1){
+        items.push(it)
+      }
+    })
+    deployTargets.value = items
+    checkedRowKeysRef.value = items.map(it => it.id)
   })
 })
 
