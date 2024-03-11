@@ -11,7 +11,6 @@ public static class SpaNoCacheMiddleware
             
             c.Response.OnStarting(() =>
             {
-                Console.WriteLine(c.Response.ContentType);
                 // html不缓存
                 if(c.Response.ContentType?.Contains("text/html")??false)
                     c.Response.Headers.Add("Cache-Control", "no-store,no-cache,must-revalidate");

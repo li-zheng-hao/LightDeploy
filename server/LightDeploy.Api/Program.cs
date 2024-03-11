@@ -9,6 +9,7 @@ using LightApi.Infra.DependencyInjections;
 using LightApi.Infra.Helper;
 using LightDeploy.Api;
 using LightDeploy.Core.Middleware;
+using LightDeploy.Core.Sse;
 using LightDeploy.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.FileProviders;
@@ -66,7 +67,6 @@ try
 
     builder.Services.AddHostedService<DeployScheduler>();
     builder.Services.AddHostedService<BrowserStartTask>();
-    
     // sse支持    
     builder.Services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(
         opt =>
@@ -76,7 +76,8 @@ try
             opt.KeepaliveMode = ServerSentEventsKeepaliveMode.Always;
 
         });
-
+    builder.Services.AddServerSentEventsClientIdProvider<NewGuidServerSentEventsClientIdProvider>();
+    builder.Services.AddInMemoryServerSentEventsNoReconnectClientsIdsStore();
 
     // MVC配置
     builder.Services.AddMvcSetup(); 
@@ -151,6 +152,18 @@ try
 
     #endregion
 
+    // 程序停止时断开所有sse连接
+    app.Lifetime.ApplicationStopping.Register(() =>
+    {
+        INotificationsServerSentEventsService sse = app.Services.GetRequiredService<INotificationsServerSentEventsService>();
+        List<Task> tasks = new();
+        foreach (var serverSentEventsClient in sse.GetClients())
+        {
+            tasks.Add(serverSentEventsClient.DisconnectAsync());
+        }
+        Task.WaitAll(tasks.ToArray());
+    });
+    
     app.MapFallbackToFile("/index.html");
     app.Run();
 }
