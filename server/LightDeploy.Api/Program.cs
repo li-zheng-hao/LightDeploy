@@ -8,6 +8,7 @@ using LightApi.Infra;
 using LightApi.Infra.DependencyInjections;
 using LightApi.Infra.Helper;
 using LightDeploy.Api;
+using LightDeploy.Core.Middleware;
 using LightDeploy.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.FileProviders;
@@ -119,8 +120,12 @@ try
            
         });
     }
+    // spa缓存
+    app.UseSpaNoCacheMiddleware();
+
     app.UseFileServer();
    
+
     // 基础框架
     app.UseInfrastructure();
 
@@ -130,6 +135,7 @@ try
 
     app.UseCors();
 
+    
     app.UseAuthorization();
 
     app.UseHttpMetrics();
