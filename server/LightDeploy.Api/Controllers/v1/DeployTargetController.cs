@@ -23,7 +23,21 @@ public class DeployTargetController : ControllerBase
         _logger = logger;
         _deployTargetService = deployTargetService;
     }
-    
+
+    /// <summary>
+    /// 获取服务状态
+    /// </summary>
+    /// <param name="targetId"></param>
+    /// <param name="serviceName"></param>
+    /// <returns></returns>
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus([FromQuery] int targetId)
+    {
+        var deployTarget =await _deployTargetService.Repository.AsQueryable().Where(it=>it.Id==targetId)
+            .Includes(it=>it.Service).FirstAsync();
+        var status = await _deployTargetService.GetServiceStatus(deployTarget);
+        return Ok(status);
+    }
     /// <summary>
     /// 查询发布目标
     /// </summary>

@@ -207,4 +207,19 @@ public class AgentService : ITransientDependency, IAsyncDisposable
             await _notifyService.NotifyMessageToUser($"返回消息 {body}");
         }
     }
+
+    public async Task<string?> GetStatus(string serviceName)
+    {
+        var response = await GetHttpClient("api/deploy/getstatus")
+            .WithTimeout(3)
+            .SetQueryParam("serviceName", serviceName)
+            .GetJsonAsync<UnifyResult<string>>();
+        if (response.success)
+        {
+            return response.data??string.Empty;
+        }
+
+        await _notifyService.NotifyMessageToUser(response.msg??"获取状态失败");
+        return null;
+    }
 }

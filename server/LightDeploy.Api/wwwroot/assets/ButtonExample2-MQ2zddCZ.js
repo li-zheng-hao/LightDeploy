@@ -1,1 +1,0 @@
-import{T as a}from"./TabPage-7jt19OsU.js";import{d as o,O as n,P as s,X as e,W as _,R as r,S as c,a6 as l}from"./index-1XSuJy-d.js";import"./_plugin-vue_export-helper-x3n3nnut.js";const x=o({__name:"ButtonExample2",setup(p){return(u,m)=>{const t=l;return n(),s(a,null,{default:e(()=>[_("div",null,[r(t,null,{default:e(()=>[c("Example2")]),_:1})])]),_:1})}}});export{x as default};
