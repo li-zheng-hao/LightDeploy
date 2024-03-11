@@ -2,7 +2,7 @@
 import axios from 'axios'
 import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { handleHttpError } from './httpErrorHandler'
-import {deepClone, deepMerge} from '@/utils'
+import { deepClone, deepMerge } from '@/utils'
 import { handleBusinessError } from '@/api/client/businessErrorHandler'
 import { useJwt } from './jwtAuth'
 import { generateRequestKey } from './helper'
@@ -57,18 +57,18 @@ export class ApiClient {
   /**
    * 基础配置，url和超时时间
    */
-  baseConfig: AxiosRequestConfig = { baseURL: '/api', timeout: 60000 ,
+  baseConfig: AxiosRequestConfig = {
+    baseURL: '/api',
+    timeout: 60000,
     // 处理query参数中的数组 变成a[]=1&a[]=2导致后端无法解析的问题
-    paramsSerializer: params => {
+    paramsSerializer: (params) => {
       return qs.stringify(params)
     }
   }
   /**
    * 默认请求配置
    */
-  defaultRequestConfig: RequestConfig = {
-
-  }
+  defaultRequestConfig: RequestConfig = {}
 
   constructor(config: AxiosRequestConfig, requestConfig?: RequestConfig) {
     this.defaultRequestConfig = Object.assign(this.defaultRequestConfig, requestConfig ?? {})
@@ -92,7 +92,7 @@ export class ApiClient {
     // );
 
     this.axiosInstance.interceptors.response.use(undefined, (err: AxiosError) => {
-      handleHttpError(err.response)
+      handleHttpError(err as any)
       return Promise.reject(err)
     })
   }
@@ -118,7 +118,7 @@ export class ApiClient {
     // 使用idmp请求
     if (targetConfig.useIdmp) {
       requestKey ??= generateRequestKey(config)
-      let result=await idmp(
+      let result = await idmp(
         requestKey,
         () => this.internalRequest<T>(config, targetConfig),
         targetConfig.idmpOptions ?? undefined
@@ -139,20 +139,19 @@ export class ApiClient {
    */
   private internalRequest<T>(config: AxiosRequestConfig, requestConfig: RequestConfig): Promise<T> {
     return new Promise((resolve, reject) => {
-      this.axiosInstance
-        .request<any, AxiosResponse<ApiResult<T>>>(config)
-        .then(
-          (res: AxiosResponse<ApiResult<T>>) => {
-            if(res.data===null||res.data===undefined||res.data==='') return resolve(null)
-
-            if (!res.data.success) handleBusinessError(res.data, requestConfig)
-            if (res.data.success && requestConfig.unwrapResult) return resolve(res.data.data)
-            else if (requestConfig?.returnRawAxiosResponse) return resolve(res as any)
-            else return resolve(res.data as any)
-          },
-          (err) => reject(err)
-        )
-        .catch((err) => reject(err))
+      this.axiosInstance.request<any, AxiosResponse<ApiResult<T>>>(config).then(
+        (res: AxiosResponse<ApiResult<T>>) => {
+          if (res.data === null || res.data === undefined || res.data == '')
+            return resolve(res as any)
+          if (res.data?.success===false) {
+            const err=handleBusinessError(res.data, requestConfig)
+            if(err) reject(err)
+          }
+          if (res.data.success===true && requestConfig.unwrapResult) return resolve(res.data.data)
+          else if (requestConfig?.returnRawAxiosResponse) return resolve(res as any)
+          else return resolve(res.data as any)
+        }
+      )
     })
   }
 }

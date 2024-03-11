@@ -3,7 +3,7 @@ import { isEmpty } from "@/utils/common/isEmpty";
 import type { AxiosResponse } from "axios";
 
 export function handleHttpError(error: AxiosResponse | undefined) {
-
+    debugger
     if (!error) return
     // 这里用来处理http常见错误，进行全局提示
     let message = "";
@@ -42,9 +42,6 @@ export function handleHttpError(error: AxiosResponse | undefined) {
             break;
         case 505:
             message = "HTTP版本不受支持(505)";
-            break;
-        case 200:
-            message = error.data.msg;
             break;
         default:
             message = `操作失败(${error.status})`;

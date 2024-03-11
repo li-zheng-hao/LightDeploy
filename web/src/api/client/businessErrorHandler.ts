@@ -7,10 +7,9 @@ import type {ApiResult, RequestConfig} from "@/api/client/apiClient";
  */
 export function handleBusinessError(apiResult: ApiResult<any> , requestConfig:RequestConfig) {
 
-
-    if(apiResult?.msg.length>0&&requestConfig.showError) {
+    if(apiResult?.msg?.length>0&&requestConfig.showError) {
         window['$message'].error(`${apiResult.msg}`, { duration: 6000, closable: true })
     }
     if(requestConfig.throwBusinessError)
-        throw new Error(apiResult?.msg??"操作失败")
+        return new Error(apiResult?.msg??"操作失败")
 }
