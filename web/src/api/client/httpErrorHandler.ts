@@ -3,7 +3,6 @@ import { isEmpty } from "@/utils/common/isEmpty";
 import type { AxiosResponse } from "axios";
 
 export function handleHttpError(error: AxiosResponse | undefined) {
-    debugger
     if (!error) return
     // 这里用来处理http常见错误，进行全局提示
     let message = "";

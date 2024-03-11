@@ -92,7 +92,7 @@ export class ApiClient {
     // );
 
     this.axiosInstance.interceptors.response.use(undefined, (err: AxiosError) => {
-      handleHttpError(err as any)
+      handleHttpError(err.response)
       return Promise.reject(err)
     })
   }
