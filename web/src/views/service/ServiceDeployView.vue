@@ -12,7 +12,7 @@
             <n-select v-model:value="serviceFilters.groupName" :options="groupNameOptions"
                       @update-value="changeGroupName"></n-select>
             <div>服务名：</div>
-            <n-select v-model:value="serviceFilters.deployServiceId" :options="serviceOptions"
+            <n-select v-model:value="serviceFilters.deployServiceId" :options="serviceOptions" :consistent-menu-width="false"
                       @update-value="changeService"></n-select>
             <n-button @click="showDeployModal=true" type="primary" style="margin-top: 10px">部署服务</n-button>
             <n-button @click="showInstallModal=true">安装服务</n-button>
