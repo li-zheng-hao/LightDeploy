@@ -107,6 +107,10 @@ const deployTargetsColumns = [
     type: 'selection'
   },
   {
+    title:"状态",
+    key:'status'
+  },
+  {
     title: '编号',
     key: 'id'
   },
@@ -219,7 +223,17 @@ async function changeService(val) {
       serviceId: val
     }
   }))
-  deployTargets.value.forEach(it => checkedRowKeysRef.value.push(it.id))
+  deployTargets.value.forEach(it => {checkedRowKeysRef.value.push(it.id)
+    apiClient.request({
+      url: '/target/status',
+      method: 'get',
+      params:{
+        targetId:it.id
+      }
+    }).then(res=>{
+      it.status=res
+    })
+  })
 
   
   deployHistory.value = (await apiClient.request({
