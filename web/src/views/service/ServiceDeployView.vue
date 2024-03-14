@@ -162,10 +162,13 @@ const environmentsOptions = ref([])
 const groupNameOptions = ref([])
 const serviceOptions = ref([])
 onMounted(async () => {
-  services.value = await apiClient.request<DeployServiceDto[]>({
+  const resp=await apiClient.request<DeployServiceDto[]>({
     url: '/service/query',
     method: 'get'
   })
+  // resp根据name字段排序
+  resp.sort((a, b) => a.name.localeCompare(b.name))
+  services.value = resp
   environmentsOptions.value = await getEnvironments()
   serviceOptions.value = services.value.map(it => ({ label: `${it.name}  ${it.description}`, value: it.id }))
   let groupNames = services.value.map(it => it.groupName)
