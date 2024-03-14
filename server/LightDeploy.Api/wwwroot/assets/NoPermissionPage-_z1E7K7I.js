@@ -1,1 +1,0 @@
-import{T as e}from"./TabPage-l_kLhg_1.js";import{d as a,O as t,P as o,X as r,S as s}from"./index-mJUAFJoQ.js";import"./_plugin-vue_export-helper-x3n3nnut.js";const f=a({__name:"NoPermissionPage",setup(n){return(c,m)=>(t(),o(e,null,{default:r(()=>[s(" 403页面 ")]),_:1}))}});export{f as default};

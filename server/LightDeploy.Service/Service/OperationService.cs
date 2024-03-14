@@ -86,6 +86,8 @@ public class OperationService : IScopedDependency, ISugarTable
 
         foreach (var deployTarget in targets)
         {
+
+            await _notifyService.NotifyMessageToUser($"-------开始处理【{deployTarget.Host}】------------");
             using var scope = App.ServiceProvider.CreateScope();
             
             var agentService = scope.ServiceProvider.GetRequiredService<AgentService>();
@@ -112,6 +114,8 @@ public class OperationService : IScopedDependency, ISugarTable
             
             await agentService.Upload(memoryStream, deployTarget.Service.Name, needCopiedFiles);
 
+            
+            await _notifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
         }
     }
  
