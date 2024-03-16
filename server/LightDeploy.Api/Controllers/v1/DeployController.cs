@@ -2,7 +2,9 @@
 using LightDeploy.Domain;
 using LightDeploy.Service;
 using LightDeploy.Service.Dto;
+using Masuit.Tools;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 namespace LightDeploy.Api.Controllers;
 
@@ -52,6 +54,7 @@ public class DeployController : ControllerBase
     [HttpPost("install")]
     public IActionResult Install([FromQuery] List<int> targetIds,[FromBody]InstallServiceRequest request,[FromServices]DeployContext deployContext)
     {
+        Log.Information($"安装参数{request.ToJsonString()}");
         Check.NotNullOrEmpty(targetIds, "发布目标不能为空");
         Check.ThrowIf(deployContext.IsDeploying,"正在执行操作中，请稍后再试");
         deployContext.ScheduleToInstall(targetIds,request);

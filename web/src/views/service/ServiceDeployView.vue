@@ -78,7 +78,7 @@
       <div class="flex gap-4 flex-col">
         <n-input placeholder="服务安装目录" v-model:value="installParams.targetDir"></n-input>
         <n-input placeholder="可执行程序(相对安装目录)" v-model:value="installParams.exePath"></n-input>
-        <n-input placeholder="执行参数" v-model:value="installParams.exePrams"></n-input>
+        <n-input placeholder="执行参数" v-model:value="installParams.exeParams"></n-input>
         <n-input placeholder="服务描述" v-model:value="installParams.description"></n-input>
         <n-button @click="installService">开始安装</n-button>
       </div>
@@ -304,7 +304,7 @@ function clearLog() {
 const showInstallModal=ref(false)
 const installParams=ref({
   targetDir:'',
-  exePrams:'',
+  exeParams:'',
   exePath:'',
   description:'',
 
