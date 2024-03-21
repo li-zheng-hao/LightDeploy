@@ -1,7 +1,9 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using CliWrap;
 using Flurl.Http;
 using LightApi.Infra;
+using LightApi.Infra.Extension;
 using LightApi.SqlSugar;
 using LightDeploy.Core.Autofac;
 using LightDeploy.Core.Helper;
@@ -96,6 +98,7 @@ public class OperationService : IScopedDependency, ISugarTable
             
             var needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
 
+          
             if (needCopiedFiles.IsNullOrEmpty())
             {
                 await _notifyService.NotifyMessageToUser($"{deployTarget.Host}:{deployTarget.Port}无需更新,跳过");
@@ -104,6 +107,19 @@ public class OperationService : IScopedDependency, ISugarTable
             }
             else
             {
+                if (service.IgnoreRules.IsNotNullOrWhiteSpace())
+                {
+                    await _notifyService.NotifyMessageToUser($"正则表达式匹配开始忽略文件，匹配规则:{service.IgnoreRules}");
+
+                    var ignoreRules = service.IgnoreRules!.Split(new[] {'|'});
+
+                    // 正则表达式匹配过滤
+                    needCopiedFiles = needCopiedFiles!.Where(it =>
+                    {
+                        return !ignoreRules.Any(rule => Regex.IsMatch(Path.Combine(it.RelativeDirectory,it.FileName), rule));
+                    }).ToList();
+                }
+                
                 foreach (var needCopiedFile in needCopiedFiles!)
                 {
                     await _notifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");

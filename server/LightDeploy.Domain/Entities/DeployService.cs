@@ -66,4 +66,10 @@ public class DeployService:ISugarTable
     /// </summary>
     [SugarColumn(IsNullable = true)]
     public int? Port { get; set; }
+    
+    /// <summary>
+    /// 忽略规则 正则表达式 用|分隔多个规则
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public string? IgnoreRules { get; set; }
 }
