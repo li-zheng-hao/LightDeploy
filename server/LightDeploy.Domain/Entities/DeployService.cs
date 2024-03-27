@@ -72,4 +72,16 @@ public class DeployService:ISugarTable
     /// </summary>
     [SugarColumn(IsNullable = true)]
     public string? IgnoreRules { get; set; }
+    
+    /// <summary>
+    /// 发布目标文件夹 不填则通过服务名找目标文件夹
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public string? TargetDir { get; set; }
+    
+    /// <summary>
+    /// 是否仅复制文件，不启动和停止服务
+    /// </summary>
+    [SugarColumn(IsNullable = true)]
+    public bool? OnlyCopyFiles { get; set; }
 }

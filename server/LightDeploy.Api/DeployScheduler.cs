@@ -2,6 +2,7 @@
 using LightApi.Infra.Extension;
 using LightDeploy.Domain.Consts;
 using LightDeploy.Service;
+using LightDeploy.Service.Dto;
 using Serilog;
 
 namespace LightDeploy.Api;
@@ -71,6 +72,7 @@ public class DeployScheduler:BackgroundService
         }
        
     }
+
 
     /// <summary>
     /// 更新客户端

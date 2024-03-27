@@ -100,7 +100,7 @@ public class AgentService : ITransientDependency, IAsyncDisposable
     /// <param name="calculateNeedDeployFiles"></param>
     /// <returns></returns>
     public async Task<bool> Upload(Stream memoryStream, string serviceName,
-        List<FileHelper.FileInfoDto> calculateNeedDeployFiles)
+        List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles)
     {
         var response = await GetHttpClient("api/deploy/deploy")
             .PostMultipartAsync(mp =>
@@ -108,6 +108,8 @@ public class AgentService : ITransientDependency, IAsyncDisposable
                 mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
                 mp.AddString("ServiceName", serviceName);
                 mp.AddJson("FileInfos", calculateNeedDeployFiles);
+                mp.AddString("TargetDir", targetDir);
+                mp.AddString("OnlyCopyFiles", onlyCopyFiles.ToString());
                 mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
                 mp.AddString("HealthCheckUrl",
                     _target.Service!.EnableHealthCheck && _target.HealthCheckUrl.IsNotNullOrWhiteSpace()
@@ -221,5 +223,24 @@ public class AgentService : ITransientDependency, IAsyncDisposable
 
         await _notifyService.NotifyMessageToUser(response.msg??"获取状态失败");
         return null;
+    }
+
+
+    public async Task<List<FileHelper.FileInfoDto>> CompareInDir(List<FileHelper.FileInfoDto> currentFileInfos, string targetDir)
+    {
+        var result = await GetHttpClient("api/deploy/comparedir")
+            .SetQueryParam("targetDir", targetDir)
+            .PostJsonAsync(currentFileInfos)
+            .ReceiveJson<UnifyResult<List<FileHelper.FileInfoDto>>>();
+        
+        if (result.success)
+        {
+            return result.data;
+        }
+        else
+        {
+            await _notifyService.NotifyMessageToUser(result.msg);
+            return null;
+        }
     }
 }

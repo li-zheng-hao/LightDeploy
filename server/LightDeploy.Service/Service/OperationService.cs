@@ -95,8 +95,14 @@ public class OperationService : IScopedDependency, ISugarTable
             var agentService = scope.ServiceProvider.GetRequiredService<AgentService>();
             
             await agentService.InitTargetConnection(deployTarget);
-            
-            var needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
+
+            List<FileHelper.FileInfoDto>? needCopiedFiles = null;
+            if (service.TargetDir.IsNotNullOrWhiteSpace())
+            {
+                needCopiedFiles=await agentService.CompareInDir(currentFileInfos, service.TargetDir);
+
+            }else
+                 needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
 
           
             if (needCopiedFiles.IsNullOrEmpty())
@@ -128,7 +134,7 @@ public class OperationService : IScopedDependency, ISugarTable
 
             var memoryStream = CreateZipFile(needCopiedFiles);
             
-            await agentService.Upload(memoryStream, deployTarget.Service.Name, needCopiedFiles);
+            await agentService.Upload(memoryStream, deployTarget.Service.Name, needCopiedFiles,service.TargetDir??"",service.OnlyCopyFiles??false);
 
             
             await _notifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");

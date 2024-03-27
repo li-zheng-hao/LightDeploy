@@ -35,7 +35,20 @@ public class DeployController : ControllerBase
        
         return Ok();
     }
-
+    
+    /// <summary>
+    /// 和目录比较文件
+    /// </summary>
+    /// <param name="targetDir"></param>
+    /// <param name="fileInfoDtos"></param>
+    /// <returns></returns>
+    [HttpPost()]
+    public IActionResult CompareDir([FromQuery] string targetDir,[FromBody] List<FileInfoDto> fileInfoDtos)
+    {
+        List<FileInfoDto> newFileInfos = _deployService.CompareFileInfosInDir(targetDir,fileInfoDtos);
+        return Ok(newFileInfos);
+    }
+    
     [HttpPost()]
     public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileInfoDto> fileInfoDtos)
     {

@@ -31,6 +31,8 @@ public class DeployContext:ISingletonDependency
         TaskType = deployTaskType;
         return true;
     }
+    
+  
     public bool ScheduleToInstall(List<int> targetIds,InstallServiceRequest request)
     {
         if (IsDeploying) return false;

@@ -24,13 +24,6 @@ public class DeployController : ControllerBase
         _deployTargetService = deployTargetService;
     }
 
-    [HttpPost("send")]
-    public async Task<IActionResult> Test([FromServices] NotifyService notifyService)
-    {
-        await notifyService.NotifyMessageToUser("测试发送");
-        return Ok();
-    }
-
     /// <summary>
     /// 部署服务 发布更新
     /// </summary>

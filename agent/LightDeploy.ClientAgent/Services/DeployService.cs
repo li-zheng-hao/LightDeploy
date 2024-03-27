@@ -1,8 +1,10 @@
 ﻿using System.Management;
+using System.Net;
 using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text.Json;
 using Flurl.Http;
+using LightApi.Infra.Extension;
 using LightApi.Infra.InfraException;
 using LightApi.Infra.Unify;
 using LightDeploy.ClientAgent.Dto;
@@ -35,27 +37,35 @@ public class DeployService
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
             archiveFile.Extract(subDir); // extract all
             Log.Information("解压完成");
-            // 获取当前系统服务
-            var services = ServiceController.GetServices();
-            var service = services.FirstOrDefault(it => it.ServiceName == deployDto.ServiceName);
-            if (service is null)
+            if (deployDto.TargetDir.IsNullOrWhiteSpace()&&deployDto.OnlyCopyFiles==true)
             {
-                Log.Information("服务不存在");
-                throw new BusinessException("服务不存在");
+                // 获取当前系统服务
+                var services = ServiceController.GetServices();
+                var service = services.FirstOrDefault(it => it.ServiceName == deployDto.ServiceName);
+                if (service is null)
+                {
+                    Log.Information("服务不存在");
+                    throw new BusinessException("服务不存在");
 
+                }
+                
+                Log.Information("正在停止服务...");
+
+                WindowsServiceHelper.StopService(deployDto.ServiceName);
+                Log.Information("停止服务完成");
+                
+                string exePath = WindowsServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
+                if (exePath == string.Empty)
+                    throw new BusinessException("服务路径不存在");
+
+                _logger.LogInformation($"服务路径:{exePath}");
+                exeDir = Path.GetDirectoryName(exePath)!;
             }
-
-            Log.Information("正在停止服务...");
-
-            WindowsServiceHelper.StopService(deployDto.ServiceName);
-            Log.Information("停止服务完成");
-
-            string exePath = WindowsServiceHelper.GetWindowsServiceLocation(deployDto.ServiceName);
-            if (exePath == string.Empty)
-                throw new BusinessException("服务路径不存在");
-
-            _logger.LogInformation($"服务路径:{exePath}");
-            exeDir = Path.GetDirectoryName(exePath)!;
+            else
+            {
+                exeDir = deployDto.TargetDir!;
+            }
+           
 
             Log.Information("开始备份文件");
 
@@ -70,10 +80,13 @@ public class DeployService
 
             retryPolicy.Execute(() => { CopyFilesRecursively(subDir, exeDir); });
 
-            WindowsServiceHelper.StartService(deployDto.ServiceName);
+            if (deployDto.OnlyCopyFiles != true)
+            {
+                WindowsServiceHelper.StartService(deployDto.ServiceName);
             
-            Log.Information("启动服务完成");
-
+                Log.Information("启动服务完成");
+            }
+            
             if (!string.IsNullOrWhiteSpace(deployDto.HealthCheckUrl))
             {
                 Log.Information("开始健康检查");
@@ -272,6 +285,39 @@ public class DeployService
         return result;
 
     }
+    
+    public List<FileInfoDto> CompareFileInfosInDir(string dir, List<FileInfoDto> fileInfoDtos)
+    {
+        if (!Directory.Exists(dir))
+        {
+            throw new BusinessException("目录不存在");
+        }
+        
+        List<FileInfoDto> result = new();
+        foreach (var fileInfoDto in fileInfoDtos)
+        {
+            var filePath=Path.Combine(dir, fileInfoDto.RelativeDirectory, fileInfoDto.FileName);
+            if (!File.Exists(filePath))
+            {
+                result.Add(fileInfoDto);
+            }
+            else
+            {
+                FileInfo fileInfo=new FileInfo(filePath);
+                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime<fileInfoDto.LastWriteTime)
+                {
+                    result.Add(fileInfoDto);
+                }                
+                // var md5=GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
+                // if (md5!=fileInfoDto.MD5 )
+                // {
+                // result.Add(fileInfoDto);
+                // }
+            }
+        }
+        return result;
+
+    }
     /// <summary>
     /// 计算文件MD5
     /// </summary>
@@ -324,4 +370,6 @@ public class DeployService
         Log.Information("处理完成");
         return rt;
     }
+
+    
 }

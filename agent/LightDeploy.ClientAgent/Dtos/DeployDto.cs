@@ -32,4 +32,14 @@ public class DeployDto
     /// </summary>
     public string ConnectionId { get; set; }
     
+    /// <summary>
+    /// 目标文件夹 如果填了这个则不会通过ServiceName来找目标文件夹
+    /// </summary>
+    public string? TargetDir { get; set; }
+    
+    /// <summary>
+    /// 是否仅复制文件，不启动和停止服务
+    /// </summary>
+    public bool? OnlyCopyFiles { get; set; }
+    
 }

@@ -73,4 +73,10 @@ public class DeployServiceDto
     [NotNullOrEmptyEx]
     [RangeEx(3000, 65535, ErrorMessage = "端口范围为3000-65535")]
     public int? Port { get; set; }
+    
+    /// <summary>
+    /// 是否只拷贝文件，不启动和停止服务
+    /// </summary>
+    [Display(Name = "是否只拷贝文件")]
+    public bool? OnlyCopyFile { get; set; }
 }
