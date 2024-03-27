@@ -37,7 +37,7 @@ public class DeployService
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
             archiveFile.Extract(subDir); // extract all
             Log.Information("解压完成");
-            if (deployDto.TargetDir.IsNullOrWhiteSpace()&&deployDto.OnlyCopyFiles==true)
+            if (deployDto.TargetDir.IsNullOrWhiteSpace()&&deployDto.OnlyCopyFiles!=true)
             {
                 // 获取当前系统服务
                 var services = ServiceController.GetServices();
@@ -108,7 +108,7 @@ public class DeployService
         }
         catch (Exception e)
         {
-            Log.Information("发布出现未处理异常" + e.Message);
+            Log.Error(e,"发布出现未处理异常" + e.Message +e.StackTrace);
             _logger.LogError(e,e.Message);
             throw;
         }

@@ -79,4 +79,9 @@ public class DeployServiceDto
     /// </summary>
     [Display(Name = "是否只拷贝文件")]
     public bool? OnlyCopyFile { get; set; }
+    
+    /// <summary>
+    /// 发布目标文件夹 不填则通过服务名找目标文件夹
+    /// </summary>
+    public string? TargetDir { get; set; }
 }
