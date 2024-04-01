@@ -216,8 +216,12 @@ public class OperationService : IScopedDependency, ISugarTable
                     await _notifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
                 }
 
+            await _notifyService.NotifyMessageToUser($"开始制作安装包");
+
             var memoryStream = CreateZipFile(currentFileInfos);
             
+            await _notifyService.NotifyMessageToUser($"开始上传安装包，开始安装");
+
             await agentService.Install(memoryStream, deployTarget,service,request);
 
         }

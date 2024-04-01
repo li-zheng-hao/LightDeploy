@@ -47,8 +47,8 @@
         <template #unchecked> 关闭健康检查</template>
       </n-switch>
       <n-input placeholder="服务端口" v-model:value="newItem.port"></n-input>
-      <n-input placeholder="目标文件夹(可为空)" v-model:value="data.targetDir"></n-input>
-      <n-switch v-model:value="data.onlyCopyFile">
+      <n-input placeholder="目标文件夹(可为空)" v-model:value="newItem.targetDir"></n-input>
+      <n-switch v-model:value="newItem.onlyCopyFile">
         <template #checked> 仅拷贝文件,不重启服务</template>
         <template #unchecked> 拷贝文件并重启服务</template>
       </n-switch>

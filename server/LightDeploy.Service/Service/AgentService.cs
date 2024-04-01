@@ -103,6 +103,7 @@ public class AgentService : ITransientDependency, IAsyncDisposable
         List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles)
     {
         var response = await GetHttpClient("api/deploy/deploy")
+            .WithTimeout(TimeSpan.FromMinutes(5))
             .PostMultipartAsync(mp =>
             {
                 mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
@@ -177,6 +178,7 @@ public class AgentService : ITransientDependency, IAsyncDisposable
         InstallServiceRequest request)
     {
         var resp = await GetHttpClient("api/deploy/installwindowsservice")
+            .WithTimeout(TimeSpan.FromMinutes(5))
             .PostMultipartAsync(mp =>
             {
                 mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
