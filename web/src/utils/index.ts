@@ -13,24 +13,13 @@ export function deepMerge<T = any>(src: any = {}, target: any = {}): T {
  * 深拷贝一个对象
  * @param source
  */
-export function deepClone(source) {
+export function deepClone(source:any) {
+
     // Prevent undefined objects
     if (!source) return source;
 
-    let bObject = Array.isArray(source) ? [] : {};
+    return JSON.parse(JSON.stringify(source));
 
-    let value;
-    for (const key in source) {
-
-        // Prevent self-references to parent object
-        // if (Object.is(aObject[key], aObject)) continue;
-
-        value = source[key];
-
-        bObject[key] = (typeof value === "object") ? deepClone(value) : value;
-    }
-
-    return bObject;
 }
 
 /**

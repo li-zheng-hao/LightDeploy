@@ -12,7 +12,7 @@
             <n-select v-model:value="serviceFilters.groupName" :options="groupNameOptions"
                       @update-value="changeGroupName"></n-select>
             <div>服务名：</div>
-            <n-select v-model:value="serviceFilters.deployServiceId" :options="serviceOptions"
+            <n-select v-model:value="serviceFilters.deployServiceId" :options="serviceOptions" :consistent-menu-width="false"
                       @update-value="changeService"></n-select>
             <n-button @click="showDeployModal=true" type="primary" style="margin-top: 10px">部署服务</n-button>
             <n-button @click="showInstallModal=true">安装服务</n-button>
@@ -95,6 +95,7 @@ import { apiClient } from '@/api/client/apiClient'
 import type { DeployTargetDto } from '@/dtos/deployTargetDto'
 import { getEnvironments } from '@/api/service/dicService'
 import { distinct } from '@/utils'
+import { throttle } from '@/utils/common/throttle'
 
 const services = ref<DeployServiceDto[]>([])
 const deployTargets = ref<DeployTargetDto[]>([])
@@ -105,6 +106,10 @@ const checkedRowKeysRef = ref<Array<string | number>>([])
 const deployTargetsColumns = [
   {
     type: 'selection'
+  },
+  {
+    title: '状态',
+    key: 'status'
   },
   {
     title: '编号',
@@ -171,15 +176,17 @@ onMounted(async () => {
 
 //#region sse
 
-let sseClient=null
+let sseClient :EventSource|null=null
 const logScrollBar=ref(null)
 onMounted(()=>{
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
     deployLogs.value.push(e.data)
-    nextTick(()=>{
+    throttle(()=>{
+      nextTick(()=>{
       logScrollBar.value?.scrollBy(0,200)
-    })
+      })
+    },1000)
   }
 })
 onUnmounted(() => {
@@ -221,11 +228,28 @@ async function changeService(val) {
   }))
   deployTargets.value.forEach(it => checkedRowKeysRef.value.push(it.id))
 
+  updateDeployHistory(val);
+  updateStatus();
+}
+
+function updateStatus() {
+  deployTargets.value.forEach(async it=>{
+    var res=await apiClient.request({
+      url:'/target/status',
+      method:'get',
+      params:{
+        targetId:it.id
+      }
+    })
+    it.status=res
+  })
+}
+async function updateDeployHistory(serviceId:number|null) {
   deployHistory.value = (await apiClient.request({
     url: '/history/query',
     method: 'get',
     params: {
-      serviceId: val
+      serviceId: serviceId
     }
   }))
 }
@@ -242,7 +266,7 @@ function deployService() {
       deployComment:deployComment.value
     }
   })
-
+  updateDeployHistory(serviceFilters.value.deployServiceId);
 }
 
 function installService() {
