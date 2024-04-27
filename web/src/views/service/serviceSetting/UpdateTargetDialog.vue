@@ -15,7 +15,9 @@
       <n-input placeholder="权限认证Key" v-model:value="target.authKey"></n-input>
       <n-button type="primary" @click="addClick">新增</n-button>
     </div>
+    <n-scrollbar style="max-height: 55vh;margin-top: 10px;">
     <n-data-table :data="targets" :columns="columns"/>
+  </n-scrollbar>
   </n-modal>
 </template>
 

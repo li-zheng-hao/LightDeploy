@@ -25,4 +25,6 @@ export interface DeployTargetDto {
    * 服务Id
    */
   serviceId?: number | null |undefined; // 使用 number | null 表示可以为 null 的数字类型
+
+  status?:string|null|undefined;// 状态
 }

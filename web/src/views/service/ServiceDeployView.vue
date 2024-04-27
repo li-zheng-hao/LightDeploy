@@ -95,6 +95,7 @@ import { apiClient } from '@/api/client/apiClient'
 import type { DeployTargetDto } from '@/dtos/deployTargetDto'
 import { getEnvironments } from '@/api/service/dicService'
 import { distinct } from '@/utils'
+import { throttle } from '@/utils/common/throttle'
 
 const services = ref<DeployServiceDto[]>([])
 const deployTargets = ref<DeployTargetDto[]>([])
@@ -107,8 +108,8 @@ const deployTargetsColumns = [
     type: 'selection'
   },
   {
-    title:"状态",
-    key:'status'
+    title: '状态',
+    key: 'status'
   },
   {
     title: '编号',
@@ -178,15 +179,17 @@ onMounted(async () => {
 
 //#region sse
 
-let sseClient=null
+let sseClient :EventSource|null=null
 const logScrollBar=ref(null)
 onMounted(()=>{
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
     deployLogs.value.push(e.data)
-    nextTick(()=>{
+    throttle(()=>{
+      nextTick(()=>{
       logScrollBar.value?.scrollBy(0,200)
-    })
+      })
+    },1000)
   }
 })
 onUnmounted(() => {
@@ -238,12 +241,28 @@ async function changeService(val) {
     })
   })
 
-  
+  updateDeployHistory(val);
+  updateStatus();
+}
+
+function updateStatus() {
+  deployTargets.value.forEach(async it=>{
+    var res=await apiClient.request({
+      url:'/target/status',
+      method:'get',
+      params:{
+        targetId:it.id
+      }
+    })
+    it.status=res
+  })
+}
+async function updateDeployHistory(serviceId:number|null) {
   deployHistory.value = (await apiClient.request({
     url: '/history/query',
     method: 'get',
     params: {
-      serviceId: val
+      serviceId: serviceId
     }
   }))
 
@@ -262,7 +281,7 @@ function deployService() {
       deployComment:deployComment.value
     }
   })
-
+  updateDeployHistory(serviceFilters.value.deployServiceId);
 }
 
 function installService() {
