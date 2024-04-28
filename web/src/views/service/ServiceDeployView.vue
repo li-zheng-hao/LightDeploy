@@ -181,15 +181,17 @@ onMounted(async () => {
 
 let sseClient :EventSource|null=null
 const logScrollBar=ref(null)
+
+let logMessage=throttle(()=>{
+      console.log('trigger');
+      logScrollBar.value?.scrollBy(0,200)
+    },1000)
+
 onMounted(()=>{
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
     deployLogs.value.push(e.data)
-    throttle(()=>{
-      nextTick(()=>{
-      logScrollBar.value?.scrollBy(0,200)
-      })
-    },1000)
+    logMessage()
   }
 })
 onUnmounted(() => {
