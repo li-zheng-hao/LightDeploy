@@ -6,13 +6,13 @@
           <div class="flex flex-col gap-2">
 
             <div>环境：</div>
-            <n-select v-model:value="serviceFilters.environment" :options="environmentsOptions"
+            <n-select v-model:value="deployData.environment" :options="environmentsOptions"
                       @update-value="changeEnvironment"></n-select>
             <div>服务分组：</div>
-            <n-select v-model:value="serviceFilters.groupName" :options="groupNameOptions"
+            <n-select v-model:value="deployData.groupName" :options="groupNameOptions"
                       @update-value="changeGroupName"></n-select>
             <div>服务名：</div>
-            <n-select v-model:value="serviceFilters.deployServiceId" :options="serviceOptions" :consistent-menu-width="false"
+            <n-select v-model:value="deployData.deployServiceId" :options="serviceOptions" :consistent-menu-width="false"
                       @update-value="changeService"></n-select>
             <n-button @click="showDeployModal=true" type="primary" style="margin-top: 10px">部署服务</n-button>
             <n-button @click="showInstallModal=true">安装服务</n-button>
@@ -96,7 +96,8 @@ import type { DeployTargetDto } from '@/dtos/deployTargetDto'
 import { getEnvironments } from '@/api/service/dicService'
 import { distinct } from '@/utils'
 import { throttle } from '@/utils/common/throttle'
-
+import {useDeployStore} from '@/stores/deployStore'
+const deployData=useDeployStore()
 const services = ref<DeployServiceDto[]>([])
 const deployTargets = ref<DeployTargetDto[]>([])
 const showDeployModal=ref(false)
@@ -152,11 +153,7 @@ const deployHistoryColumns = [
   }
 ]
 
-const serviceFilters = ref({
-  environment: null,
-  groupName: null,
-  deployServiceId: null
-})
+
 
 
 const environmentsOptions = ref([])
@@ -174,7 +171,9 @@ onMounted(async () => {
   serviceOptions.value = services.value.map(it => ({ label: `${it.name}  ${it.description}`, value: it.id }))
   let groupNames = services.value.map(it => it.groupName)
   groupNameOptions.value = distinct(groupNames).map(it => ({ label: it, value: it }))
-
+  changeEnvironment(deployData.environment,false)
+  changeGroupName(deployData.groupName,false)
+  changeService(deployData.deployServiceId)
 })
 
 //#region sse
@@ -189,6 +188,7 @@ onMounted(()=>{
     logScrollBar.value?.scrollBy(0,200)
 
   }
+  
 })
 onUnmounted(() => {
   sseClient?.close()
@@ -196,22 +196,26 @@ onUnmounted(() => {
 
 //#endregion
 
-function changeEnvironment(val) {
+function changeEnvironment(val,reset=true) {
   const availableServices = services.value.filter(it => it.environmentName == val)
-  serviceFilters.value.groupName = null
-  serviceFilters.value.deployServiceId = null
+  if(reset){
+    deployData.groupName = null
+    deployData.deployServiceId = null
+  }
   serviceOptions.value = availableServices.map(it => ({ label: `${it.name}  ${it.description}`, value: it.id }))
   let groupNames = availableServices.map(it => it.groupName)
   groupNameOptions.value = distinct(groupNames).map(it => ({ label: it, value: it }))
 }
 
-function changeGroupName(val) {
+function changeGroupName(val,reset=true) {
 
-  const availableServices = services.value.filter(it => it.environmentName == serviceFilters.value.environment
+  const availableServices = services.value.filter(it => it.environmentName == deployData.environment
     && it.groupName == val)
 
   serviceOptions.value = availableServices.map(it => ({ label: `${it.name}  ${it.description}`, value: it.id }))
-  serviceFilters.value.deployServiceId = null
+  if(reset){
+    deployData.deployServiceId = null
+  }
 
 }
 
@@ -279,7 +283,7 @@ function deployService() {
       deployComment:deployComment.value
     }
   })
-  updateDeployHistory(serviceFilters.value.deployServiceId);
+  updateDeployHistory(deployData.deployServiceId);
 }
 
 function installService() {
