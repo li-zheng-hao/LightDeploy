@@ -39,6 +39,7 @@ public class AgentService : ITransientDependency, IAsyncDisposable
                 .WithAutomaticReconnect()
                 .Build();
 
+            _notifyService.SetHost(target.Host);
             connection.On("Log", (string msg) => { _notifyService.NotifyMessageToUser($"Agent消息: " + msg); });
             await connection.StartAsync();
         }

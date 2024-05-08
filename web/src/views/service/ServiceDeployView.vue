@@ -184,9 +184,7 @@ const logScrollBar=ref(null)
 onMounted(()=>{
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
-    deployLogs.value.push(e.data)
-    logScrollBar.value?.scrollBy(0,200)
-
+    deployLogs.value.unshift(e.data)
   }
   
 })

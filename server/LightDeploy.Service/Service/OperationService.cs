@@ -88,7 +88,8 @@ public class OperationService : IScopedDependency, ISugarTable
 
         foreach (var deployTarget in targets)
         {
-
+            _notifyService.SetHost(deployTarget.Host);
+            
             await _notifyService.NotifyMessageToUser($"-------开始处理【{deployTarget.Host}】------------");
             using var scope = App.ServiceProvider.CreateScope();
             
@@ -138,6 +139,8 @@ public class OperationService : IScopedDependency, ISugarTable
 
             
             await _notifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
+            
+            _notifyService.ClearHost();
         }
     }
  

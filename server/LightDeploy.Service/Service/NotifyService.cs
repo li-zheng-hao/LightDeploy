@@ -1,4 +1,5 @@
 ﻿using Lib.AspNetCore.ServerSentEvents;
+using LightApi.Infra.Extension;
 using LightDeploy.Core.Autofac;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -27,7 +28,24 @@ public class NotifyService :IScopedDependency
         _serverSentEventsService = serverSentEventsService;
     }
 
+    /// <summary>
+    /// 发布服务器
+    /// </summary>
+    private string Host { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 设置发布主机
+    /// </summary>
+    /// <param name="host"></param>
+    public void SetHost(string host)
+    {
+        Host = $"【{host}】";
+    }
+
+    public void ClearHost()
+    {
+        Host= string.Empty;
+    }
     /// <summary>
     /// 发送消息给当前用户
     /// </summary>
@@ -37,7 +55,7 @@ public class NotifyService :IScopedDependency
     {
         var num=_serverSentEventsService.GetClients().Count();
         if(num<=0) Log.Warning("当前无用户在线");
-        message = $"{DateTime.Now} {message}";
+        message = $"{Host}{DateTime.Now} {message}";
         return _serverSentEventsService.SendEventAsync(message);
     }
 
