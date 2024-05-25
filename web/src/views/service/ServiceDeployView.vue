@@ -101,7 +101,7 @@ const deployData=useDeployStore()
 const services = ref<DeployServiceDto[]>([])
 const deployTargets = ref<DeployTargetDto[]>([])
 const showDeployModal=ref(false)
-const deployLogs = ref([])
+const deployLogs = ref([] as string[])
 const deployComment=ref('')
 const checkedRowKeysRef = ref<Array<string | number>>([])
 const deployTargetsColumns = [
@@ -184,7 +184,12 @@ const logScrollBar=ref(null)
 onMounted(()=>{
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
-    deployLogs.value.unshift(e.data)
+  let arr=e.data.split('|') as string[]
+  arr=arr.reverse()
+  arr=arr.map(it=>{
+    return it+'\n'
+  })
+    deployLogs.value.unshift(...arr)
   }
   
 })

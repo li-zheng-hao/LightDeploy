@@ -56,7 +56,8 @@ public class NotifyService :IScopedDependency
         var num=_serverSentEventsService.GetClients().Count();
         if(num<=0) Log.Warning("当前无用户在线");
         message = $"{Host}{DateTime.Now} {message}";
-        return _serverSentEventsService.SendEventAsync(message);
+        NotifyTask.AddNotify(message);
+        return Task.CompletedTask;
     }
 
   
