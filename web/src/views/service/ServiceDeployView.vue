@@ -39,12 +39,15 @@
           </n-data-table>
         </n-card>
         <n-card title="控制台">
-          <n-scrollbar style="max-height: 300px" trigger="none" class="log-box-scrollbar"
+          <!-- <n-scrollbar style="max-height: 300px" trigger="none" class="log-box-scrollbar"
            ref="logScrollBar">
             <div v-for="item in deployLogs">
               {{ item }}
             </div>
-          </n-scrollbar>
+          </n-scrollbar> -->
+                <n-config-provider :hljs="hljs">
+         <NLog :lines="deployLogs"  style="height: 300px;" language="console"></NLog>
+        </n-config-provider>
         </n-card>
       </div>
     </div>
@@ -89,14 +92,18 @@
 
 <script setup lang="ts">
 import TabPage from '@/components/TabPage.vue'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import {  onMounted, onUnmounted, ref } from 'vue'
 import type DeployServiceDto from '@/dtos/deployServiceDto'
 import { apiClient } from '@/api/client/apiClient'
 import type { DeployTargetDto } from '@/dtos/deployTargetDto'
 import { getEnvironments } from '@/api/service/dicService'
 import { distinct } from '@/utils'
-import { throttle } from '@/utils/common/throttle'
 import {useDeployStore} from '@/stores/deployStore'
+import hljs from 'highlight.js/lib/core'
+import powershell from 'highlight.js/lib/languages/powershell';
+import { NLog } from 'naive-ui'
+hljs.registerLanguage('console', powershell);
+
 const deployData=useDeployStore()
 const services = ref<DeployServiceDto[]>([])
 const deployTargets = ref<DeployTargetDto[]>([])
@@ -182,9 +189,12 @@ let sseClient :EventSource|null=null
 const logScrollBar=ref(null)
 
 onMounted(()=>{
+  
   sseClient=new EventSource('/api/sse')
   sseClient.onmessage=(e)=>{
   let arr=e.data.split('|') as string[]
+  console.log(arr);
+  
   arr=arr.reverse()
   arr=arr.map(it=>{
     return it+'\n'
