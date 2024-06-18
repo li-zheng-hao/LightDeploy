@@ -82,8 +82,12 @@ public class DeployService
 
             if (deployDto.OnlyCopyFiles != true)
             {
-                WindowsServiceHelper.StartService(deployDto.ServiceName);
+                Log.Information("开始启动服务");
+
+                var errStr=WindowsServiceHelper.StartService(deployDto.ServiceName);
             
+                if(!string.IsNullOrWhiteSpace(errStr))  Log.Error($"启动服务异常：{errStr}");
+                
                 Log.Information("启动服务完成");
             }
             

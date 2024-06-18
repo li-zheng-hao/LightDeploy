@@ -2,6 +2,7 @@
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
+using Serilog;
 
 namespace LightDeploy.ClientAgent
 {
@@ -135,7 +136,7 @@ namespace LightDeploy.ClientAgent
             }
         }
 
-        public static string StartService(string serviceName, int timeouSeconds=30000)
+        public static string StartService(string serviceName, int timeouSeconds=15)
         {
             try
             {
@@ -151,6 +152,7 @@ namespace LightDeploy.ClientAgent
             }
             catch (Exception e)
             {
+                Log.Error(e,e.Message);
                 return e.Message;
             }
         }
@@ -171,7 +173,7 @@ namespace LightDeploy.ClientAgent
             }
         }
 
-        public static string StopService(string serviceName, int timeoutMilliseconds=30000)
+        public static string StopService(string serviceName, int timeoutMilliseconds=30)
         {
             try
             {
