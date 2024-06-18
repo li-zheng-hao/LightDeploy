@@ -97,13 +97,14 @@ public class OperationService : IScopedDependency, ISugarTable
             
             await agentService.InitTargetConnection(deployTarget);
 
-            List<FileHelper.FileInfoDto>? needCopiedFiles = null;
-            if (service.TargetDir.IsNotNullOrWhiteSpace())
-            {
-                needCopiedFiles=await agentService.CompareInDir(currentFileInfos, service.TargetDir);
-
-            }else
-                 needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
+            List<FileHelper.FileInfoDto>? needCopiedFiles = currentFileInfos;
+            
+            // if (service.TargetDir.IsNotNullOrWhiteSpace())
+            // {
+            //     needCopiedFiles=await agentService.CompareInDir(currentFileInfos, service.TargetDir);
+            //
+            // }else
+            //      needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
 
           
             if (needCopiedFiles.IsNullOrEmpty())
