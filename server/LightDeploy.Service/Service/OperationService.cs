@@ -99,12 +99,12 @@ public class OperationService : IScopedDependency, ISugarTable
 
             List<FileHelper.FileInfoDto>? needCopiedFiles = currentFileInfos;
             
-            // if (service.TargetDir.IsNotNullOrWhiteSpace())
-            // {
-            //     needCopiedFiles=await agentService.CompareInDir(currentFileInfos, service.TargetDir);
-            //
-            // }else
-            //      needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
+            if (service.TargetDir.IsNotNullOrWhiteSpace())
+            {
+                needCopiedFiles=await agentService.CompareInDir(currentFileInfos, service.TargetDir);
+            
+            }else
+                 needCopiedFiles=await agentService.Compare(currentFileInfos, service.Name);
 
           
             if (needCopiedFiles.IsNullOrEmpty())
