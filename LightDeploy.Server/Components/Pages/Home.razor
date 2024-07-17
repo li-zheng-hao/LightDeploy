@@ -1,0 +1,207 @@
+﻿@page "/"
+@using LightDeploy.Server.Domain
+@using Masuit.Tools
+@using Serilog
+@using ThrottleDebounce
+@using SqlSugar
+@inject NavigationManager Navigation
+@inject ISqlSugarClient DbClient
+@inject IMessageService Message
+@implements IDisposable
+<PageTitle>服务发布</PageTitle>
+
+<div id="service-deploy-root-box" style="display: flex">
+    <div style="display: flex;flex: 1">
+        <Card Title="服务选择" Style="width: 95%;">
+            <GridRow Type="flex" Justify="start" Align="middle" Gutter="(16, 16)">
+                <GridCol Span="24">
+                    <Text>选择分组:</Text>
+                </GridCol>
+                <GridCol Span="24">
+                    <Select DataSource="@ServiceGroups"  OnSelectedItemChanged="SelectGroupChanged" TItem="string"
+                            TItemValue="string" Value="SelectedGroup" ></Select>
+                  
+                </GridCol>
+                <GridCol Span="24">
+                    <Text>选择环境:</Text>
+                </GridCol>
+                <GridCol Span="24">
+                    <Select DataSource="@EnvironmentNames"  OnSelectedItemChanged="SelectEnvironmentChanged" TItem="string"
+                            TItemValue="string" Value="SelectedEnvironment" EnableSearch="true" ></Select>
+                </GridCol>
+                <GridCol Span="24">
+                    <Text>选择服务:</Text>
+                </GridCol>
+                <GridCol Span="24">
+                    <Select DataSource="@ServiceNames"  OnSelectedItemChanged="SelectServiceChanged" TItem="string"
+                            TItemValue="string" Value="SelectedServiceName" EnableSearch="true" ></Select>
+                </GridCol>
+                <GridCol Span="24">
+                    <GridRow Type="flex" Justify="start" Align="middle" Gutter="(16, 16)">
+                        <GridCol Span="12">
+                            <Button Type="@ButtonType.Primary" OnClick="Deploy">部署服务</Button>
+                        </GridCol>
+                        <GridCol Span="12">
+                            <Button Danger>取消部署</Button>
+                        </GridCol>
+                        <GridCol Span="12" >
+                            <Button >安装服务</Button>
+                        </GridCol>
+                        <GridCol Span="12">
+                            <Button >启动服务</Button>
+                        </GridCol>
+                        <GridCol Span="12">
+                            <Button >停止服务</Button>
+                        </GridCol>
+                    <GridCol Span="12">
+                        <Button >清空日志</Button>
+                    </GridCol >
+                    </GridRow>
+                </GridCol>
+            </GridRow>
+        </Card>
+    </div>
+    <div style="flex: 3;">
+        <GridRow Type="flex" Justify="start" Align="middle" Gutter="(16, 16)">
+            <GridCol Span="24">
+                <Card Title="目标选择" Style="width: 100%"></Card>
+            </GridCol>
+            <GridCol Span="24">
+                <Card Title="控制台"></Card>
+            </GridCol>
+            <GridCol Span="24">
+                <Card Title="发布历史"></Card>
+            </GridCol>
+        </GridRow>
+    </div>
+
+</div>
+
+
+@code{
+
+    List<DeployService>? DeployServices;
+
+    List<DeployTarget>? DeployTargets;
+
+    List<DeployHistory>? DeployHistories;
+
+    string SelectedEnvironment = string.Empty;
+    string SelectedGroup = string.Empty;
+    string SelectedServiceName = string.Empty;
+
+    List<string?> ServiceGroups;
+    List<string> ServiceNames;
+    List<string?> EnvironmentNames;
+    private RateLimitedAction recaculateOptions;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        recaculateOptions = GetRecalculateOptions();
+        FetchData();
+        recaculateOptions?.Invoke();
+    }
+
+    void FetchData()
+    {
+        DeployServices = DbClient.Queryable<DeployService>().ToList();
+        DeployTargets = DbClient.Queryable<DeployTarget>().ToList();
+        Log.Information($"刷新数据 一共有{DeployServices.Count}条数据");
+    }
+
+    void FetchHistory(int serviceId)
+    {
+        DeployHistories = DbClient.Queryable<DeployHistory>().Where(it => it.ServiceId == serviceId)
+            .OrderByDescending(it => it.PublishTime)
+            .Take(10)
+            .ToList();
+    }
+
+    void Deploy()
+    {
+        var service = GetCorrectDeployService();
+        
+        if (service == null)
+            return;
+        Log.Information("开始部署");
+    }
+
+    private void SelectGroupChanged(string group)
+    {
+        SelectedGroup = group;
+        SelectedServiceName = string.Empty;
+        SelectedEnvironment = string.Empty;
+        recaculateOptions?.Invoke();
+
+    }
+
+    private void SelectServiceChanged(string serviceName)
+    {
+        SelectedServiceName = serviceName;
+        recaculateOptions?.Invoke();
+
+
+        if (serviceName.IsNullOrEmpty())
+            return;
+        var service = GetCorrectDeployService();
+        if (service != null)
+            FetchHistory(service.Id);
+    }
+
+    private void SelectEnvironmentChanged(string environment)
+    {
+        SelectedEnvironment = environment;
+        SelectedServiceName = string.Empty;
+        recaculateOptions?.Invoke();
+    }
+
+
+    DeployService? GetCorrectDeployService()
+    {
+        var selectedServices = DeployServices
+            .WhereIf(!SelectedGroup.IsNullOrEmpty(), it => it.GroupName == SelectedGroup)
+            .WhereIf(!SelectedServiceName.IsNullOrEmpty(), it => it.Name == SelectedServiceName)
+            .WhereIf(!SelectedEnvironment.IsNullOrEmpty(), it => it.EnvironmentName == SelectedEnvironment)
+            .ToList();
+        if (selectedServices.IsNullOrEmpty())
+        {
+            Message.Warning("没有找到可用服务,请先依次选择好分组、服务、环境再试");
+            return null;
+        }
+
+        if (selectedServices.Count > 1)
+        {
+            Message.Warning($"当前过滤条件找到的一共有{selectedServices.Count}个服务，无法确定使用哪一个,请先依次选择好分组、服务、环境再试");
+            return null;
+        }
+
+        return selectedServices.First();
+    }
+
+    RateLimitedAction GetRecalculateOptions()
+    {
+        return Debouncer.Debounce(() => {
+            Log.Information("重新计算下拉选项");
+            ServiceNames=  (DeployServices?
+                .WhereIf(!SelectedGroup.IsNullOrEmpty(), it => it.GroupName == SelectedGroup)
+                .WhereIf(!SelectedEnvironment.IsNullOrEmpty(),it=>it.EnvironmentName==SelectedEnvironment)
+                .Select(it => it.Name).Distinct().ToList() ?? new List<string>());
+            ServiceGroups=(DeployServices?.Select(it => it.GroupName)
+                .Distinct().ToList() ?? new List<string?>() { });
+            EnvironmentNames=(DeployServices?
+                .WhereIf(!SelectedGroup.IsNullOrEmpty(), it => it.GroupName == SelectedGroup)
+                .WhereIf(!SelectedServiceName.IsNullOrEmpty(), it => it.Name == SelectedServiceName)
+                .Select(it => it.EnvironmentName).Distinct().ToList() ?? new List<string?>());
+            InvokeAsync(() => {
+                StateHasChanged();
+            });
+        }, TimeSpan.FromSeconds(0.5));
+    }
+
+    public void Dispose()
+    {
+        recaculateOptions.Dispose();
+    }
+
+}

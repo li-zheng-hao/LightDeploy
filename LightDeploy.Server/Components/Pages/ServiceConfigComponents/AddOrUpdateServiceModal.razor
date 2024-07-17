@@ -1,0 +1,121 @@
+﻿@using LightDeploy.Server.Domain
+
+<div style="display: flex;flex-direction: column;gap: 10px">
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >环境:</GridCol>
+        <GridCol Span="8">
+            <SimpleSelect @bind-Value="@AddOrUpdateServiceModel.EnvironmentName">
+                <SelectOptions>
+                    <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
+                    <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
+                    <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
+                    <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
+                    <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
+                </SelectOptions>
+            </SimpleSelect>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >分组:</GridCol>
+        <GridCol Span="8">
+            <Input @bind-Value="@AddOrUpdateServiceModel.GroupName" ></Input>
+        </GridCol>
+    </GridRow>
+    
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >服务名:</GridCol>
+        <GridCol Span="8">
+            <Input @bind-Value="@AddOrUpdateServiceModel.Name" ></Input>
+        </GridCol>
+    </GridRow>
+    
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >服务说明:</GridCol>
+        <GridCol Span="8">
+            <Input @bind-Value="@AddOrUpdateServiceModel.Description" ></Input>
+        </GridCol>
+    </GridRow>
+    
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >发布方式:</GridCol>
+        <GridCol Span="8">
+            <Select @bind-Value="@AddOrUpdateServiceModel.DeployMode" DataSource="DeployModes" TItem="DeployMode" TItemValue="int"
+                    ItemValue="c=>c.Value"
+                    ItemLabel="c=>c.Label"
+                    >
+            </Select>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >项目路径:</GridCol>
+        <GridCol Span="8">
+            <Input @bind-Value="@AddOrUpdateServiceModel.ProjectPath" ></Input>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >是否包含运行时:</GridCol>
+        <GridCol Span="8">
+            <Switch @bind-Value="@AddOrUpdateServiceModel.IsSelfContained"></Switch>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >是否开启健康检查:</GridCol>
+        <GridCol Span="8">
+            <Switch @bind-Value="@AddOrUpdateServiceModel.EnableHealthCheck"></Switch>
+        </GridCol>
+    </GridRow>
+    
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >端口号:</GridCol>
+        <GridCol Span="8">
+            <AntDesign.InputNumber @bind-Value="@AddOrUpdateServiceModel.Port" ></AntDesign.InputNumber>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >是否仅拷贝文件并重启服务:</GridCol>
+        <GridCol Span="8">
+            <Switch @bind-Checked="OnlyCopyFiles" ></Switch>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >目标文件夹:</GridCol>
+        <GridCol Span="10">
+            <Input @bind-Value="@AddOrUpdateServiceModel.TargetDir" Placeholder="仅在拷贝文件并重启服务选项开启的情况下有效"></Input>
+        </GridCol>
+    </GridRow>
+    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
+        <GridCol >目标文件夹:</GridCol>
+        <GridCol Span="10">
+            <Input @bind-Value="@AddOrUpdateServiceModel.TargetDir" Placeholder="仅在拷贝文件并重启服务选项开启的情况下有效"></Input>
+        </GridCol>
+    </GridRow>
+</div>
+@code {
+
+    class DeployMode
+    {
+        public string Label { get; set; }
+        public int Value { get; set; }
+    }
+
+    List<DeployMode> DeployModes = new()
+    {
+        new DeployMode() { Label = "项目", Value = 0 },
+        new DeployMode() { Label = "文件夹", Value = 1 }
+    };
+    
+    [Parameter]
+    public DeployService AddOrUpdateServiceModel { get; set; } = null!;
+
+    private bool OnlyCopyFiles
+    {
+        get
+        {
+            return AddOrUpdateServiceModel.OnlyCopyFiles ?? false;
+        }
+        set
+        {
+            AddOrUpdateServiceModel.OnlyCopyFiles = value;
+        }
+    }
+}

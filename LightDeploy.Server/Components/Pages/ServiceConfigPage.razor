@@ -1,0 +1,125 @@
+﻿@page "/service-config"
+@using LightDeploy.Server.Domain
+@using Masuit.Tools
+@using LightDeploy.Server.Components.Pages.ServiceConfigComponents
+@inject ISqlSugarClient DbClient
+@inject IMessageService Message
+<PageTitle>服务配置</PageTitle>
+
+<div>
+    <GridRow Gutter="(16, 16)">
+        <GridCol Span="2">
+            <SimpleSelect @bind-Value="@environmentName">
+                <SelectOptions>
+                    <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
+                    <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
+                    <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
+                    <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
+                    <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
+                </SelectOptions>
+            </SimpleSelect>
+        </GridCol>
+        <GridCol Span="2">
+            <Select TItem="string" TItemValue="string" @bind-Value="groupName" DataSource="serviceGroups"></Select>
+        </GridCol>
+        <GridCol>
+            <Input @bind-Value="@serviceName" Label="服务名" Placeholder="服务名"/>
+        </GridCol>
+
+        <GridCol><Button @onclick="Search">搜索</Button></GridCol>
+        <GridCol><Button @onclick="AddNewService">新增服务</Button></GridCol>
+    </GridRow>
+    <GridRow Gutter="(16, 16)" Style="margin:0;margin-top: 16px">
+        <Table 
+               TItem="DeployService"
+               DataSource="@deployServices"
+               Size="TableSize.Small"
+               RowKey="x=>x.Id"
+               HidePagination="true"
+               ScrollY="800px"
+        >
+            <PropertyColumn Property="c=>c.Id" Title="编号" />
+            <PropertyColumn Property="c=>c.GroupName" Title="分组" Sortable/>
+            <PropertyColumn Property="c=>c.Name" Title="服务名" Sortable />
+            <PropertyColumn Property="c=>c.Port" Title="端口号" Sortable />
+            <PropertyColumn Property="c=>c.EnvironmentName" Title="环境"  Sortable/>
+            <PropertyColumn Property="c=>c.Description" Title="描述"  />
+            <ActionColumn Title="操作">
+                <Space>
+                    <SpaceItem><Button Type="@ButtonType.Primary">修改</Button></SpaceItem>
+                    <SpaceItem><Button >修改发布目标</Button></SpaceItem>
+                    <SpaceItem><Button Danger>删除</Button></SpaceItem>
+                </Space>
+            </ActionColumn>
+        </Table>
+    </GridRow>
+    
+    <Modal @bind-Visible="@addOrUpdateServiceModalVisible" OnOk="AddOrUpdateServiceOk" OnCancel="AddOrUpdateServiceCancel"
+           Title="新增或编辑服务">
+        <AddOrUpdateServiceModal AddOrUpdateServiceModel="addOrUpdateService"></AddOrUpdateServiceModal>
+    </Modal>
+</div>
+
+@code {
+    string groupName;
+    string serviceName;
+    string environmentName;
+    List<DeployService> deployServices;
+
+    DeployService addOrUpdateService=new();
+    bool addOrUpdateServiceModalVisible=false;    
+    List<string?> serviceGroups;
+
+    protected override void OnInitialized()
+    {
+        FetchData();
+        serviceGroups=(deployServices?.Select(it => it.GroupName)
+            .Distinct().ToList() ?? new List<string?>() { });
+        base.OnInitialized();
+    }
+
+    private void Search()
+    {
+       FetchData();
+    }
+
+    void FetchData()
+    {
+        deployServices= DbClient.Queryable<DeployService>()
+            .WhereIF(!groupName.IsNullOrEmpty(),it=>it.GroupName==groupName)
+            .WhereIF(!serviceName.IsNullOrEmpty(),it=>it.Name==serviceName)
+            .WhereIF(!environmentName.IsNullOrEmpty(),it=>it.EnvironmentName==environmentName)
+            .ToList();
+       
+    }
+
+
+    private void AddNewService()
+    {
+        addOrUpdateServiceModalVisible=true;
+    }
+
+    private void AddOrUpdateServiceOk(MouseEventArgs obj)
+    {
+        addOrUpdateServiceModalVisible=false;
+        if (addOrUpdateService.Name.IsNullOrEmpty()) Message.Error("服务名不能为空");
+        if (addOrUpdateService.GroupName.IsNullOrEmpty()) Message.Error("服务分组不能为空");
+        if (addOrUpdateService.EnvironmentName.IsNullOrEmpty()) Message.Error("服务环境不能为空");        
+        if (addOrUpdateService.Id==0) DbClient.Insertable(addOrUpdateService).ExecuteCommand();
+        else DbClient.Updateable(addOrUpdateService).ExecuteCommand();
+        Message.Success("操作成功");
+        ResetAddOrUpdateModel();
+        FetchData();
+    }
+
+    private void AddOrUpdateServiceCancel(MouseEventArgs obj)
+    {
+        addOrUpdateServiceModalVisible=false;
+    }
+
+    private void ResetAddOrUpdateModel()
+    {
+        addOrUpdateService = new();
+    }
+
+}

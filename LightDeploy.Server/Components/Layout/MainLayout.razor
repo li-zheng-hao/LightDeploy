@@ -1,0 +1,103 @@
+﻿@using Serilog
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@implements IDisposable
+<div Id="root-layout-box">
+    <Layout Style="height:100vh" >
+        <Sider   NoTrigger Collapsed=collapsed>
+            <div class="logo" style="display:flex;align-items:center;justify-content:center;color:white">@title</div>
+            <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline" DefaultSelectedKeys=@(new[]{"1"})>
+                <MenuItem Key="1" RouterLink="/" RouterMatch="NavLinkMatch.All">
+                    <Icon Type="user" Theme="outline" />
+                    <span>服务发布</span>
+                </MenuItem>
+                <MenuItem Key="2" RouterLink="/service-config" RouterMatch="NavLinkMatch.Prefix">
+                    <Icon Type="video-camera" Theme="outline"  />
+                    <span>服务配置</span>
+                </MenuItem>
+                <MenuItem Key="3" RouterLink="/global-config" RouterMatch="NavLinkMatch.Prefix">
+                    <Icon Type="upload" Theme="outline" />
+                    <span>全局配置</span>
+                </MenuItem>
+            </Menu>
+        </Sider>
+        <Layout>
+            <Header Style="background-color:white">
+                <GridRow>
+                    <GridCol>
+                        @if (collapsed)
+                        {
+                            <Icon Type="menu-unfold" Theme="outline" Class="menu-collapse-trigger" OnClick="toggle"/>
+                        }
+                        else
+                        {
+                            <Icon Type="menu-fold" Theme="outline" Class="menu-collapse-trigger" OnClick="toggle"/>
+                        }
+                    </GridCol>
+                    <GridCol>
+                        <h1>@pageTitle</h1>
+                        
+                    </GridCol>
+                </GridRow>
+           
+            </Header>
+            <Content Style="padding:10px">@Body</Content>
+        </Layout>
+    </Layout>
+</div>
+
+
+<div id="blazor-error-ui">
+    与服务器的连接已断开,正在重连...
+    <a href="" class="reload">重新加载</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+
+@code {
+    bool collapsed;
+    string title => collapsed ? "LightDeploy" : "服务发布工具";
+    void toggle()
+    {
+        collapsed = !collapsed;
+    }
+
+    string pageTitle="服务发布";
+    
+    void OnCollapse(bool isCollapsed)
+    {
+        Console.WriteLine($"Collapsed: {isCollapsed}");
+    }
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += LocationChanged;
+        base.OnInitialized();
+    }
+
+    private void LocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var currentLocation=e.Location;
+        Log.Information($"跳转到页面{currentLocation}");
+        var query = new Uri(currentLocation).PathAndQuery;
+        switch (query)
+        {
+            case "/service-config":
+                pageTitle = "服务配置";
+                break;
+            case "/global-config":
+                pageTitle = "全局配置";
+                break;
+            default:
+                pageTitle = "服务发布";
+                break;
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= LocationChanged;
+    }
+
+}
