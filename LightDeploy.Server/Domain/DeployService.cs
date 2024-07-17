@@ -1,4 +1,5 @@
-﻿using LightApi.SqlSugar;
+﻿using System.ComponentModel.DataAnnotations;
+using LightApi.SqlSugar;
 using SqlSugar;
 
 namespace LightDeploy.Server.Domain;
@@ -11,11 +12,15 @@ public class DeployService:ISugarTable
     /// <summary>
     /// 分组名称
     /// </summary>
+    [Required(ErrorMessage = "分组不能为空")]
+    [Length(minimumLength:1,maximumLength:255)]
     public string? GroupName { get; set; }
     
     /// <summary>
     /// 服务名称
     /// </summary>
+    [Required(ErrorMessage = "服务名不能为空")]
+    [Length(minimumLength:1,maximumLength:255)]
     public string Name { get; set; }
     
     /// <summary>
@@ -26,6 +31,8 @@ public class DeployService:ISugarTable
     /// <summary>
     /// 默认路径
     /// </summary>
+    [Required(ErrorMessage = "项目路径不能为空")]
+    [Length(minimumLength:1,maximumLength:255)]
     public string ProjectPath { get; set; }
     
     /// <summary>
@@ -55,6 +62,7 @@ public class DeployService:ISugarTable
     /// 环境名称
     /// </summary>
     [SugarColumn(IsNullable = true)]
+    [Required(ErrorMessage = "环境不能为空")]
     public string? EnvironmentName { get; set; }
     
     [Navigate(NavigateType.OneToMany, nameof(DeployTarget.ServiceId),nameof(Id))] 

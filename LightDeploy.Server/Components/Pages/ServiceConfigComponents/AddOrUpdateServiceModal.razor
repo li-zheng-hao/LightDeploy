@@ -1,95 +1,58 @@
 ﻿@using LightDeploy.Server.Domain
 
-<div style="display: flex;flex-direction: column;gap: 10px">
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >环境:</GridCol>
-        <GridCol Span="8">
-            <SimpleSelect @bind-Value="@AddOrUpdateServiceModel.EnvironmentName">
-                <SelectOptions>
-                    <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
-                    <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
-                    <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
-                    <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
-                    <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
-                </SelectOptions>
-            </SimpleSelect>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >分组:</GridCol>
-        <GridCol Span="8">
-            <Input @bind-Value="@AddOrUpdateServiceModel.GroupName" ></Input>
-        </GridCol>
-    </GridRow>
-    
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >服务名:</GridCol>
-        <GridCol Span="8">
-            <Input @bind-Value="@AddOrUpdateServiceModel.Name" ></Input>
-        </GridCol>
-    </GridRow>
-    
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >服务说明:</GridCol>
-        <GridCol Span="8">
-            <Input @bind-Value="@AddOrUpdateServiceModel.Description" ></Input>
-        </GridCol>
-    </GridRow>
-    
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >发布方式:</GridCol>
-        <GridCol Span="8">
-            <Select @bind-Value="@AddOrUpdateServiceModel.DeployMode" DataSource="DeployModes" TItem="DeployMode" TItemValue="int"
-                    ItemValue="c=>c.Value"
-                    ItemLabel="c=>c.Label"
-                    >
-            </Select>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >项目路径:</GridCol>
-        <GridCol Span="8">
-            <Input @bind-Value="@AddOrUpdateServiceModel.ProjectPath" ></Input>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >是否包含运行时:</GridCol>
-        <GridCol Span="8">
-            <Switch @bind-Value="@AddOrUpdateServiceModel.IsSelfContained"></Switch>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >是否开启健康检查:</GridCol>
-        <GridCol Span="8">
-            <Switch @bind-Value="@AddOrUpdateServiceModel.EnableHealthCheck"></Switch>
-        </GridCol>
-    </GridRow>
-    
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >端口号:</GridCol>
-        <GridCol Span="8">
-            <AntDesign.InputNumber @bind-Value="@AddOrUpdateServiceModel.Port" ></AntDesign.InputNumber>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >是否仅拷贝文件并重启服务:</GridCol>
-        <GridCol Span="8">
-            <Switch @bind-Checked="OnlyCopyFiles" ></Switch>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >目标文件夹:</GridCol>
-        <GridCol Span="10">
-            <Input @bind-Value="@AddOrUpdateServiceModel.TargetDir" Placeholder="仅在拷贝文件并重启服务选项开启的情况下有效"></Input>
-        </GridCol>
-    </GridRow>
-    <GridRow Gutter="16" Type="flex" Justify="start" Align="middle">
-        <GridCol >目标文件夹:</GridCol>
-        <GridCol Span="10">
-            <Input @bind-Value="@AddOrUpdateServiceModel.TargetDir" Placeholder="仅在拷贝文件并重启服务选项开启的情况下有效"></Input>
-        </GridCol>
-    </GridRow>
-</div>
+<Form Model="@AddOrUpdateServiceModel" LabelColSpan="8"
+      ValidateOnChange
+      @ref="form"
+      WrapperColSpan="16">
+    <FormItem Label="环境" Required>
+        <SimpleSelect @bind-Value="@context.EnvironmentName">
+            <SelectOptions>
+                <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
+                <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
+                <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
+                <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
+                <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
+            </SelectOptions>
+        </SimpleSelect>
+    </FormItem>
+    <FormItem Label="分组">
+        <Input @bind-Value="@context.GroupName" ></Input>
+    </FormItem>
+    <FormItem Label="服务名">
+        <Input @bind-Value="@context.Name" ></Input>
+    </FormItem>
+    <FormItem Label="服务说明">
+        <Input @bind-Value="@context.Description" ></Input>
+    </FormItem>
+    <FormItem Label="发布方式">
+        <Select @bind-Value="@context.DeployMode" DataSource="DeployModes" TItem="DeployMode" TItemValue="int"
+                ItemValue="c=>c.Value"
+                ItemLabel="c=>c.Label"
+        >
+        </Select>
+    </FormItem>
+    <FormItem Label="项目路径">
+        <Input @bind-Value="@context.ProjectPath" ></Input>
+    </FormItem>
+    <FormItem Label="包含运行时">
+        <Switch @bind-Value="@context.IsSelfContained"></Switch>
+    </FormItem>
+    <FormItem Label="健康检查">
+        <Switch @bind-Value="@context.EnableHealthCheck"></Switch>
+    </FormItem>
+    <FormItem Label="端口">
+        <AntDesign.InputNumber @bind-Value="@context.Port" ></AntDesign.InputNumber>
+    </FormItem>
+    <FormItem Label="仅拷贝文件并重启服务">
+        <Switch @bind-Checked="OnlyCopyFiles" ></Switch>
+    </FormItem>
+    <FormItem Label="目标文件夹">
+        <Input @bind-Value="@context.TargetDir" Placeholder="仅在拷贝文件并重启服务选项开启的情况下有效"></Input>
+    </FormItem>
+    <FormItem Label="忽略规则(Regex表达式)">
+        <Input @bind-Value="@context.IgnoreRules" Placeholder="忽略规则，用|分割"></Input>
+    </FormItem>
+</Form>
 @code {
 
     class DeployMode
@@ -97,13 +60,18 @@
         public string Label { get; set; }
         public int Value { get; set; }
     }
-
+    private Form<DeployService> form;
+    
     List<DeployMode> DeployModes = new()
     {
         new DeployMode() { Label = "项目", Value = 0 },
         new DeployMode() { Label = "文件夹", Value = 1 }
     };
-    
+
+    public bool Validate()
+    {
+        return form.Validate();      
+    }
     [Parameter]
     public DeployService AddOrUpdateServiceModel { get; set; } = null!;
 

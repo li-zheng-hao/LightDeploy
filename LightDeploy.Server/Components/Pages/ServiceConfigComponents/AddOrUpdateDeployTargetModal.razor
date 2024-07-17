@@ -1,0 +1,110 @@
+﻿@using LightDeploy.Server.Domain
+@using Masuit.Tools
+@using Serilog
+@inject ISqlSugarClient DbClient
+@inject  IMessageService Message
+<div>
+    <Form Model="_newDeployTarget">
+        <FormItem Label="IP">
+            <Input @bind-Value="@_newDeployTarget.Host"/>
+        </FormItem>
+
+        <FormItem Label="Port">
+            <Input @bind-Value="@_newDeployTarget.Port"/>
+        </FormItem>
+        <FormItem Label="健康检查Url">
+            <Input @bind-Value="@_newDeployTarget.HealthCheckUrl">
+            </Input>
+        </FormItem>
+        <FormItem Label="权限认证Key">
+            <Input @bind-Value="@_newDeployTarget.AuthKey">
+            </Input>
+        </FormItem>
+
+        <FormItem >
+            <Button Type="@ButtonType.Primary" HtmlType="submit" OnClick="() => Add()">
+                新增
+            </Button>
+        </FormItem>
+    </Form>
+    <GridRow>
+        <GridCol Span="24">
+            <Table
+                TItem="DeployTarget"
+                DataSource="@_deployTargets"
+                Size="TableSize.Small"
+                PaginationPosition="bottomRight"
+                PageSize="20"
+                RowKey="x => x.Id"
+            >
+                <PropertyColumn Property="c => c.Host" Title="IP" Sortable/>
+                <PropertyColumn Property="c => c.Port" Title="端口号" Sortable/>
+                <PropertyColumn Property="c => c.HealthCheckUrl" Title="健康检查Url"/>
+                <PropertyColumn Property="c => c.AuthKey" Title="权限认证Key"/>
+                <ActionColumn Title="操作" Context="row">
+                    <Space>
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" OnClick="()=>UpdateDeployTarget(context)">修改</Button>
+                        </SpaceItem>
+                        <SpaceItem>
+                            <Button Danger OnClick="()=>DeleteDeployTarget(context)">删除</Button>
+                        </SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </GridCol>
+    </GridRow>
+</div>
+
+@code {
+
+    DeployTarget _newDeployTarget = new();
+    [Parameter] public DeployService DeployService { get; set; }
+
+    List<DeployTarget> _deployTargets;
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        FetchData();
+    }
+
+    public void FetchData()
+    {
+        _deployTargets=DbClient.Queryable<DeployTarget>().Where(it => it.ServiceId == DeployService.Id).ToList();
+        Log.Information($"查询到{_deployTargets.Count}条");
+    }
+    void Add()
+    {
+        if ( _newDeployTarget.Host.IsNullOrEmpty() || _newDeployTarget.Port.IsNullOrEmpty())
+        {
+            Message.Error("请输入IP和端口");
+            return;
+        }
+        var exist=DbClient.Queryable<DeployTarget>().Any(it => it.ServiceId == DeployService.Id && it.Host == _newDeployTarget.Host && it.Port == _newDeployTarget.Port);
+
+        if (exist)
+        {
+            Message.Error("该服务已经存在相同的IP和端口的发布目标");
+        }
+        else
+        {
+            _newDeployTarget.ServiceId = DeployService.Id;
+            DbClient.Insertable(_newDeployTarget).ExecuteCommand();
+            FetchData();
+        }
+    }
+
+    void UpdateDeployTarget(DeployTarget deployTarget)
+    {
+        DbClient.Updateable(deployTarget).ExecuteCommand();
+        FetchData();
+        Message.Success("更新成功");
+    }
+    
+    void DeleteDeployTarget(DeployTarget deployTarget)
+    {
+        DbClient.Deleteable(deployTarget).ExecuteCommand();
+        FetchData();
+        Message.Success("删除成功");
+    }
+}

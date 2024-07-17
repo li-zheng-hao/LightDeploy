@@ -9,104 +9,157 @@
 <div>
     <GridRow Gutter="(16, 16)">
         <GridCol Span="2">
-            <SimpleSelect @bind-Value="@environmentName">
-                <SelectOptions>
-                    <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
-                    <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
-                    <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
-                    <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
-                    <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
-                </SelectOptions>
-            </SimpleSelect>
+                <SimpleSelect @bind-Value="@_environmentName"  Placeholder="选择环境">
+                    <SelectOptions>
+                        <SimpleSelectOption Label="无" Value=""></SimpleSelectOption>
+                        <SimpleSelectOption Label="开发" Value="开发"></SimpleSelectOption>
+                        <SimpleSelectOption Label="开发测试" Value="开发测试"></SimpleSelectOption>
+                        <SimpleSelectOption Label="测试" Value="测试"></SimpleSelectOption>
+                        <SimpleSelectOption Label="预览" Value="预览"></SimpleSelectOption>
+                        <SimpleSelectOption Label="生产" Value="生产"></SimpleSelectOption>
+                    </SelectOptions>
+                </SimpleSelect>
+           
         </GridCol>
         <GridCol Span="2">
-            <Select TItem="string" TItemValue="string" @bind-Value="groupName" DataSource="serviceGroups"></Select>
+            <Select TItem="string" TItemValue="string" @bind-Value="_groupName" DataSource="_serviceGroups" Placeholder="选择分组"></Select>
         </GridCol>
         <GridCol>
-            <Input @bind-Value="@serviceName" Label="服务名" Placeholder="服务名"/>
+            <Input @bind-Value="@_serviceName" Label="服务名" Placeholder="服务名"/>
         </GridCol>
 
-        <GridCol><Button @onclick="Search">搜索</Button></GridCol>
-        <GridCol><Button @onclick="AddNewService">新增服务</Button></GridCol>
+        <GridCol>
+            <Button @onclick="Search">搜索</Button>
+        </GridCol>
+        <GridCol>
+            <Button @onclick="AddNewService">新增服务</Button>
+        </GridCol>
     </GridRow>
-    <GridRow Gutter="(16, 16)" Style="margin:0;margin-top: 16px">
-        <Table 
-               TItem="DeployService"
-               DataSource="@deployServices"
-               Size="TableSize.Small"
-               RowKey="x=>x.Id"
-               HidePagination="true"
-               ScrollY="800px"
-        >
-            <PropertyColumn Property="c=>c.Id" Title="编号" />
-            <PropertyColumn Property="c=>c.GroupName" Title="分组" Sortable/>
-            <PropertyColumn Property="c=>c.Name" Title="服务名" Sortable />
-            <PropertyColumn Property="c=>c.Port" Title="端口号" Sortable />
-            <PropertyColumn Property="c=>c.EnvironmentName" Title="环境"  Sortable/>
-            <PropertyColumn Property="c=>c.Description" Title="描述"  />
-            <ActionColumn Title="操作">
-                <Space>
-                    <SpaceItem><Button Type="@ButtonType.Primary">修改</Button></SpaceItem>
-                    <SpaceItem><Button >修改发布目标</Button></SpaceItem>
-                    <SpaceItem><Button Danger>删除</Button></SpaceItem>
-                </Space>
-            </ActionColumn>
-        </Table>
+    <GridRow id="table-box" Style="margin-top: 16px;width: 100%">
+        <GridCol Span="24">
+            <Table
+                TItem="DeployService"
+                DataSource="@_deployServices"
+                Size="TableSize.Small"
+                PaginationPosition="bottomRight"
+                PageSize="20"
+                RowKey="x => x.Id"
+                >
+                <PropertyColumn Property="c => c.Id" Title="编号"/>
+                <PropertyColumn Property="c => c.GroupName" Title="分组" Sortable/>
+                <PropertyColumn Property="c => c.Name" Title="服务名" Sortable/>
+                <PropertyColumn Property="c => c.Port" Title="端口号" Sortable/>
+                <PropertyColumn Property="c => c.EnvironmentName" Title="环境" Sortable/>
+                <PropertyColumn Property="c => c.Description" Title="描述"/>
+                <PropertyColumn Property="c => c.EnableHealthCheck" Title="健康检查"/>
+                <PropertyColumn Property="c => c.IgnoreRules" Title="忽略规则"/>
+                <PropertyColumn Property="c => c.EnableNotify" Title="企业微信通知"/>
+                <PropertyColumn Property="c => c.OnlyCopyFiles" Title="仅拷贝文件"/>
+                <PropertyColumn Property="c => c.TargetDir" Title="目标文件夹"/>
+                <ActionColumn Title="操作" Context="row">
+                    <Space>
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" OnClick="()=>UpdateService(context)">修改</Button>
+                        </SpaceItem>
+                        <SpaceItem>
+                            <Button OnClick="()=>UpdateDeployTarget(context)">修改发布目标</Button>
+                        </SpaceItem>
+                        <SpaceItem>
+                            <Button Danger OnClick="()=>DeleteService(context)">删除</Button>
+                        </SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </GridCol>
+
     </GridRow>
-    
-    <Modal @bind-Visible="@addOrUpdateServiceModalVisible" OnOk="AddOrUpdateServiceOk" OnCancel="AddOrUpdateServiceCancel"
+
+    <Modal Visible="@_addOrUpdateServiceModalVisible" OnOk="AddOrUpdateServiceOk" OnCancel="AddOrUpdateServiceCancel"
            Title="新增或编辑服务">
-        <AddOrUpdateServiceModal AddOrUpdateServiceModel="addOrUpdateService"></AddOrUpdateServiceModal>
+        <AddOrUpdateServiceModal AddOrUpdateServiceModel="_addOrUpdateServiceModel" @ref="_addOrUpdateServiceModal"></AddOrUpdateServiceModal>
+    </Modal>
+    <Modal Visible="@_addOrUpdateDeployTargetModalVisible" OnOk="AddOrUpdateDeployTargetOk" OnCancel="AddOrUpdateDeployTargetCancel"
+           Title="编辑发布目标">
+        <AddOrUpdateDeployTargetModal DeployService="_deployServiceTargetUpdateModel" @ref="_addOrUpdateDeployTargetModal"></AddOrUpdateDeployTargetModal>
     </Modal>
 </div>
 
 @code {
-    string groupName;
-    string serviceName;
-    string environmentName;
-    List<DeployService> deployServices;
+    string? _groupName;
+    string? _serviceName;
+    string? _environmentName;
+    List<DeployService>? _deployServices;
 
-    DeployService addOrUpdateService=new();
-    bool addOrUpdateServiceModalVisible=false;    
-    List<string?> serviceGroups;
+    DeployService _addOrUpdateServiceModel = new();
+    DeployService _deployServiceTargetUpdateModel = new();
+    bool _addOrUpdateServiceModalVisible = false;
+    List<string?>? _serviceGroups;
+    AddOrUpdateServiceModal? _addOrUpdateServiceModal;
+    AddOrUpdateDeployTargetModal? _addOrUpdateDeployTargetModal;
+    bool _addOrUpdateDeployTargetModalVisible;
 
     protected override void OnInitialized()
     {
         FetchData();
-        serviceGroups=(deployServices?.Select(it => it.GroupName)
+        _serviceGroups = (_deployServices?.Select(it => it.GroupName)
             .Distinct().ToList() ?? new List<string?>() { });
         base.OnInitialized();
     }
 
     private void Search()
     {
-       FetchData();
+        FetchData();
     }
 
     void FetchData()
     {
-        deployServices= DbClient.Queryable<DeployService>()
-            .WhereIF(!groupName.IsNullOrEmpty(),it=>it.GroupName==groupName)
-            .WhereIF(!serviceName.IsNullOrEmpty(),it=>it.Name==serviceName)
-            .WhereIF(!environmentName.IsNullOrEmpty(),it=>it.EnvironmentName==environmentName)
+        _deployServices = DbClient.Queryable<DeployService>()
+            .WhereIF(!_groupName.IsNullOrEmpty(), it => it.GroupName == _groupName)
+            .WhereIF(!_serviceName.IsNullOrEmpty(), it => it.Name == _serviceName)
+            .WhereIF(!_environmentName.IsNullOrEmpty(), it => it.EnvironmentName == _environmentName)
             .ToList();
-       
     }
 
 
     private void AddNewService()
     {
-        addOrUpdateServiceModalVisible=true;
+        _addOrUpdateServiceModalVisible = true;
     }
 
     private void AddOrUpdateServiceOk(MouseEventArgs obj)
     {
-        addOrUpdateServiceModalVisible=false;
-        if (addOrUpdateService.Name.IsNullOrEmpty()) Message.Error("服务名不能为空");
-        if (addOrUpdateService.GroupName.IsNullOrEmpty()) Message.Error("服务分组不能为空");
-        if (addOrUpdateService.EnvironmentName.IsNullOrEmpty()) Message.Error("服务环境不能为空");        
-        if (addOrUpdateService.Id==0) DbClient.Insertable(addOrUpdateService).ExecuteCommand();
-        else DbClient.Updateable(addOrUpdateService).ExecuteCommand();
+        if (!_addOrUpdateServiceModal.Validate())
+        {
+            return;
+        }
+
+
+        if (_addOrUpdateServiceModel.Id == 0)
+        {
+            var exist=DbClient.Queryable<DeployService>().First(it => it.Name == _addOrUpdateServiceModel.Name);
+
+            if (exist != null)
+            {
+                Message.Error("同名服务已存在");
+                return;
+            }
+            
+            DbClient.Insertable(_addOrUpdateServiceModel).ExecuteCommand();
+        }
+        else
+        {
+            var exist=DbClient.Queryable<DeployService>().First(it => it.Name == _addOrUpdateServiceModel.Name&&it.Id!=_addOrUpdateServiceModel.Id);
+
+
+            if (exist != null)
+            {
+                Message.Error("同名服务已存在");
+                return;
+            }
+            DbClient.Updateable(_addOrUpdateServiceModel).ExecuteCommand();
+        }
+        _addOrUpdateServiceModalVisible = false;
+
         Message.Success("操作成功");
         ResetAddOrUpdateModel();
         FetchData();
@@ -114,12 +167,41 @@
 
     private void AddOrUpdateServiceCancel(MouseEventArgs obj)
     {
-        addOrUpdateServiceModalVisible=false;
+        _addOrUpdateServiceModalVisible = false;
     }
 
     private void ResetAddOrUpdateModel()
     {
-        addOrUpdateService = new();
+        _addOrUpdateServiceModel = new();
+    }
+
+    private void DeleteService(DeployService row)
+    {
+        Message.Success(row.Id.ToString());
+    }
+
+    private void UpdateService(DeployService context)
+    {
+        _addOrUpdateServiceModel = context;
+        _addOrUpdateServiceModalVisible = true;
+    }
+
+    void UpdateDeployTarget(DeployService deployService)
+    {
+        _deployServiceTargetUpdateModel = deployService;
+        _addOrUpdateDeployTargetModalVisible = true;
+        _addOrUpdateDeployTargetModal?.FetchData();
+        
+    }
+    void AddOrUpdateDeployTargetOk()
+    {
+        _addOrUpdateDeployTargetModalVisible = false;
+        _deployServiceTargetUpdateModel = new();
+    }
+    
+    void AddOrUpdateDeployTargetCancel()
+    {
+        _addOrUpdateDeployTargetModalVisible = false; 
     }
 
 }
