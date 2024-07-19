@@ -1,0 +1,92 @@
+﻿@using LightDeploy.Server.Domain
+@using Masuit.Tools
+@using Serilog
+@inject ISqlSugarClient DbClient
+@inject  ISnackbar Message
+<MudDialog>
+    <DialogContent >
+        <MudGrid>
+            <MudItem lg="12">
+                <MudForm @ref="form">
+                    <MudSelect T="string" @bind-Value="@DeployService.EnvironmentName" Placeholder="环境" >
+                        <MudSelectItem Value="@("开发")" />
+                        <MudSelectItem Value="@("开发测试")" />
+                        <MudSelectItem Value="@("测试")" />
+                        <MudSelectItem Value="@("预览")" />
+                        <MudSelectItem Value="@("生产")" />
+                    </MudSelect>
+                    <MudTextField Placeholder="请输入分组名" T="string" Required RequiredError="分组名不能为空" @bind-Value="DeployService.GroupName"/>
+                    <MudTextField Placeholder="请输入服务名" T="string" Required RequiredError="服务名不能为空" @bind-Value="DeployService.Name"/>
+                    <MudTextField Placeholder="请输入项目路径" T="string"  Required RequiredError="项目路径不能为空" @bind-Value="DeployService.ProjectPath"/>
+                    <MudTextField Placeholder="请输入服务说明" T="string"  @bind-Value="DeployService.Description"/>
+                    <MudSelect T="int" @bind-Value="@DeployService.DeployMode" Placeholder="发布方式" >
+                        <MudSelectItem Value="0">项目</MudSelectItem>
+                        <MudSelectItem Value="1">文件夹</MudSelectItem>
+                    </MudSelect>
+                    <MudSwitch T="bool" bind-Value="@DeployService.IsSelfContained" Label="包含运行时"></MudSwitch>
+                    <MudSwitch T="bool" bind-Value="@DeployService.EnableHealthCheck" Label="健康检查"></MudSwitch>
+                    <MudNumericField Label="Port" T="int?" Required RequiredError="端口不能为空" @bind-Value="DeployService.Port"/>
+                    <MudSwitch T="bool?" bind-Value="@DeployService.OnlyCopyFiles" Label="仅拷贝文件并重启服务"></MudSwitch>
+                    <MudTextField Placeholder="请输入目标文件夹" T="string"  @bind-Value="DeployService.TargetDir"/>
+                    <MudTextField Placeholder="请输入忽略规则,|分割" T="string"  @bind-Value="DeployService.IgnoreRules"/>
+                    <MudTextField Placeholder="请输入运行前执行的powershell脚本" AutoGrow MaxLines="50" T="string"  @bind-Value="DeployService.BeforeScript"/>
+                </MudForm>
+            </MudItem>
+            
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" OnClick="Add" Class="mt-4">确定</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" DropShadow="false" OnClick="Close" Class="mt-4">关闭</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter] 
+    public DeployService DeployService { get; set; }
+
+    private MudForm form;
+    
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    void Close() => MudDialog.Close(DialogResult.Ok(true));
+
+    async Task Add()
+    {
+        await form.Validate();
+        if (!form.IsValid)
+        {
+            Message.Add("填写的数据存在错误", Severity.Error);
+            return;
+        }
+
+        if (DeployService.Id != 0)
+        {
+            DbClient.Updateable(DeployService).ExecuteCommand();
+            Message.Add("更新成功", Severity.Success);
+            Close();
+        }
+        else
+        {
+            var exist = DbClient.Queryable<DeployService>().Any(it => it.Name == DeployService.Name&&it.Id!=DeployService.Id);
+
+            if (exist)
+            {
+                Message.Add("该服务已经存在相同的IP和端口的发布目标", Severity.Error);
+            }
+            else
+            {
+                DbClient.Insertable(DeployService).ExecuteCommand();
+                Message.Add("添加成功", Severity.Success);
+                Close();
+            }
+        }
+      
+        
+    }
+
+
+
+}
