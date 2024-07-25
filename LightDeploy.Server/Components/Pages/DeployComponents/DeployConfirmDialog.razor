@@ -6,7 +6,7 @@
         <div>
             <MudGrid>
                 <MudItem lg="12" Style="display: flex;flex-direction: column">
-                    <MudInput T="string" Label="发布说明" Placeholder="请输入本次发布说明" MaxLines="5" AutoGrow bind-Value="releaseNote"></MudInput>
+                    <MudInput T="string" Label="发布说明" Placeholder="请输入本次发布说明" MaxLines="5" AutoGrow @bind-Value="releaseNote"></MudInput>
                 </MudItem>
             </MudGrid>
         </div>
@@ -22,7 +22,7 @@
     private MudDialogInstance MudDialog { get; set; }
 
     string releaseNote = string.Empty;
-    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    private void Submit() => MudDialog.Close(DialogResult.Ok(releaseNote));
 
     private void Cancel() => MudDialog.Cancel();
 }

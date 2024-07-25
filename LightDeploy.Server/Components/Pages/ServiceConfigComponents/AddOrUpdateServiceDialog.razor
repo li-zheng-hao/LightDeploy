@@ -26,7 +26,7 @@
                     <MudSwitch T="bool" bind-Value="@DeployService.IsSelfContained" Label="包含运行时"></MudSwitch>
                     <MudSwitch T="bool" bind-Value="@DeployService.EnableHealthCheck" Label="健康检查"></MudSwitch>
                     <MudNumericField Label="Port" T="int?" Required RequiredError="端口不能为空" @bind-Value="DeployService.Port"/>
-                    <MudSwitch T="bool?" bind-Value="@DeployService.OnlyCopyFiles" Label="仅拷贝文件并重启服务"></MudSwitch>
+                    <MudSwitch T="bool?" bind-Value="@DeployService.OnlyCopyFiles" Label="仅拷贝文件"></MudSwitch>
                     <MudTextField Placeholder="请输入目标文件夹" T="string"  @bind-Value="DeployService.TargetDir"/>
                     <MudTextField Placeholder="请输入忽略规则,|分割" T="string"  @bind-Value="DeployService.IgnoreRules"/>
                     <MudTextField Placeholder="请输入运行前执行的powershell脚本" AutoGrow MaxLines="50" T="string"  @bind-Value="DeployService.BeforeScript"/>
@@ -70,11 +70,13 @@
         }
         else
         {
-            var exist = DbClient.Queryable<DeployService>().Any(it => it.Name == DeployService.Name&&it.Id!=DeployService.Id);
+            var exist = DbClient.Queryable<DeployService>().Any(it => it.Name == DeployService.Name
+                                                                      &&it.EnvironmentName==DeployService.EnvironmentName
+                                                                      &&it.GroupName==DeployService.GroupName&&it.Id!=DeployService.Id);
 
             if (exist)
             {
-                Message.Add("该服务已经存在相同的IP和端口的发布目标", Severity.Error);
+                Message.Add("该服务已经存在相同分组和名称的服务", Severity.Error);
             }
             else
             {
