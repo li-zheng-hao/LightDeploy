@@ -221,7 +221,7 @@
     
     void FetchData()
     {
-        DeployServices = DbClient.Queryable<DeployService>().ToList();
+        DeployServices = DbClient.Queryable<DeployService>().OrderBy(it=>it.Name).ToList();
         Log.Information($"刷新数据 一共有{DeployServices.Count}条数据");
     }
 
