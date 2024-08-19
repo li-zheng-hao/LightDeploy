@@ -275,7 +275,7 @@ public class DeployService
             else
             {
                 FileInfo fileInfo=new FileInfo(filePath);
-                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime<fileInfoDto.LastWriteTime)
+                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime!=fileInfoDto.LastWriteTime)
                 {
                     result.Add(fileInfoDto);
                 }                
