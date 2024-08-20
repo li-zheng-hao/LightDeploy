@@ -57,7 +57,7 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        AllTargets = DbClient.Queryable<DeployTarget>().ToList();
+        AllTargets = DbClient.Queryable<DeployTarget>().OrderBy(it=>it.Host).ToList();
         AgentUpdateDtos = AllTargets.DistinctBy(it => it.Host).Select(it => new AgentUpdateDto()
         {
             Host = it.Host,
