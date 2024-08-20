@@ -30,6 +30,7 @@ public class AgentService : IAsyncDisposable
             _target = target;
             connection = new HubConnectionBuilder()
                 .WithUrl($"http://{target.Host}:{target.Port}/agent")
+                .WithServerTimeout(TimeSpan.FromSeconds(3))
                 .WithAutomaticReconnect()
                 .Build();
             connection.On("Log", (string msg) => { _notifyService.NotifyMessageToUser($"Agent: {msg}"); });
@@ -54,7 +55,7 @@ public class AgentService : IAsyncDisposable
     {
         var client = $"http://{_target.Host}:{_target.Port}/{endpoint}"
                 .WithHeader("Authorization", _target.AuthKey ?? "")
-                .WithHeader("WsConnectionId", connection.ConnectionId)
+                .WithHeader("WsConnectionId", connection?.ConnectionId??string.Empty)
             ;
         client.Settings.JsonSerializer = new NewtonsoftJsonSerializer(new JsonSerializerSettings()
         {
@@ -225,6 +226,18 @@ public class AgentService : IAsyncDisposable
 
         _notifyService.NotifyMessageToUser(response.msg??"获取状态失败");
         return response.msg??"获取状态失败";
+    }
+    public async Task<string?> GetAgentVersion(DeployTarget target)
+    {
+        _target = target;
+        var response = await GetHttpClient("api/deploy/getagentversion")
+            .WithTimeout(1)
+            .GetJsonAsync<UnifyResult<string>>();
+        if (response.success)
+        {
+            return response.data??string.Empty;
+        }
+        return response.msg??"获取版本失败";
     }
 
 

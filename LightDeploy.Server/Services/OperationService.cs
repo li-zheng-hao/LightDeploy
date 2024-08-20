@@ -315,6 +315,31 @@ public class OperationService
              await _agentService.DisConnect();
         }
     }
+    
+    /// <summary>
+    /// 更新Agent
+    /// </summary>
+    public async Task UpdateAgent(DeployTarget target, string? zipFilePath)
+    {
+        _notifyService.NotifyMessageToUser($"更新{target.Host}开始");
+
+        try
+        {
+            await  _agentService.InitTargetConnection(target,default);
+
+            await  _agentService.UpdateAgent(zipFilePath, target);
+
+            await _agentService.DisConnect();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,e.Message);
+            _notifyService.NotifyMessageToUser($"更新代理失败:{e.Message}:{e.StackTrace}");
+            return ;
+        }
+        _notifyService.NotifyMessageToUser($"更新{target.Host}完成");
+
+    }
 
     public async Task<string> GetStatus(DeployTarget deployTarget,string serviceName)
     {
@@ -332,6 +357,22 @@ public class OperationService
         {
             Log.Error(e,e.Message);
             return e.Message;
+        }
+        
+    }
+    public async Task<string> GetAgentVersion(DeployTarget deployTarget)
+    {
+        try
+        {
+            string? status=await _agentService.GetAgentVersion(deployTarget);
+
+            return status??"查询失败";
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,e.Message);
+            _notifyService.NotifyMessageToUser($"{deployTarget.Host}获取版本失败:{e.Message}");
+            return "查询失败";
         }
         
     }

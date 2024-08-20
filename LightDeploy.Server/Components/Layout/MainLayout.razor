@@ -19,6 +19,7 @@
             <MudNavMenu>
                 <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Backup">服务发布</MudNavLink>
                 <MudNavLink Href="/service-config" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.BorderAll">服务配置</MudNavLink>
+                <MudNavLink Href="/agent-update" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Boy">代理更新</MudNavLink>
             </MudNavMenu>
         </MudDrawer>
         <MudMainContent >
@@ -66,6 +67,9 @@
                 break;
             case "/global-config":
                 pageTitle = "全局配置";
+                break;
+            case "/agent-update":
+                pageTitle = "代理更新";
                 break;
             default:
                 pageTitle = "服务发布";

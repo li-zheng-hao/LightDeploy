@@ -141,4 +141,14 @@ public class DeployController : ControllerBase
         return Ok(WindowsServiceHelper.GetStatus(serviceName));
 
     }
+
+    /// <summary>
+    /// 获取代理版本
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+    public IActionResult GetAgentVersion()
+    {
+        return Ok("1.0.0");
+    }
 }
