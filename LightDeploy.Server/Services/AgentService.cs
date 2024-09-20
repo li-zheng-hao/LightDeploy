@@ -25,17 +25,18 @@ public class AgentService : IAsyncDisposable
 
     public async Task InitTargetConnection(DeployTarget target,CancellationToken cancellationToken)
     {
-        if (connection == null)
+        if (connection != null)
         {
-            _target = target;
-            connection = new HubConnectionBuilder()
-                .WithUrl($"http://{target.Host}:{target.Port}/agent")
-                .WithServerTimeout(TimeSpan.FromSeconds(3))
-                .WithAutomaticReconnect()
-                .Build();
-            connection.On("Log", (string msg) => { _notifyService.NotifyMessageToUser($"Agent: {msg}"); });
-            await connection.StartAsync(cancellationToken:cancellationToken);
+            await DisConnect();
         }
+        _target = target;
+        connection = new HubConnectionBuilder()
+            .WithUrl($"http://{target.Host}:{target.Port}/agent")
+            .WithServerTimeout(TimeSpan.FromSeconds(3))
+            .WithAutomaticReconnect()
+            .Build();
+        connection.On("Log", (string msg) => { _notifyService.NotifyMessageToUser($"Agent: {msg}"); });
+        await connection.StartAsync(cancellationToken:cancellationToken);
     }
     public async Task DisConnect()
     {
@@ -101,7 +102,7 @@ public class AgentService : IAsyncDisposable
     /// <param name="calculateNeedDeployFiles"></param>
     /// <returns></returns>
     public async Task<bool> Upload(Stream memoryStream, string serviceName,
-        List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles,bool enableHealthCheck)
+        List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles,bool enableHealthCheck,bool skipBackup)
     {
         var response = await GetHttpClient("api/deploy/deploy")
             .WithTimeout(TimeSpan.FromMinutes(5))

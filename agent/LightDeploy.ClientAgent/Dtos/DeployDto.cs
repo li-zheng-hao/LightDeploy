@@ -42,4 +42,9 @@ public class DeployDto
     /// </summary>
     public bool? OnlyCopyFiles { get; set; }
     
+    /// <summary>
+    /// 跳过备份步骤
+    /// </summary>
+    public bool? SkipBackup { get; set; }
+    
 }

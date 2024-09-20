@@ -20,6 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddWindowsService();
 builder.Services.AddScoped<DeployService>();
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
+builder.Services.AddSqlSugarSetup();
 builder.Services.Configure<FormOptions>(x =>
 {
     x.ValueLengthLimit = int.MaxValue;

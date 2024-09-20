@@ -2,9 +2,10 @@
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Masuit.Tools;
+using Serilog;
 using SevenZipExtractor;
 
-namespace LightDeploy.Server.Core;
+namespace LightDeploy.ClientAgent.Helper;
 
 public static class FileHelper
 {
@@ -118,22 +119,26 @@ public static class FileHelper
     {
         var exeDirInfo = new DirectoryInfo(dir);
         var fileInfos = exeDirInfo.GetFiles("*.*", SearchOption.AllDirectories);
-        var fileInfoDtos = fileInfos.Where(it => it.Extension != ".log")
+        Log.Information($"获取文件信息,文件总数：{fileInfos.Count()}");
+        var fileInfoDtos = fileInfos
+            .Where(it=>new[]{".log", ".db", ".db-shm", ".db-wal"}.All(ext=>!ext.Equals(it.Extension, StringComparison.OrdinalIgnoreCase)))
             .WhereIf(serviceIgnoreRules.IsNullOrEmpty()==false,it =>
             {
                 var ignoreRules = serviceIgnoreRules!.Split(new[] { '|' });
                 return ignoreRules.All(rule=>!Regex.IsMatch(it.FullName, rule));
             })
-            .Select(it => new FileInfoDto()
-        {
-            FileName = it.Name,
-            RelativeDirectory = Path.GetDirectoryName(it.FullName)!.Replace(dir, string.Empty),
-            FileSize = it.Length,
-            AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
-            LastWriteTime = it.LastWriteTime,
-            // MD5 = "none"
-            MD5 = GetFileMd5(it.FullName)
-        }).ToList();
+            .Select(it =>
+            {
+                return new FileInfoDto()
+                {
+                    FileName = it.Name,
+                    RelativeDirectory = Path.GetDirectoryName(it.FullName)!.Replace(dir, string.Empty),
+                    FileSize = it.Length,
+                    AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
+                    LastWriteTime = it.LastWriteTime,
+                    MD5 = GetFileMd5(it.FullName)
+                };
+            }).ToList();
         foreach (var fileInfoDto in fileInfoDtos.Where(it => it.RelativeDirectory.StartsWith("/") || it.RelativeDirectory.StartsWith("\\")))
         {
             fileInfoDto.RelativeDirectory = fileInfoDto.RelativeDirectory.Substring(1);

@@ -6,6 +6,7 @@ public class NotifyService
 {
     public List<string> Logs { get; private set; } = new();
 
+    public static object locker = new();
     public void ClearLogs()
     {
         Logs.Clear();
@@ -35,8 +36,11 @@ public class NotifyService
     /// <returns></returns>
     public void NotifyMessageToUser(string message)
     {
-        message = $"{Host}{DateTime.Now} {message}";
-        Logs.Insert(0,message);
-        Log.Information(message);
+        lock (locker)
+        {
+            message = $"{Host}{DateTime.Now} {message}";
+            Logs.Insert(0,message);
+            Log.Information(message);
+        }
     }
 }

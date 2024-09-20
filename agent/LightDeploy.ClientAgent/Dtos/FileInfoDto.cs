@@ -10,17 +10,17 @@ public class FileInfoDto
     /// 文件名
     /// </summary>
     public string FileName { get; set; }
-    
+
     /// <summary>
     /// 文件大小
     /// </summary>
     public long FileSize { get; set; }
-    
+
     /// <summary>
     /// 最后修改时间
     /// </summary>
     public DateTime LastWriteTime { get; set; }
 
     public string? AbsoluteDirectory { get; set; }
-    public string MD5 { get; set; }
+    public string? MD5 { get; set; }
 }

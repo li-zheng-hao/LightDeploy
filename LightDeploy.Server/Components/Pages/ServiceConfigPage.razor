@@ -119,7 +119,7 @@
     {
         _deployServices = DbClient.Queryable<DeployService>()
             .WhereIF(!_groupName.IsNullOrEmpty(), it => it.GroupName == _groupName)
-            .WhereIF(!_serviceName.IsNullOrEmpty(), it => it.Name == _serviceName)
+            .WhereIF(!_serviceName.IsNullOrEmpty(), it => it.Name.Contains(_serviceName))
             .WhereIF(!_environmentName.IsNullOrEmpty(), it => it.EnvironmentName == _environmentName)
             .ToList();
     }

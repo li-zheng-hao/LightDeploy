@@ -149,6 +149,6 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult GetAgentVersion()
     {
-        return Ok("1.0.0");
+        return Ok("1.3.1");
     }
 }

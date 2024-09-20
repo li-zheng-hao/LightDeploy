@@ -135,7 +135,11 @@ public class OperationService
 
     private async Task DeployFolder(List<DeployTarget> targets, DeployService service, string buildOutputDir,DeployContext deployContext)
     {
-        var currentFileInfos = FileHelper.GetFileInfos(buildOutputDir);
+        _notifyService.NotifyMessageToUser($"-------开始计算发布文件信息------------");
+
+        var currentFileInfos = FileHelper.GetFileInfos(buildOutputDir,service.IgnoreRules);
+
+        _notifyService.NotifyMessageToUser($"-------计算发布文件信息完成，一共有{currentFileInfos.Count}待比较------------");
 
         foreach (var deployTarget in targets)
         {
@@ -146,6 +150,7 @@ public class OperationService
             await _agentService.InitTargetConnection(deployTarget,deployContext.CancellationTokenSource?.Token??default);
 
             List<FileHelper.FileInfoDto>? needCopiedFiles;
+            _notifyService.NotifyMessageToUser("开始对比文件");
 
             if (!string.IsNullOrWhiteSpace(service.TargetDir))
             {
@@ -154,6 +159,7 @@ public class OperationService
             else
                 needCopiedFiles = await _agentService.Compare(currentFileInfos, service.Name,deployContext.CancellationTokenSource?.Token??default);
 
+            _notifyService.NotifyMessageToUser("文件对比完成");
 
             if (needCopiedFiles.IsNullOrEmpty())
             {
@@ -176,6 +182,7 @@ public class OperationService
                             Regex.IsMatch(Path.Combine(it.RelativeDirectory, it.FileName), rule));
                     }).ToList();
                 }
+                _notifyService.NotifyMessageToUser($"-------文件对比完成，一共有{needCopiedFiles!.Count}个文件待发布------------");
 
                 foreach (var needCopiedFile in needCopiedFiles!)
                 {
@@ -186,11 +193,12 @@ public class OperationService
             var memoryStream = FileHelper.CreateZipFile(needCopiedFiles,deployContext.CancellationTokenSource?.Token??default);
 
             deployContext.CanCanel = false;
-            
-            _notifyService.NotifyMessageToUser($"开始上传并部署文件");
 
+
+            bool skipBackup = service.EnvironmentName != "生产";
+            _notifyService.NotifyMessageToUser($"开始上传并部署文件,跳过备份:{skipBackup}");
             await _agentService.Upload(memoryStream, service.Name, needCopiedFiles,
-                service.TargetDir ?? "", service.OnlyCopyFiles ?? false,service.EnableHealthCheck);
+                service.TargetDir ?? "", service.OnlyCopyFiles ?? false,service.EnableHealthCheck,skipBackup);
 
             _notifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
 
