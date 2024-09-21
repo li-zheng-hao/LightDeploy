@@ -2,6 +2,7 @@
 using System.Management;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using Serilog;
 
 namespace LightDeploy.ClientAgent
 {
@@ -421,10 +422,11 @@ namespace LightDeploy.ClientAgent
          */
         public static bool NssmInstall(string serviceName, string param, string execFullPath, string serviceStartType, string serviceDescription,Func<string,Task> log)
         {
-            var parent=Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory);
+            var parent=Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)!.Parent;
             string nssmPath = Path.Combine(parent!.FullName, "nssm.exe");
             if (!File.Exists(nssmPath))
             {
+                Log.Information($"nssm.exe 文件未找到，路径{nssmPath}");
                 throw new FileNotFoundException(nssmPath);
             }
 

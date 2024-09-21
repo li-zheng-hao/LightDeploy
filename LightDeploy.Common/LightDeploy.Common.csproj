@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="LightApi.Infra" Version="3.8.2" />
+      <PackageReference Include="LightApi.SqlSugar" Version="1.0.0" />
+      <PackageReference Include="SevenZipExtractor" Version="1.0.17" />
+    </ItemGroup>
+
+</Project>

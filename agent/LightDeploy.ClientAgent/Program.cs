@@ -1,15 +1,16 @@
-using LightApi.Infra.DependencyInjections;
+using LightApi.Infra;
 using LightDeploy.ClientAgent;
 using LightDeploy.ClientAgent.Auth;
 using LightDeploy.ClientAgent.Hubs;
 using LightDeploy.ClientAgent.Services;
+using LightDeploy.Common;
 using Microsoft.AspNetCore.Http.Features;
-using Serilog;
-using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogSetup();
-builder.Services.AddInfraSetup(builder.Configuration);
+builder.Services.AddLightApiSetup(it =>
+{
+});
 builder.Host.AddAutofacSetup(builder.Configuration);
 
 // Add services to the container.
@@ -20,7 +21,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddWindowsService();
 builder.Services.AddScoped<DeployService>();
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
-builder.Services.AddSqlSugarSetup();
+builder.Services.AddSqlSugarSetup("DataSource=lightdeploy_agent.db");
 builder.Services.Configure<FormOptions>(x =>
 {
     x.ValueLengthLimit = int.MaxValue;
@@ -35,6 +36,14 @@ builder.Services.AddAuthentication(option =>
  
     })
     .AddKeyAuthentication(options => { });
+
+builder.Services.AddMvc(it =>
+{
+
+}).AddNewtonsoftJson(it =>
+{
+    it.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+});
 
 var app = builder.Build();
 

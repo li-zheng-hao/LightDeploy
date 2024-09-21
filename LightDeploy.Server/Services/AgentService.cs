@@ -1,5 +1,6 @@
 ﻿using Flurl.Http;
 using Flurl.Http.Configuration;
+using LightDeploy.Common.Helper;
 using LightDeploy.Server.Core;
 using LightDeploy.Server.Domain;
 using LightDeploy.Server.Dtos;
@@ -13,15 +14,11 @@ namespace LightDeploy.Server.Services;
 
 public class AgentService : IAsyncDisposable
 {
-    private readonly NotifyService _notifyService;
+    public NotifyService? NotifyService;
     private HubConnection? connection;
 
     private DeployTarget _target;
 
-    public AgentService(NotifyService notifyService)
-    {
-        _notifyService = notifyService;
-    }
 
     public async Task InitTargetConnection(DeployTarget target,CancellationToken cancellationToken)
     {
@@ -35,8 +32,11 @@ public class AgentService : IAsyncDisposable
             .WithServerTimeout(TimeSpan.FromSeconds(3))
             .WithAutomaticReconnect()
             .Build();
-        connection.On("Log", (string msg) => { _notifyService.NotifyMessageToUser($"Agent: {msg}"); });
-        await connection.StartAsync(cancellationToken:cancellationToken);
+        connection.On("Log", (string msg) => { NotifyService.NotifyMessageToUser($"Agent: {msg}"); });
+        var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        tokenSource.CancelAfter(TimeSpan.FromSeconds(2));
+        
+        await connection.StartAsync(cancellationToken:tokenSource.Token);
     }
     public async Task DisConnect()
     {
@@ -89,7 +89,7 @@ public class AgentService : IAsyncDisposable
         }
         else
         {
-            _notifyService.NotifyMessageToUser(result.msg);
+            NotifyService.NotifyMessageToUser(result.msg);
             return null;
         }
     }
@@ -122,7 +122,7 @@ public class AgentService : IAsyncDisposable
             .ReceiveJson<UnifyResult<object>>();
         if (!response.success)
         {
-            _notifyService.NotifyMessageToUser($"部署失败{_target.Host}:{_target.Port} {response.msg}");
+            NotifyService.NotifyMessageToUser($"部署失败{_target.Host}:{_target.Port} {response.msg}");
             return false;
         }
         else
@@ -137,7 +137,7 @@ public class AgentService : IAsyncDisposable
             .ReceiveJson<UnifyResult<object>>();
         if (!response.success)
         {
-            _notifyService.NotifyMessageToUser(response.msg ?? "启动失败");
+            NotifyService.NotifyMessageToUser(response.msg ?? "启动失败");
         }
     }
 
@@ -149,7 +149,7 @@ public class AgentService : IAsyncDisposable
             .ReceiveJson<UnifyResult<object>>();
         if (!response.success)
         {
-            _notifyService.NotifyMessageToUser(response.msg ?? "停止失败");
+            NotifyService.NotifyMessageToUser(response.msg ?? "停止失败");
         }
     }
 
@@ -165,7 +165,7 @@ public class AgentService : IAsyncDisposable
         }
         else
         {
-            _notifyService.NotifyMessageToUser(response.msg ?? "获取状态失败");
+            NotifyService.NotifyMessageToUser(response.msg ?? "获取状态失败");
             return default;
         }
     }
@@ -184,7 +184,7 @@ public class AgentService : IAsyncDisposable
             .PostMultipartAsync(mp =>
             {
                 mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
-                mp.AddString("ServiceName", deployTarget.Service!.Name);
+                mp.AddString("ServiceName", service!.Name);
                 mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
                 mp.AddString("Params", request.ExeParams ?? "");
                 mp.AddString("ExeFullPath", Path.Combine(request.TargetDir, request.ExePath) ?? "");
@@ -194,7 +194,7 @@ public class AgentService : IAsyncDisposable
         if (!resp.success)
         {
             Log.Error(resp.ToJsonString());
-            _notifyService.NotifyMessageToUser($"安装失败 {resp.msg}");
+            NotifyService.NotifyMessageToUser($"安装失败 {resp.msg}");
         }
     }
 
@@ -208,9 +208,9 @@ public class AgentService : IAsyncDisposable
         catch (FlurlHttpException ex)
         {
             var body = await ex.GetResponseStringAsync();
-            _notifyService.NotifyMessageToUser("处理异常");
-            _notifyService.NotifyMessageToUser($"返回消息 {ex.Message}");
-            _notifyService.NotifyMessageToUser($"返回消息 {body}");
+            NotifyService.NotifyMessageToUser("处理异常");
+            NotifyService.NotifyMessageToUser($"返回消息 {ex.Message}");
+            NotifyService.NotifyMessageToUser($"返回消息 {body}");
         }
     }
 
@@ -225,7 +225,7 @@ public class AgentService : IAsyncDisposable
             return response.data??string.Empty;
         }
 
-        _notifyService.NotifyMessageToUser(response.msg??"获取状态失败");
+        NotifyService.NotifyMessageToUser(response.msg??"获取状态失败");
         return response.msg??"获取状态失败";
     }
     public async Task<string?> GetAgentVersion(DeployTarget target)
@@ -255,7 +255,7 @@ public class AgentService : IAsyncDisposable
         }
         else
         {
-            _notifyService.NotifyMessageToUser(result.msg??string.Empty);
+            NotifyService.NotifyMessageToUser(result.msg??string.Empty);
             return null;
         }
     }

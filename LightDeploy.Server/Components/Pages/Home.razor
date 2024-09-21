@@ -19,7 +19,7 @@
 
 <PageTitle>服务发布</PageTitle>
 <div style="display: flex;gap: 10px">
-    <MudGrid  Style="flex: 1">
+    <MudGrid Style="flex: 1">
         <MudItem xs="12">
             <MudCard>
                 <MudCardHeader>
@@ -32,17 +32,16 @@
                         <MudItem xs="12">
                             <MudSelect T="string" Label="选择环境" AnchorOrigin="Origin.BottomCenter" Value="SelectedEnvironment"
                                        ValueChanged="@SelectEnvironmentChanged">
-                                <MudSelectItem Value="@("开发")" />
-                                <MudSelectItem Value="@("开发测试")" />
-                                <MudSelectItem Value="@("测试")" />
-                                <MudSelectItem Value="@("预览")" />
-                                <MudSelectItem Value="@("生产")" />
+                                <MudSelectItem Value="@("开发")"/>
+                                <MudSelectItem Value="@("开发测试")"/>
+                                <MudSelectItem Value="@("测试")"/>
+                                <MudSelectItem Value="@("预览")"/>
+                                <MudSelectItem Value="@("生产")"/>
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12">
                             <MudSelect T="string" Label="选择分组" AnchorOrigin="Origin.BottomCenter" Value="SelectedGroup"
-                                       ValueChanged="@SelectGroupChanged"
-                                     >
+                                       ValueChanged="@SelectGroupChanged">
                                 @foreach (var item in ServiceGroups ?? new List<string?>())
                                 {
                                     <MudSelectItem Value="@item"/>
@@ -53,8 +52,7 @@
 
                         <MudItem xs="12">
                             <MudSelect T="string" Label="选择服务" AnchorOrigin="Origin.BottomCenter" Value="SelectedServiceName"
-                                       ValueChanged="@SelectServiceChanged"
-                                       >
+                                       ValueChanged="@SelectServiceChanged">
                                 @foreach (var item in ServiceNames ?? new List<string>())
                                 {
                                     <MudSelectItem Value="item"/>
@@ -68,7 +66,7 @@
                             <MudButton Variant="Variant.Filled" OnClick="InstallService" Disabled="@DeployContext.IsRunning">安装服务</MudButton>
                             <MudButton Variant="Variant.Filled" OnClick="StartService">启动服务</MudButton>
                             <MudButton Variant="Variant.Filled" OnClick="StopService">停止服务</MudButton>
-                            <MudButton Variant="Variant.Filled" OnClick="()=>NotifyService.ClearLogs()">清空日志</MudButton>
+                            <MudButton Variant="Variant.Filled" OnClick="() => NotifyService.ClearLogs()">清空日志</MudButton>
                         </MudItem>
                     </MudGrid>
                 </MudCardContent>
@@ -85,7 +83,7 @@
                 <MudCardContent>
                     <MudGrid>
                         <MudItem xs="12">
-                            <MudTable T="DeployHistory" Items="DeployHistories"  >
+                            <MudTable T="DeployHistory" Items="DeployHistories">
                                 <HeaderContent>
                                     <MudTh>说明</MudTh>
                                     <MudTh>发布时间</MudTh>
@@ -101,8 +99,8 @@
             </MudCard>
         </MudItem>
     </MudGrid>
-    <div Style="flex: 3" >
-        <MudGrid  >
+    <div Style="flex: 3">
+        <MudGrid >
             <MudItem lg="12">
                 <MudCard>
                     <MudCardHeader>
@@ -112,9 +110,9 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudGrid>
-                            <MudItem xs="12" >
-                                <MudTable T="DeployTargetViewModel" @ref="deployTargetsTable" Items="DeployTargetViewModels" MultiSelection  @bind-SelectedItems="@selectDeployTargets"
-                                          SelectOnRowClick Height="300px" >
+                            <MudItem xs="12">
+                                <MudTable T="DeployTargetViewModel" @ref="deployTargetsTable" Items="DeployTargetViewModels" MultiSelection @bind-SelectedItems="@selectDeployTargets"
+                                          SelectOnRowClick Height="300px">
                                     <HeaderContent>
                                         <MudTh>编号</MudTh>
                                         <MudTh>状态</MudTh>
@@ -145,9 +143,9 @@
                         <MudGrid>
                             <MudItem xs="12">
                                 <div style="max-height: 500px;overflow-y: scroll">
-                                    @foreach (var item in NotifyService.Logs.ToList())
+                                    @foreach (var log in NotifyService.Logs)
                                     {
-                                    <div>@item</div>
+                                        <div>@log</div>
                                     }
                                 </div>
                             </MudItem>
@@ -157,7 +155,7 @@
             </MudItem>
         </MudGrid>
     </div>
-    
+
 </div>
 
 
@@ -167,24 +165,21 @@
 
 @code{
 
-   
+
     // 部署上下文
     DeployContext DeployContext = new();
-    [Inject] 
-    public OperationService OperationService{ get; set; }
-    [Inject] 
-    public NotifyService NotifyService{ get; set; }
-    [Inject] 
-    public ILocalStorageService LocalStorageService{ get; set; }
-    
+    [Inject] public OperationService OperationService { get; set; }
+    [Inject] public NotifyService NotifyService { get; set; }
+    [Inject] public ILocalStorageService LocalStorageService { get; set; }
+
     List<DeployService>? DeployServices;
-    
+
     List<DeployTarget>? DeployTargets;
 
     List<DeployTargetViewModel>? DeployTargetViewModels;
-    
+
     List<DeployHistory>? DeployHistories;
-    
+
     string SelectedEnvironment = string.Empty;
     string SelectedGroup = string.Empty;
     string SelectedServiceName = string.Empty;
@@ -193,14 +188,15 @@
     List<string>? ServiceNames;
     List<string?>? EnvironmentNames;
     private RateLimitedAction recaculateOptions;
-    private HashSet<DeployTargetViewModel> selectDeployTargets=new();
+    private HashSet<DeployTargetViewModel> selectDeployTargets = new();
 
     protected override async Task OnInitializedAsync()
     {
         base.OnInitialized();
+        OperationService.NotifyService = NotifyService;
         recaculateOptions = GetRecalculateOptions();
         FetchData();
-        DeployContext.PropertyChanged += (s,e) =>
+        DeployContext.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(DeployContext.CanCanel))
             {
@@ -208,20 +204,20 @@
             }
         };
         recaculateOptions?.Invoke();
-        
-        SelectedServiceName=await LocalStorageService.GetItemAsStringAsync(nameof(SelectedServiceName) )??string.Empty;
-        SelectedEnvironment=await LocalStorageService.GetItemAsStringAsync(nameof(SelectedEnvironment))??string.Empty;
-        SelectedGroup=await LocalStorageService.GetItemAsStringAsync(nameof(SelectedGroup))??string.Empty;
+
+        SelectedServiceName = await LocalStorageService.GetItemAsStringAsync(nameof(SelectedServiceName)) ?? string.Empty;
+        SelectedEnvironment = await LocalStorageService.GetItemAsStringAsync(nameof(SelectedEnvironment)) ?? string.Empty;
+        SelectedGroup = await LocalStorageService.GetItemAsStringAsync(nameof(SelectedGroup)) ?? string.Empty;
         Log.Information($"已选择值 {SelectedServiceName} {SelectedEnvironment} {SelectedGroup}");
         if (SelectedServiceName.IsNullOrEmpty() == false)
         {
             await SelectServiceChanged(SelectedServiceName);
         }
     }
-    
+
     void FetchData()
     {
-        DeployServices = DbClient.Queryable<DeployService>().OrderBy(it=>it.Name).ToList();
+        DeployServices = DbClient.Queryable<DeployService>().OrderBy(it => it.Name).ToList();
         Log.Information($"刷新数据 一共有{DeployServices.Count}条数据");
     }
 
@@ -238,9 +234,11 @@
             Message.Add("当前进度无法取消", Severity.Error);
             return;
         }
+
         DeployContext.CancellationTokenSource?.Cancel();
         Message.Add("取消部署成功", Severity.Success);
     }
+
     void FetchHistory(int serviceId)
     {
         DeployHistories = DbClient.Queryable<DeployHistory>().Where(it => it.ServiceId == serviceId)
@@ -248,7 +246,7 @@
             .Take(10)
             .ToList();
     }
-    
+
     async Task Deploy()
     {
         var service = GetCorrectDeployService();
@@ -257,45 +255,42 @@
             Message.Add("请选择要部署的服务", Severity.Error);
             return;
         }
+
         if (selectDeployTargets.IsNullOrEmpty())
         {
             Message.Add("请选择要部署的目标", Severity.Error);
         }
         else
         {
-            var dialogRef= DialogService.Show<DeployConfirmDialog>("发布说明");
+            var dialogRef = DialogService.Show<DeployConfirmDialog>("发布说明");
             var dialogResult = await dialogRef.Result;
             if (dialogResult!.Canceled) return;
             var releaseNote = dialogResult.Data as string;
             DeployContext.IsRunning = true;
             NotifyService.ClearLogs();
-            NotifyService.NotifyMessageToUser("开始部署"+DateTime.Now);
+            NotifyService.NotifyMessageToUser("开始部署" + DateTime.Now);
             Task.Run(() =>
             {
                 while (DeployContext.IsRunning)
                 {
-                    InvokeAsync(() =>
-                    {
-                        StateHasChanged();
-                    });
+                    InvokeAsync(() => { StateHasChanged(); });
                     Thread.Sleep(500);
                 }
             });
-            await OperationService.Deploy(selectDeployTargets.Adapt<List<DeployTarget>>(),service, releaseNote,DeployContext);
+            await OperationService.Deploy(selectDeployTargets.Adapt<List<DeployTarget>>(), service, releaseNote, DeployContext);
             DeployContext.Reset();
             FetchHistory(service.Id);
         }
     }
 
-   
+
     private void SelectGroupChanged(string group)
     {
         SelectedGroup = group;
         SelectedServiceName = string.Empty;
         recaculateOptions?.Invoke();
-    
     }
-    
+
     private async Task SelectServiceChanged(string serviceName)
     {
         SelectedServiceName = serviceName;
@@ -312,29 +307,21 @@
         {
             FetchHistory(service.Id);
             FetchDeployTarget(service.Id);
-            FetchTargetStatus(service.Name);
+            await FetchTargetStatus(service.Name);
         }
     }
 
-    private void FetchTargetStatus(string serviceName)
+    private async Task FetchTargetStatus(string serviceName)
     {
-        if(DeployTargetViewModels.IsNullOrEmpty()) return;
+        if (DeployTargetViewModels.IsNullOrEmpty()) return;
 
-        
-        Task.Run(async () =>
+        await Parallel.ForEachAsync(DeployTargetViewModels!, async (deployTargetViewModel, _) =>
         {
-            foreach (var deployTargetViewModel in DeployTargetViewModels!)
-            {
-                NotifyService.NotifyMessageToUser("获取目标状态"+deployTargetViewModel.Host );
-                deployTargetViewModel.Status = await OperationService.GetStatus(deployTargetViewModel.Adapt<DeployTarget>(), serviceName);
-
-                await InvokeAsync(() =>
-                {
-                    StateHasChanged();
-                });
-            }
-
+            deployTargetViewModel.Status = await OperationService.GetStatus(deployTargetViewModel.Adapt<DeployTarget>(), serviceName);
+            NotifyService.NotifyMessageToUser($"获取目标状态{ deployTargetViewModel.Host}:{deployTargetViewModel.Status}" );
+            await InvokeAsync(() => { StateHasChanged(); });
         });
+
     }
 
     private void SelectEnvironmentChanged(string environment)
@@ -345,8 +332,8 @@
         Log.Information($"选择环境改变了{SelectedEnvironment}");
         recaculateOptions?.Invoke();
     }
-    
-    
+
+
     DeployService? GetCorrectDeployService()
     {
         var selectedServices = DeployServices
@@ -356,52 +343,50 @@
             .ToList();
         if (selectedServices.IsNullOrEmpty())
         {
-            Message.Add("没有找到可用服务,请先依次选择好分组、服务、环境再试",Severity.Error);
+            Message.Add("没有找到可用服务,请先依次选择好分组、服务、环境再试", Severity.Error);
             return null;
         }
-    
+
         if (selectedServices.Count > 1)
         {
-            Message.Add($"当前过滤条件找到的一共有{selectedServices.Count}个服务，无法确定使用哪一个,请先依次选择好分组、服务、环境再试",Severity.Error);
+            Message.Add($"当前过滤条件找到的一共有{selectedServices.Count}个服务，无法确定使用哪一个,请先依次选择好分组、服务、环境再试", Severity.Error);
             return null;
         }
-    
+
         return selectedServices.First();
     }
-    
+
     RateLimitedAction GetRecalculateOptions()
     {
-        return Debouncer.Debounce(() => {
+        return Debouncer.Debounce(() =>
+        {
             Log.Information($"重新计算下拉选项 {SelectedEnvironment} {SelectedGroup}");
-            ServiceNames=  (DeployServices?
+            ServiceNames = (DeployServices?
                 .WhereIf(!SelectedGroup.IsNullOrEmpty(), it => it.GroupName == SelectedGroup)
-                .WhereIf(!SelectedEnvironment.IsNullOrEmpty(),it=>it.EnvironmentName==SelectedEnvironment)
+                .WhereIf(!SelectedEnvironment.IsNullOrEmpty(), it => it.EnvironmentName == SelectedEnvironment)
                 .Select(it => it.Name).Distinct().ToList() ?? new List<string>());
-            ServiceGroups=(DeployServices
-                .WhereIf(!SelectedEnvironment.IsNullOrEmpty(),it=>it.EnvironmentName==SelectedEnvironment)
-                .Select(it=>it.GroupName)
-                .Distinct().ToList() );
-            EnvironmentNames=(DeployServices?
+            ServiceGroups = (DeployServices
+                .WhereIf(!SelectedEnvironment.IsNullOrEmpty(), it => it.EnvironmentName == SelectedEnvironment)
+                .Select(it => it.GroupName)
+                .Distinct().ToList());
+            EnvironmentNames = (DeployServices?
                 .Select(it => it.EnvironmentName).Distinct().ToList() ?? new List<string?>());
-            InvokeAsync(() => {
-                StateHasChanged();
-            });
+            InvokeAsync(() => { StateHasChanged(); });
         }, TimeSpan.FromSeconds(0.5));
     }
 
     void FetchDeployTarget(int serviceId)
     {
-        DeployTargets= DbClient.Queryable<DeployTarget>().Where(it => it.ServiceId == serviceId).ToList();
+        DeployTargets = DbClient.Queryable<DeployTarget>().Where(it => it.ServiceId == serviceId).ToList();
         DeployTargetViewModels = DeployTargets?.Adapt<List<DeployTargetViewModel>>();
         selectDeployTargets?.Clear();
         if (selectDeployTargets == null) selectDeployTargets = new HashSet<DeployTargetViewModel>();
-        foreach (var deployTargetViewModel in DeployTargetViewModels??new List<DeployTargetViewModel>())
+        foreach (var deployTargetViewModel in DeployTargetViewModels ?? new List<DeployTargetViewModel>())
         {
             selectDeployTargets.Add(deployTargetViewModel);
         }
-
-        // deployTargetsTable.UpdateSelection();
     }
+
     public void Dispose()
     {
         recaculateOptions.Dispose();
@@ -418,6 +403,7 @@
             Message.Add("请选择要部署的服务", Severity.Error);
             return;
         }
+
         if (selectDeployTargets.IsNullOrEmpty())
         {
             Message.Add("请选择要部署的目标", Severity.Error);
@@ -426,11 +412,11 @@
         {
             foreach (var deployTarget in selectDeployTargets.Adapt<List<DeployTarget>>())
             {
-                await OperationService.StartService(deployTarget,service.Name);
+                await OperationService.StartService(deployTarget, service.Name);
             }
         }
     }
-    
+
     async Task StopService()
     {
         var service = GetCorrectDeployService();
@@ -439,6 +425,7 @@
             Message.Add("请选择要部署的服务", Severity.Error);
             return;
         }
+
         if (selectDeployTargets.IsNullOrEmpty())
         {
             Message.Add("请选择要部署的目标", Severity.Error);
@@ -447,7 +434,7 @@
         {
             foreach (var deployTarget in selectDeployTargets.Adapt<List<DeployTarget>>())
             {
-                await OperationService.StopService(deployTarget,service.Name);
+                await OperationService.StopService(deployTarget, service.Name);
             }
         }
     }
@@ -460,33 +447,31 @@
             Message.Add("请选择要部署的服务", Severity.Error);
             return;
         }
+
         if (selectDeployTargets.IsNullOrEmpty())
         {
             Message.Add("请选择要部署的目标", Severity.Error);
         }
         else
         {
-            var dialogRef= DialogService.Show<InstallServiceDialog>("安装配置");
+            var dialogRef = DialogService.Show<InstallServiceDialog>("安装配置");
             var dialogResult = await dialogRef.Result;
             if (dialogResult!.Canceled) return;
             var request = dialogResult.Data as InstallServiceRequest;
             DeployContext.IsRunning = true;
             NotifyService.ClearLogs();
-            NotifyService.NotifyMessageToUser("开始部署"+DateTime.Now);
+            NotifyService.NotifyMessageToUser("开始部署" + DateTime.Now);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             Task.Run(() =>
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             {
                 while (DeployContext.IsRunning)
                 {
-                    InvokeAsync(() =>
-                    {
-                        StateHasChanged();
-                    });
+                    InvokeAsync(() => { StateHasChanged(); });
                     Thread.Sleep(500);
                 }
             });
-            await OperationService.Install(selectDeployTargets.Adapt<List<DeployTarget>>(),service, request!,DeployContext);
+            await OperationService.Install(selectDeployTargets.Adapt<List<DeployTarget>>(), service, request!, DeployContext);
             DeployContext.Reset();
         }
     }

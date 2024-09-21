@@ -1,15 +1,12 @@
-using System.Management;
-using System.ServiceProcess;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using LightApi.Infra.Extension;
 using LightApi.Infra.InfraException;
-using LightApi.Infra.Unify;
 using LightDeploy.ClientAgent.Dto;
 using LightDeploy.ClientAgent.Services;
+using LightDeploy.Common.Helper;
+using Masuit.Tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Win32;
+using Serilog;
 
 namespace LightDeploy.ClientAgent.Controllers;
 
@@ -43,16 +40,16 @@ public class DeployController : ControllerBase
     /// <param name="fileInfoDtos"></param>
     /// <returns></returns>
     [HttpPost()]
-    public IActionResult CompareDir([FromQuery] string targetDir,[FromBody] List<FileInfoDto> fileInfoDtos)
+    public IActionResult CompareDir([FromQuery] string targetDir,[FromBody] List<FileHelper.FileInfoDto> fileInfoDtos)
     {
-        List<FileInfoDto> newFileInfos = _deployService.CompareFileInfosInDir(targetDir,fileInfoDtos);
+        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfosInDir(targetDir,fileInfoDtos);
         return Ok(newFileInfos);
     }
     
     [HttpPost()]
-    public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileInfoDto> fileInfoDtos)
+    public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileHelper.FileInfoDto> fileInfoDtos)
     {
-        List<FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
+        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
         return Ok(newFileInfos);
     }
    
@@ -94,7 +91,7 @@ public class DeployController : ControllerBase
         var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
         return Ok(exist);
     }
-
+    
     /// <summary>
     /// 安装windows服务
     /// </summary>
@@ -103,6 +100,7 @@ public class DeployController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> InstallWindowsService([FromForm] InstallWindowsServiceDto installWindowsServiceDto)
     {
+        Log.Information(installWindowsServiceDto.ToJsonString());
         var exist=WindowsServiceHelper.ServiceIsExisted(installWindowsServiceDto.ServiceName);
         Check.ThrowIf(exist,"服务已存在");
         var result=await _deployService.InstallWindowsService(installWindowsServiceDto);
@@ -149,6 +147,6 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult GetAgentVersion()
     {
-        return Ok("1.3.1");
+        return Ok("1.4.0");
     }
 }

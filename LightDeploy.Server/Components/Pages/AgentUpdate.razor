@@ -29,23 +29,21 @@
             </MudTable>
         </MudItem>
         <MudItem lg="12">
-            @foreach(var log in NotifyService.Logs)
+            @foreach (var log in NotifyService.Logs)
             {
                 <div>@log</div>
-            } 
+            }
         </MudItem>
     </MudGrid>
 </div>
 @inject ISqlSugarClient DbClient
 
 @code {
-    
-    [Inject] 
-    public OperationService OperationService{ get; set; }
-    
-    [Inject]
-    public NotifyService NotifyService { get; set; }
-    
+
+    [Inject] public OperationService OperationService { get; set; }
+
+    [Inject] public NotifyService NotifyService { get; set; }
+
     List<AgentUpdateDto> AgentUpdateDtos { get; set; }
 
     HashSet<AgentUpdateDto> SelectAgentUpdateDtos { get; set; }
@@ -54,35 +52,38 @@
 
 
     List<DeployTarget> AllTargets { get; set; }
-    protected override void OnInitialized()
+
+    protected override async Task OnInitializedAsync()
     {
         base.OnInitialized();
-        AllTargets = DbClient.Queryable<DeployTarget>().OrderBy(it=>it.Host).ToList();
+        OperationService.NotifyService = NotifyService;
+        AllTargets = DbClient.Queryable<DeployTarget>().OrderBy(it => it.Host).ToList();
         AgentUpdateDtos = AllTargets.DistinctBy(it => it.Host).Select(it => new AgentUpdateDto()
         {
             Host = it.Host,
             Version = "未知"
         }).ToList();
-        FetchTargetVersion();
+        await FetchTargetVersion();
     }
 
     public async Task Update()
     {
         if (string.IsNullOrWhiteSpace(ZipFilePath))
         {
-            Message.Add("更新包不存在",Severity.Error);
+            Message.Add("更新包不存在", Severity.Error);
             return;
         }
 
         if (SelectAgentUpdateDtos.IsNullOrEmpty())
         {
-            Message.Add("没有选择任何目标",Severity.Error);
+            Message.Add("没有选择任何目标", Severity.Error);
             return;
         }
+
         NotifyService.ClearLogs();
-        
+
         Message.Add("开始更新");
-        
+
         foreach (var selectAgentUpdateDto in SelectAgentUpdateDtos)
         {
             var target = AllTargets.First(it => it.Host == selectAgentUpdateDto.Host);
@@ -91,22 +92,18 @@
 
         Message.Add("全部更新完成", Severity.Success);
     }
-    private void FetchTargetVersion()
-    {
-        if(AgentUpdateDtos.IsNullOrEmpty()) return;
 
-        Task.Run(async () =>
+    private async Task FetchTargetVersion()
+    {
+        if (AgentUpdateDtos.IsNullOrEmpty()) return;
+
+        await Parallel.ForEachAsync(AgentUpdateDtos, async (agentUpdateDto, _) =>
         {
-            foreach (var agentUpdateDto in AgentUpdateDtos)
-            {
-                var target = AllTargets.First(it => it.Host == agentUpdateDto.Host);
-                agentUpdateDto.Version= await OperationService.GetAgentVersion(target);
-                await InvokeAsync(() =>
-                {
-                    StateHasChanged();
-                });
-            }
+            var target = AllTargets.First(it => it.Host == agentUpdateDto.Host);
+            agentUpdateDto.Version = await OperationService.GetAgentVersion(target);
+            NotifyService.NotifyMessageToUser($"查询到目标{agentUpdateDto.Host}版本:{agentUpdateDto.Version}");
         });
+        await InvokeAsync(() => { StateHasChanged(); });
     }
 
     private void ClearLog()

@@ -5,7 +5,7 @@ using Masuit.Tools;
 using Serilog;
 using SevenZipExtractor;
 
-namespace LightDeploy.ClientAgent.Helper;
+namespace LightDeploy.Common.Helper;
 
 public static class FileHelper
 {
@@ -48,39 +48,6 @@ public static class FileHelper
             Directory.Delete(path, recursive);
     }
 
-    /// <summary>
-    /// 从IFormFileCollection中获取指定文件名的索引 如果不存在则返回-1
-    /// </summary>
-    /// <param name="files"></param>
-    /// <param name="fileName"></param>
-    /// <param name="IgnoreCase">是否忽略大小写比较</param>
-    /// <param name="ignoreExtension">是否忽略后缀名</param>
-    /// <returns></returns>
-    public static int GetIndexFromIFormFileCollection(IFormFileCollection files, string fileName,
-        bool IgnoreCase = false, bool ignoreExtension = true)
-    {
-        for (int i = 0; i < files.Count; i++)
-        {
-            var file = files[i];
-            // Perform your desired check or condition
-            if (ignoreExtension)
-            {
-                if (Path.GetFileNameWithoutExtension(file.FileName).Equals(Path.GetFileNameWithoutExtension(fileName),
-                        IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                {
-                    return i;
-                }
-            }
-            else if (file.FileName.Equals(fileName,
-                         IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     public static List<(string fileName, Stream stream)> DecompressFilesBy7Zip(Stream inputStream,
         params string[] exts)
     {
@@ -96,7 +63,6 @@ public static class FileHelper
         }
         return result;
     }
-
 
     public static Stream CompressFiles(List<(Stream Stream, string fileName)> files)
     {

@@ -1,18 +1,13 @@
-﻿using System.Management;
-using System.Net;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text.Json;
 using Flurl.Http;
 using LightApi.Infra.Extension;
 using LightApi.Infra.InfraException;
-using LightApi.Infra.Unify;
 using LightDeploy.ClientAgent.Domain;
 using LightDeploy.ClientAgent.Dto;
-using LightDeploy.ClientAgent.Helper;
-using LightDeploy.ClientAgent.Hubs;
+using LightDeploy.Common.Helper;
 using Masuit.Tools;
-using Microsoft.AspNetCore.SignalR;
 using Polly;
 using Serilog;
 using SevenZipExtractor;
@@ -39,7 +34,7 @@ public class DeployService
         string exeDir = string.Empty;
         try
         {
-            var fileInfoDtos = JsonSerializer.Deserialize<List<FileInfoDto>>(deployDto.FileInfos);
+            var fileInfoDtos = JsonSerializer.Deserialize<List<FileHelper.FileInfoDto>>(deployDto.FileInfos);
             var readStream = deployDto.File.OpenReadStream();
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
             archiveFile.Extract(subDir); // extract all
@@ -146,7 +141,7 @@ public class DeployService
 
     }
 
-    private void UpdateNewFileRecord(string serviceName, List<FileInfoDto>? fileInfoDtos)
+    private void UpdateNewFileRecord(string serviceName, List<FileHelper.FileInfoDto>? fileInfoDtos)
     {
         if (fileInfoDtos == null) return;
         var items = _sqlSugarClient.Queryable<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
@@ -220,7 +215,7 @@ public class DeployService
     /// <param name="backupDir"></param>
     /// <param name="deployDtoFileInfos"></param>
     /// <exception cref="NotImplementedException"></exception>
-    private async Task Backup(string exeDir, string backupDir, List<FileInfoDto> deployDtoFileInfos)
+    private async Task Backup(string exeDir, string backupDir, List<FileHelper.FileInfoDto> deployDtoFileInfos)
     {
         Log.Information($"备份文件夹 {backupDir}");
         foreach (var deployDtoFileInfo in deployDtoFileInfos)
@@ -277,7 +272,7 @@ public class DeployService
         }
     }
 
-    public List<FileInfoDto> GetFileInfos(string serviceName, string ignoreFileExtensions)
+    public List<FileHelper.FileInfoDto> GetFileInfos(string serviceName, string ignoreFileExtensions)
     {
         string[] ignoreArr = new[] { ".log", ".db", ".db-shm", ".db-wal" };
         if (!string.IsNullOrWhiteSpace(ignoreFileExtensions))
@@ -292,7 +287,7 @@ public class DeployService
         string exeDir = Path.GetDirectoryName(exePath)!;
         var exeDirInfo = new DirectoryInfo(exeDir);
         var fileInfos = exeDirInfo.GetFiles("*.*", SearchOption.AllDirectories);
-        var fileInfoDtos = fileInfos.Select(it => new FileInfoDto()
+        var fileInfoDtos = fileInfos.Select(it => new FileHelper.FileInfoDto()
         {
             FileName = it.Name,
             RelativeDirectory = Path.GetDirectoryName(it.FullName)!.Replace(exeDir, string.Empty),
@@ -308,7 +303,7 @@ public class DeployService
         return fileInfoDtos;
     }
 
-    public List<FileInfoDto> CompareFileInfos(string serviceName, List<FileInfoDto> fileInfoDtos)
+    public List<FileHelper.FileInfoDto> CompareFileInfos(string serviceName, List<FileHelper.FileInfoDto> fileInfoDtos)
     {
         string exePath = WindowsServiceHelper.GetWindowsServiceLocation(serviceName);
 
@@ -316,7 +311,7 @@ public class DeployService
             throw new BusinessException("服务路径不存在");
 
         string exeDir = Path.GetDirectoryName(exePath)!;
-        List<FileInfoDto> result = new();
+        List<FileHelper.FileInfoDto> result = new();
         var dbFileRecords = _sqlSugarClient.Queryable<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
         if (dbFileRecords.IsNullOrEmpty())
         {
@@ -399,14 +394,14 @@ public class DeployService
         return res;
     }
 
-    public List<FileInfoDto> CompareFileInfosInDir(string dir, List<FileInfoDto> fileInfoDtos)
+    public List<FileHelper.FileInfoDto> CompareFileInfosInDir(string dir, List<FileHelper.FileInfoDto> fileInfoDtos)
     {
         if (!Directory.Exists(dir))
         {
             throw new BusinessException("目录不存在");
         }
 
-        List<FileInfoDto> result = new();
+        List<FileHelper.FileInfoDto> result = new();
         foreach (var fileInfoDto in fileInfoDtos)
         {
             var filePath = Path.Combine(dir, fileInfoDto.RelativeDirectory, fileInfoDto.FileName);
@@ -468,8 +463,12 @@ public class DeployService
         if (Directory.Exists(targetDir))
         {
             var files = Directory.GetFiles(targetDir);
+
             if (files.Length > 0)
+            {
+                Log.Error("指定目录下已存在文件,请清空后再试");
                 throw new BusinessException("指定目录下已存在文件,请清空后再试");
+            }
         }
         else
         {

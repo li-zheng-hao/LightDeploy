@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
+using LightApi.Infra;
 using LightApi.SqlSugar;
+using LightDeploy.Common.Helper;
 using LightDeploy.Server.Core;
 using LightDeploy.Server.Domain;
 using LightDeploy.Server.Dtos;
@@ -12,17 +14,14 @@ namespace LightDeploy.Server.Services;
 
 public class OperationService
 {
-    private readonly AgentService _agentService;
     private readonly IBaseRepository<DeployHistory> _repository;
-    private readonly NotifyService _notifyService;
+    public NotifyService NotifyService;
 
 
-    public OperationService(AgentService agentService, IBaseRepository<DeployHistory> repository,
-        NotifyService notifyService)
+    public OperationService(IBaseRepository<DeployHistory> repository
+        )
     {
-        _agentService = agentService;
         _repository = repository;
-        _notifyService = notifyService;
     }
 
     public async Task Deploy(List<DeployTarget> targets,DeployService deployService, string? deployComment,DeployContext deployContext)
@@ -41,7 +40,7 @@ public class OperationService
                 var buildResult = await BuildProject(service, deployContext);
                 if (!buildResult.success) return;
                 dir = buildResult.dir;
-                _notifyService.NotifyMessageToUser("编译完成");
+                NotifyService.NotifyMessageToUser("编译完成");
             }
             else
             {
@@ -64,23 +63,23 @@ public class OperationService
         }
         catch (TaskCanceledException )
         {
-            _notifyService.NotifyMessageToUser("任务已取消");
+            NotifyService.NotifyMessageToUser("任务已取消");
         }
         catch (OperationCanceledException )
         {
-            _notifyService.NotifyMessageToUser("任务已取消");
+            NotifyService.NotifyMessageToUser("任务已取消");
         }
         catch (Exception e)
         {
             if (e.InnerException is TaskCanceledException)
             {
-                _notifyService.NotifyMessageToUser("任务已取消");
+                NotifyService.NotifyMessageToUser("任务已取消");
             }
             else
             {
-                _notifyService.NotifyMessageToUser("部署失败");
-                _notifyService.NotifyMessageToUser(e.Message);
-                _notifyService.NotifyMessageToUser(e.StackTrace ?? "");
+                NotifyService.NotifyMessageToUser("部署失败");
+                NotifyService.NotifyMessageToUser(e.Message);
+                NotifyService.NotifyMessageToUser(e.StackTrace ?? "");
             }
         }
     }
@@ -93,19 +92,19 @@ public class OperationService
         var scriptFile = Path.Combine(tmpDir, $"{Guid.NewGuid().ToString()}.ps1");
         try
         {
-            _notifyService.NotifyMessageToUser($"工作目录:{workingDir}");
+            NotifyService.NotifyMessageToUser($"工作目录:{workingDir}");
             File.WriteAllText(scriptFile, serviceBeforeScript);
             var res = await Cli.Wrap("C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe")
                 .WithWorkingDirectory(workingDir)
                 .WithArguments(scriptFile)
-                .WithStandardOutputPipe(PipeTarget.ToDelegate(s => _notifyService.NotifyMessageToUser(s)))
+                .WithStandardOutputPipe(PipeTarget.ToDelegate(s => NotifyService.NotifyMessageToUser(s)))
                 .WithStandardErrorPipe(PipeTarget.ToDelegate(s =>
                 {
-                    _notifyService.NotifyMessageToUser(s);
+                    NotifyService.NotifyMessageToUser(s);
                 }))
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteAsync(token);
-            _notifyService.NotifyMessageToUser($"脚本执行返回状态码：{res.ExitCode}");
+            NotifyService.NotifyMessageToUser($"脚本执行返回状态码：{res.ExitCode}");
             if (!res.IsSuccess ||res.ExitCode!=0)
                 throw new Exception("脚本执行失败");
         }
@@ -124,9 +123,9 @@ public class OperationService
 
         var result = await Cli.Wrap("dotnet")
             .WithArguments($" publish {service.ProjectPath} -c Release -o {tmpDir} {isSelfContained} ")
-            .WithStandardOutputPipe(PipeTarget.ToDelegate(_notifyService.NotifyMessageToUser,
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(NotifyService.NotifyMessageToUser,
                 Encoding.GetEncoding("utf-8")))
-            .WithStandardErrorPipe(PipeTarget.ToDelegate(_notifyService.NotifyMessageToUser,
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(NotifyService.NotifyMessageToUser,
                 Encoding.GetEncoding("utf-8")))
             .WithValidation(CommandResultValidation.ZeroExitCode)
             .ExecuteAsync(deployContext.CancellationTokenSource?.Token??default);
@@ -135,35 +134,38 @@ public class OperationService
 
     private async Task DeployFolder(List<DeployTarget> targets, DeployService service, string buildOutputDir,DeployContext deployContext)
     {
-        _notifyService.NotifyMessageToUser($"-------开始计算发布文件信息------------");
+        NotifyService.NotifyMessageToUser($"-------开始计算发布文件信息------------");
 
         var currentFileInfos = FileHelper.GetFileInfos(buildOutputDir,service.IgnoreRules);
 
-        _notifyService.NotifyMessageToUser($"-------计算发布文件信息完成，一共有{currentFileInfos.Count}待比较------------");
+        NotifyService.NotifyMessageToUser($"-------计算发布文件信息完成，一共有{currentFileInfos.Count}待比较------------");
 
         foreach (var deployTarget in targets)
         {
-            _notifyService.SetHost(deployTarget.Host);
+            var agentService = App.GetRequiredService<AgentService>();
+            agentService.NotifyService = NotifyService;
+            
+            NotifyService.SetHost(deployTarget.Host);
 
-            _notifyService.NotifyMessageToUser($"-------开始处理【{deployTarget.Host}】------------");
+            NotifyService.NotifyMessageToUser($"-------开始处理【{deployTarget.Host}】------------");
 
-            await _agentService.InitTargetConnection(deployTarget,deployContext.CancellationTokenSource?.Token??default);
+            await agentService.InitTargetConnection(deployTarget,deployContext.CancellationTokenSource?.Token??default);
 
             List<FileHelper.FileInfoDto>? needCopiedFiles;
-            _notifyService.NotifyMessageToUser("开始对比文件");
+            NotifyService.NotifyMessageToUser("开始对比文件");
 
             if (!string.IsNullOrWhiteSpace(service.TargetDir))
             {
-                needCopiedFiles = await _agentService.CompareInDir(currentFileInfos, service.TargetDir!,deployContext.CancellationTokenSource?.Token??default);
+                needCopiedFiles = await agentService.CompareInDir(currentFileInfos, service.TargetDir!,deployContext.CancellationTokenSource?.Token??default);
             }
             else
-                needCopiedFiles = await _agentService.Compare(currentFileInfos, service.Name,deployContext.CancellationTokenSource?.Token??default);
+                needCopiedFiles = await agentService.Compare(currentFileInfos, service.Name,deployContext.CancellationTokenSource?.Token??default);
 
-            _notifyService.NotifyMessageToUser("文件对比完成");
+            NotifyService.NotifyMessageToUser("文件对比完成");
 
             if (needCopiedFiles.IsNullOrEmpty())
             {
-                _notifyService.NotifyMessageToUser($"{deployTarget.Host}:{deployTarget.Port}无需更新,跳过");
+                NotifyService.NotifyMessageToUser($"{deployTarget.Host}:{deployTarget.Port}无需更新,跳过");
 
                 continue;
             }
@@ -171,7 +173,7 @@ public class OperationService
             {
                 if (!string.IsNullOrWhiteSpace(service.IgnoreRules))
                 {
-                    _notifyService.NotifyMessageToUser($"正则表达式匹配开始忽略文件，匹配规则:{service.IgnoreRules}");
+                    NotifyService.NotifyMessageToUser($"正则表达式匹配开始忽略文件，匹配规则:{service.IgnoreRules}");
 
                     var ignoreRules = service.IgnoreRules!.Split(new[] { '|' });
 
@@ -182,11 +184,11 @@ public class OperationService
                             Regex.IsMatch(Path.Combine(it.RelativeDirectory, it.FileName), rule));
                     }).ToList();
                 }
-                _notifyService.NotifyMessageToUser($"-------文件对比完成，一共有{needCopiedFiles!.Count}个文件待发布------------");
+                NotifyService.NotifyMessageToUser($"-------文件对比完成，一共有{needCopiedFiles!.Count}个文件待发布------------");
 
                 foreach (var needCopiedFile in needCopiedFiles!)
                 {
-                    _notifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
+                    NotifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
                 }
             }
 
@@ -196,15 +198,15 @@ public class OperationService
 
 
             bool skipBackup = service.EnvironmentName != "生产";
-            _notifyService.NotifyMessageToUser($"开始上传并部署文件,跳过备份:{skipBackup}");
-            await _agentService.Upload(memoryStream, service.Name, needCopiedFiles,
+            NotifyService.NotifyMessageToUser($"开始上传并部署文件,跳过备份:{skipBackup}");
+            await agentService.Upload(memoryStream, service.Name, needCopiedFiles,
                 service.TargetDir ?? "", service.OnlyCopyFiles ?? false,service.EnableHealthCheck,skipBackup);
 
-            _notifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
+            NotifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
 
-            _notifyService.ClearHost();
+            NotifyService.ClearHost();
 
-            await _agentService.DisConnect();
+            await agentService.DisConnect();
         }
     }
 
@@ -222,7 +224,7 @@ public class OperationService
                 var buildResult = await BuildProject(service, deployContext);
                 if (!buildResult.success) return;
                 dir = buildResult.dir;
-                _notifyService.NotifyMessageToUser("编译完成");
+                NotifyService.NotifyMessageToUser("编译完成");
             }
             else
             {
@@ -238,13 +240,13 @@ public class OperationService
         }
         catch (OperationCanceledException)
         {
-            _notifyService.NotifyMessageToUser("操作已取消");
+            NotifyService.NotifyMessageToUser("操作已取消");
         }
         catch (Exception e)
         {
-            _notifyService.NotifyMessageToUser("安装失败");
-            _notifyService.NotifyMessageToUser(e.Message);
-            _notifyService.NotifyMessageToUser(e.StackTrace ?? "");
+            NotifyService.NotifyMessageToUser("安装失败");
+            NotifyService.NotifyMessageToUser(e.Message);
+            NotifyService.NotifyMessageToUser(e.StackTrace ?? "");
         }
     }
 
@@ -262,44 +264,51 @@ public class OperationService
 
         foreach (var deployTarget in targets)
         {
-            await _agentService.InitTargetConnection(deployTarget,deployContext.CancellationTokenSource?.Token??default);
+            var agentService = App.GetRequiredService<AgentService>();
+            
+            agentService.NotifyService = NotifyService;
+            await agentService.InitTargetConnection(deployTarget,deployContext.CancellationTokenSource?.Token??default);
 
 
             foreach (var needCopiedFile in currentFileInfos!)
             {
-                _notifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
+                NotifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
             }
 
-            _notifyService.NotifyMessageToUser($"开始制作安装包");
+            NotifyService.NotifyMessageToUser($"开始制作安装包");
 
             var memoryStream =FileHelper.CreateZipFile(currentFileInfos,deployContext.CancellationTokenSource?.Token??default);
 
-            _notifyService.NotifyMessageToUser($"开始上传安装包，开始安装");
+            NotifyService.NotifyMessageToUser($"开始上传安装包，开始安装");
 
-            await _agentService.Install(memoryStream, deployTarget, service, request);
+            await agentService.Install(memoryStream, deployTarget, service, request);
 
-            _notifyService.NotifyMessageToUser($"安装完成");
+            NotifyService.NotifyMessageToUser($"安装完成");
         }
     }
 
     public async Task StartService(DeployTarget deployTarget,string serviceName)
     {
-        await _agentService.InitTargetConnection(deployTarget,default);
+        var agentService = App.GetRequiredService<AgentService>();
+        agentService.NotifyService = NotifyService;
+        await agentService.InitTargetConnection(deployTarget,default);
 
-        await _agentService.StartService(serviceName);
+        await agentService.StartService(serviceName);
 
-        _notifyService.NotifyMessageToUser("操作完毕");
+        NotifyService.NotifyMessageToUser("操作完毕");
 
-        await _agentService.DisConnect();
+        await agentService.DisConnect();
     }
 
     public async Task StopService(DeployTarget deployTarget,string serviceName)
     {
-        await _agentService.InitTargetConnection(deployTarget,default);
+        var agentService = App.GetRequiredService<AgentService>();
+        agentService.NotifyService = NotifyService;
+        await agentService.InitTargetConnection(deployTarget,default);
 
-        await _agentService.StopService(serviceName);
+        await agentService.StopService(serviceName);
 
-        _notifyService.NotifyMessageToUser("操作完毕");
+        NotifyService.NotifyMessageToUser("操作完毕");
     }
 
     /// <summary>
@@ -312,15 +321,17 @@ public class OperationService
     {
         foreach (var deployTarget in targets)
         {
-             _notifyService.NotifyMessageToUser($"更新{deployTarget.Host}开始");
+            var agentService = App.GetRequiredService<AgentService>();
+            agentService.NotifyService = NotifyService;
+             NotifyService.NotifyMessageToUser($"更新{deployTarget.Host}开始");
 
-            await  _agentService.InitTargetConnection(deployTarget,default);
+            await  agentService.InitTargetConnection(deployTarget,default);
 
-            await  _agentService.UpdateAgent(zipFilePath, deployTarget);
+            await  agentService.UpdateAgent(zipFilePath, deployTarget);
 
-             _notifyService.NotifyMessageToUser($"更新{deployTarget.Host}完成");
+             NotifyService.NotifyMessageToUser($"更新{deployTarget.Host}完成");
 
-             await _agentService.DisConnect();
+             await agentService.DisConnect();
         }
     }
     
@@ -329,36 +340,42 @@ public class OperationService
     /// </summary>
     public async Task UpdateAgent(DeployTarget target, string? zipFilePath)
     {
-        _notifyService.NotifyMessageToUser($"更新{target.Host}开始");
+        NotifyService.NotifyMessageToUser($"更新{target.Host}开始");
 
         try
         {
-            await  _agentService.InitTargetConnection(target,default);
+            var agentService = App.GetRequiredService<AgentService>();
+            agentService.NotifyService = NotifyService;
+            await  agentService.InitTargetConnection(target,default);
 
-            await  _agentService.UpdateAgent(zipFilePath, target);
+            await  agentService.UpdateAgent(zipFilePath, target);
 
-            await _agentService.DisConnect();
+            await agentService.DisConnect();
         }
         catch (Exception e)
         {
             Log.Error(e,e.Message);
-            _notifyService.NotifyMessageToUser($"更新代理失败:{e.Message}:{e.StackTrace}");
+            NotifyService.NotifyMessageToUser($"更新代理失败:{e.Message}:{e.StackTrace}");
             return ;
         }
-        _notifyService.NotifyMessageToUser($"更新{target.Host}完成");
+        NotifyService.NotifyMessageToUser($"更新{target.Host}完成");
 
     }
 
     public async Task<string> GetStatus(DeployTarget deployTarget,string serviceName)
     {
         
-        await _agentService.InitTargetConnection(deployTarget,default);
+        var agentService = App.GetRequiredService<AgentService>();
         try
         {
-            string? status=await _agentService.GetStatus(serviceName);
+            agentService.NotifyService = NotifyService;
+            await agentService.InitTargetConnection(deployTarget,default);
+       
+            string? status=await agentService.GetStatus(serviceName);
 
-            await _agentService.DisConnect();
-            _notifyService.NotifyMessageToUser($"查询到目标：{deployTarget.Host}服务器上的服务状态为{status}");
+            await agentService.DisConnect();
+            
+            NotifyService.NotifyMessageToUser($"查询到目标：{deployTarget.Host}服务器上的服务状态为{status}");
             return status??"查询失败";
         }
         catch (Exception e)
@@ -372,14 +389,16 @@ public class OperationService
     {
         try
         {
-            string? status=await _agentService.GetAgentVersion(deployTarget);
+            var agentService = App.GetRequiredService<AgentService>();
+            agentService.NotifyService = NotifyService;
+            string? status=await agentService.GetAgentVersion(deployTarget);
 
             return status??"查询失败";
         }
         catch (Exception e)
         {
             Log.Error(e,e.Message);
-            _notifyService.NotifyMessageToUser($"{deployTarget.Host}获取版本失败:{e.Message}");
+            NotifyService.NotifyMessageToUser($"{deployTarget.Host}获取版本失败:{e.Message}");
             return "查询失败";
         }
         
