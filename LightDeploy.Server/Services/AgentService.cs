@@ -100,6 +100,7 @@ public class AgentService : IAsyncDisposable
     /// <param name="memoryStream"></param>
     /// <param name="serviceName"></param>
     /// <param name="calculateNeedDeployFiles"></param>
+    /// <param name="skipBackup"></param>
     /// <returns></returns>
     public async Task<bool> Upload(Stream memoryStream, string serviceName,
         List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles,bool enableHealthCheck,bool skipBackup)
@@ -118,6 +119,7 @@ public class AgentService : IAsyncDisposable
                     enableHealthCheck && !string.IsNullOrWhiteSpace(_target.HealthCheckUrl)
                         ? _target.HealthCheckUrl
                         : "");
+                mp.AddString("SkipBackup", skipBackup.ToString());
             })
             .ReceiveJson<UnifyResult<object>>();
         if (!response.success)
