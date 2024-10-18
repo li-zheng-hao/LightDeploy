@@ -184,9 +184,9 @@ public class DeployService
                     return true;
                 }
             }
-            catch
+            catch(Exception e)
             {
-                // ignored
+                Log.Error(e,$"健康检查异常:{deployDtoHealthCheckUrl} {e.Message}");
             }
 
             Log.Information($"健康检查失败,休息3秒再检查 第{i + 1}次/10");

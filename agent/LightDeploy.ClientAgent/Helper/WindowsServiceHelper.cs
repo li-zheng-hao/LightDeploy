@@ -138,11 +138,26 @@ namespace LightDeploy.ClientAgent
 
         public static string StartService(string serviceName, int timeouSeconds=15)
         {
+            int tryCount = 3;
+            string errMessage=string.Empty;
+            while (tryCount > 0)
+            {
+                errMessage=StartServiceInternal(serviceName, timeouSeconds);
+                if (IsStart(serviceName))
+                    return string.Empty;
+                Thread.Sleep(1000);
+                tryCount--;
+            }
+
+            return errMessage;
+        }
+
+        private static string StartServiceInternal(string serviceName, int timeouSeconds=15)
+        {
             try
             {
                 using (var service = new ServiceController(serviceName))
                 {
-
                     var timeout = TimeSpan.FromSeconds(timeouSeconds);
                     service.Start();
                     service.WaitForStatus(ServiceControllerStatus.Running, timeout);
