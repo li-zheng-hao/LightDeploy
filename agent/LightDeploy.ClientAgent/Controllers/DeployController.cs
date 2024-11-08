@@ -147,6 +147,18 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult GetAgentVersion()
     {
-        return Ok("1.4.1");
+        return Ok("1.5.0");
+    }
+
+    /// <summary>
+    /// 复制文件
+    /// </summary>
+    /// <param name="copyDto"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public IActionResult Copy([FromForm] CopyFileDto copyDto)
+    {
+        _deployService.CopyFile(copyDto);
+        return Ok();
     }
 }

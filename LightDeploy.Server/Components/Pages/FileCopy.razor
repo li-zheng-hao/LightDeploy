@@ -1,0 +1,124 @@
+﻿@page "/file-copy"
+@using LightDeploy.Server.Domain
+@using LightDeploy.Server.Dtos
+@using LightDeploy.Server.Services
+@using LightDeploy.Server.ViewModels
+@using Masuit.Tools
+@inject ISnackbar Message
+<div Style="flex: 3">
+    <MudGrid >
+        <MudItem lg="6">
+            <MudTextField @bind-Value="ZipFilePath" Placeholder="Zip文件路径" Variant="Variant.Text"></MudTextField>
+            <MudTextField @bind-Value="TargetDirPath" Placeholder="解压路径" Variant="Variant.Text"></MudTextField>
+        </MudItem>
+        <MudItem lg="3" Style="display: flex;gap: 20px">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Update">开始复制</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="ClearLog">清空日志</MudButton>
+        </MudItem>
+        <MudItem xs="12">
+            <MudTable T="AgentUpdateDto" Items="AgentUpdateDtos" MultiSelection @bind-SelectedItems="@SelectAgentUpdateDtos"
+                      SelectOnRowClick Height="400px">
+                <HeaderContent>
+                    <MudTh>IP</MudTh>
+                    <MudTh>版本</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="IP">@context.Host</MudTd>
+                    <MudTd DataLabel="版本">@context.Version</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+        <MudItem lg="12">
+            @foreach (var log in NotifyService.Logs)
+            {
+                <div>@log</div>
+            }
+        </MudItem>
+    </MudGrid>
+</div>
+@inject ISqlSugarClient DbClient
+
+@code {
+
+    [Inject] public OperationService OperationService { get; set; }
+
+    [Inject] public NotifyService NotifyService { get; set; }
+
+    List<AgentUpdateDto> AgentUpdateDtos { get; set; }
+
+    HashSet<AgentUpdateDto> SelectAgentUpdateDtos { get; set; }
+
+    string? ZipFilePath { get; set; }
+
+    string? TargetDirPath { get; set; }
+
+    List<DeployTarget> AllTargets { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        OperationService.NotifyService = NotifyService;
+        AllTargets = DbClient.Queryable<DeployTarget>().OrderBy(it => it.Host).ToList();
+        AgentUpdateDtos = AllTargets.DistinctBy(it => it.Host).Select(it => new AgentUpdateDto()
+        {
+            Host = it.Host,
+            Version = "未知"
+        }).ToList();
+        await FetchTargetVersion();
+    }
+
+    public async Task Update()
+    {
+        if (string.IsNullOrWhiteSpace(ZipFilePath)||File.Exists(ZipFilePath)==false)
+        {
+            Message.Add("Zip文件不存在", Severity.Error);
+            return;
+        }
+        if(ZipFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)==false)
+        {
+            Message.Add("Zip文件格式不正确", Severity.Error);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(TargetDirPath))
+        {
+            Message.Add("目标路径不能为空", Severity.Error);
+            return;
+        }
+        if (SelectAgentUpdateDtos.IsNullOrEmpty())
+        {
+            Message.Add("没有选择任何目标", Severity.Error);
+            return;
+        }
+
+        NotifyService.ClearLogs();
+
+        Message.Add("开始复制");
+
+        foreach (var selectAgentUpdateDto in SelectAgentUpdateDtos)
+        {
+            var target = AllTargets.First(it => it.Host == selectAgentUpdateDto.Host);
+            await OperationService.CopyFile(target, ZipFilePath,TargetDirPath);
+        }
+
+        Message.Add("全部复制完成", Severity.Success);
+    }
+
+    private async Task FetchTargetVersion()
+    {
+        if (AgentUpdateDtos.IsNullOrEmpty()) return;
+
+        await Parallel.ForEachAsync(AgentUpdateDtos, async (agentUpdateDto, _) =>
+        {
+            var target = AllTargets.First(it => it.Host == agentUpdateDto.Host);
+            agentUpdateDto.Version = await OperationService.GetAgentVersion(target);
+            NotifyService.NotifyMessageToUser($"查询到目标{agentUpdateDto.Host}版本:{agentUpdateDto.Version}");
+        });
+        await InvokeAsync(() => { StateHasChanged(); });
+    }
+
+    private void ClearLog()
+    {
+        NotifyService.ClearLogs();
+    }
+
+}

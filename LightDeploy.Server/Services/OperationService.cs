@@ -361,6 +361,32 @@ public class OperationService
         NotifyService.NotifyMessageToUser($"更新{target.Host}完成");
 
     }
+    /// <summary>
+    /// 复制文件
+    /// </summary>
+    public async Task CopyFile(DeployTarget target, string zipFilePath,string targetDir)
+    {
+        NotifyService.NotifyMessageToUser($"更新{target.Host}开始");
+
+        try
+        {
+            var agentService = App.GetRequiredService<AgentService>();
+            agentService.NotifyService = NotifyService;
+            await  agentService.InitTargetConnection(target,default);
+
+            await  agentService.CopyFile(zipFilePath,targetDir, target);
+
+            await agentService.DisConnect();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,e.Message);
+            NotifyService.NotifyMessageToUser($"复制文件失败:{e.Message}:{e.StackTrace}");
+            return ;
+        }
+        NotifyService.NotifyMessageToUser($"{target.Host}复制完成");
+
+    }
 
     public async Task<string> GetStatus(DeployTarget deployTarget,string serviceName)
     {

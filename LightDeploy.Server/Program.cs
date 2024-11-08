@@ -12,7 +12,8 @@ builder.Services.AddLightApiSetup(it => { });
 builder.Services.AddSqlSugarSetup();
 builder.Host.AddAutofacSetup("LightDeploy");
 // Add services to the container.
-builder.Services.AddRazorComponents()
+builder.Services.AddRazorComponents(options => 
+                                        options.DetailedErrors = true)
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddTransient<AgentService>();

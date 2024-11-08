@@ -215,6 +215,26 @@ public class AgentService : IAsyncDisposable
             NotifyService.NotifyMessageToUser($"返回消息 {body}");
         }
     }
+    
+    public async Task CopyFile(string zipFilePath,string targetDirPath, DeployTarget deployTarget)
+    {
+        try
+        {
+            await GetHttpClient("api/deploy/updateself")
+                .PostMultipartAsync(content =>
+                {
+                    content.AddFile("file", zipFilePath);
+                    content.AddString("targetDir", targetDirPath);
+                });
+        }
+        catch (FlurlHttpException ex)
+        {
+            var body = await ex.GetResponseStringAsync();
+            NotifyService?.NotifyMessageToUser("处理异常");
+            NotifyService?.NotifyMessageToUser($"返回消息 {ex.Message}");
+            NotifyService?.NotifyMessageToUser($"返回消息 {body}");
+        }
+    }
 
     public async Task<string?> GetStatus(string serviceName)
     {

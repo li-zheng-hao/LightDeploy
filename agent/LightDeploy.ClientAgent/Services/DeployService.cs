@@ -37,7 +37,7 @@ public class DeployService
             var fileInfoDtos = JsonSerializer.Deserialize<List<FileHelper.FileInfoDto>>(deployDto.FileInfos);
             var readStream = deployDto.File.OpenReadStream();
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
-            archiveFile.Extract(subDir); // extract all
+            archiveFile.Extract(subDir,true); // extract all
             Log.Information("解压完成");
             if (deployDto.TargetDir.IsNullOrWhiteSpace() && deployDto.OnlyCopyFiles != true)
             {
@@ -487,4 +487,19 @@ public class DeployService
     }
 
 
+    public void CopyFile(CopyFileDto copyDto)
+    {
+        try
+        {
+            var readStream = copyDto.File.OpenReadStream();
+            using ArchiveFile archiveFile = new ArchiveFile(readStream);
+            archiveFile.Extract(copyDto.TargetDir,true); // extract all
+            Log.Information("解压完成");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,"解压失败");
+        }
+      
+    }
 }
