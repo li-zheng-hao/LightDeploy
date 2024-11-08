@@ -325,7 +325,13 @@ public class DeployService
                 it.RelativeDirectory == fileInfoDto.RelativeDirectory && it.FileName == fileInfoDto.FileName);
             if (dbFileRecord != null)
             {
-                if (dbFileRecord.MD5 != fileInfoDto.MD5)
+                // 优先比较文件大小
+                FileInfo fileInfo=new FileInfo(filePath);
+                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime!=fileInfoDto.LastWriteTime)
+                {
+                    result.Add(fileInfoDto);
+                }          
+                else if (dbFileRecord.MD5 != fileInfoDto.MD5)
                 {
                     result.Add(fileInfoDto);
                 }
@@ -412,7 +418,7 @@ public class DeployService
             else
             {
                 FileInfo fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length != fileInfoDto.FileSize)
+                if (fileInfo.Length != fileInfoDto.FileSize || fileInfo.LastWriteTime != fileInfoDto.LastWriteTime)
                 {
                     result.Add(fileInfoDto);
                 }
