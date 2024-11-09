@@ -50,7 +50,10 @@ public static class ServiceCollectionExtensions
             {
                 using (LogContext.PushProperty("WsConnectionId", connectionId.ToString()))
                 {
+
+                    Log.Information($"{connectionId.ToString()}连接建立");
                     await next();
+                    Log.Information($"{connectionId.ToString()}连接断开");
                 }
               
             }

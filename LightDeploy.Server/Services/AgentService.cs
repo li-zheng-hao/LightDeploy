@@ -19,9 +19,9 @@ public class AgentService : IAsyncDisposable
 
     private DeployTarget _target;
 
-
     public async Task InitTargetConnection(DeployTarget target,CancellationToken cancellationToken)
     {
+        Log.Information("正在连接Agent：" + target.Host + ":" + target.Port + "");
         if (connection != null)
         {
             await DisConnect();
@@ -29,17 +29,22 @@ public class AgentService : IAsyncDisposable
         _target = target;
         connection = new HubConnectionBuilder()
             .WithUrl($"http://{target.Host}:{target.Port}/agent")
-            .WithServerTimeout(TimeSpan.FromSeconds(3))
-            .WithAutomaticReconnect()
+            .ConfigureLogging(logging =>
+            {
+                logging.AddConsole(); // 启用控制台日志
+                logging.SetMinimumLevel(LogLevel.Information); // 设置日志级别
+            })
             .Build();
-        connection.On("Log", (string msg) => { NotifyService.NotifyMessageToUser($"Agent: {msg}"); });
-        var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        tokenSource.CancelAfter(TimeSpan.FromSeconds(2));
+        connection.On("Log", (string msg) =>
+        {
+            NotifyService.NotifyMessageToUser($"Agent: {msg}");
+        });
         
-        await connection.StartAsync(cancellationToken:tokenSource.Token);
+        await connection.StartAsync();
     }
     public async Task DisConnect()
     {
+        Log.Information("正在断开Agent：" + _target.Host + ":" + _target.Port + "");
         if (connection != null)
         {
             await connection!.DisposeAsync();

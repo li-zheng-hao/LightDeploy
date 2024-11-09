@@ -419,13 +419,14 @@
 
     async Task StopService()
     {
+        
         var service = GetCorrectDeployService();
         if (service == null)
         {
             Message.Add("请选择要部署的服务", Severity.Error);
             return;
         }
-
+        
         if (selectDeployTargets.IsNullOrEmpty())
         {
             Message.Add("请选择要部署的目标", Severity.Error);

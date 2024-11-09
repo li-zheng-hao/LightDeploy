@@ -146,6 +146,7 @@ public class DeployService
         if (fileInfoDtos == null) return;
         var items = _sqlSugarClient.Queryable<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
         var timestamp = DateTime.UtcNow.ToFileTimeUtc();
+        _sqlSugarClient.Ado.BeginTran();
         foreach (var fileInfoDto in fileInfoDtos)
         {
             var item = items.FirstOrDefault(it => it.RelativeDirectory == fileInfoDto.RelativeDirectory && it.FileName == fileInfoDto.FileName);
@@ -169,6 +170,7 @@ public class DeployService
                 _sqlSugarClient.Insertable(item).ExecuteCommand();
             }
         }
+        _sqlSugarClient.Ado.CommitTran();
     }
 
     private async Task<bool> HealthCheck(string deployDtoHealthCheckUrl)
@@ -259,7 +261,6 @@ public class DeployService
             if (exeFile is null)
             {
                 File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name));
-                Log.Information($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
                 _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
             }
             else
@@ -267,7 +268,6 @@ public class DeployService
 
                 File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name), true);
                 _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
-                Log.Information($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
             }
         }
     }
@@ -325,9 +325,14 @@ public class DeployService
                 it.RelativeDirectory == fileInfoDto.RelativeDirectory && it.FileName == fileInfoDto.FileName);
             if (dbFileRecord != null)
             {
+                if (!File.Exists(filePath))
+                {
+                    result.Add(fileInfoDto);
+                    continue;
+                }
                 // 优先比较文件大小
                 FileInfo fileInfo=new FileInfo(filePath);
-                if (fileInfo.Length!=fileInfoDto.FileSize||fileInfo.LastWriteTime!=fileInfoDto.LastWriteTime)
+                if (fileInfo.Length!=fileInfoDto.FileSize)
                 {
                     result.Add(fileInfoDto);
                 }          
@@ -418,7 +423,7 @@ public class DeployService
             else
             {
                 FileInfo fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length != fileInfoDto.FileSize || fileInfo.LastWriteTime != fileInfoDto.LastWriteTime)
+                if (fileInfo.Length != fileInfoDto.FileSize )
                 {
                     result.Add(fileInfoDto);
                 }

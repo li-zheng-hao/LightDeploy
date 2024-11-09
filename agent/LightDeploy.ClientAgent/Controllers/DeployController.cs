@@ -1,3 +1,4 @@
+using LightApi.Infra;
 using LightApi.Infra.Extension;
 using LightApi.Infra.InfraException;
 using LightDeploy.ClientAgent.Dto;
@@ -147,7 +148,7 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult GetAgentVersion()
     {
-        return Ok("1.5.1");
+        return Ok(App.GetConfig<string>("Version")??"未知");
     }
 
     /// <summary>
