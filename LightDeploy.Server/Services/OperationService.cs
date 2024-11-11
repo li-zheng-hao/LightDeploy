@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
+using LightApi.EFCore.Repository;
 using LightApi.Infra;
-using LightApi.SqlSugar;
 using LightDeploy.Common.Helper;
 using LightDeploy.Server.Core;
 using LightDeploy.Server.Domain;
@@ -14,11 +14,11 @@ namespace LightDeploy.Server.Services;
 
 public class OperationService
 {
-    private readonly IBaseRepository<DeployHistory> _repository;
+    private readonly IEfRepository<DeployHistory> _repository;
     public NotifyService NotifyService;
 
 
-    public OperationService(IBaseRepository<DeployHistory> repository
+    public OperationService(IEfRepository<DeployHistory> repository
         )
     {
         _repository = repository;
@@ -55,12 +55,13 @@ public class OperationService
                 Directory.Delete(dir, true);
             }
 
-            await _repository.Change<DeployHistory>().InsertAsync(new DeployHistory()
+             _repository.Add(new DeployHistory()
             {
                 ServiceId = targets.First().ServiceId,
                 Description = deployComment,
                 PublishTime = DateTime.Now,
             });
+            await _repository.SaveChangesAsync();
         }
         catch (TaskCanceledException )
         {

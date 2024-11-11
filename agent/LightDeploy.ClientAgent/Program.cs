@@ -1,10 +1,12 @@
 using LightApi.Infra;
 using LightDeploy.ClientAgent;
 using LightDeploy.ClientAgent.Auth;
+using LightDeploy.ClientAgent.Domain;
 using LightDeploy.ClientAgent.Hubs;
 using LightDeploy.ClientAgent.Services;
 using LightDeploy.Common;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogSetup();
@@ -21,7 +23,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddWindowsService();
 builder.Services.AddScoped<DeployService>();
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
-builder.Services.AddSqlSugarSetup("DataSource=lightdeploy_agent.db");
+builder.Services.AddInfrastructureEfCoreSqlite<LdAgentDbContext>((sp, op) =>
+{
+    op.UseSqlite("Data Source=lightdeploy_agent_v2.db");
+},typeof(LdAgentAppDbEntityInfo));
 builder.Services.Configure<FormOptions>(x =>
 {
     x.ValueLengthLimit = int.MaxValue;
@@ -53,7 +58,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+using (var dbContext= app.Services.GetRequiredService<LdAgentDbContext>())
+{
+    dbContext.Database.Migrate();
+}
 app.AddConnectionIdMiddleware();
 app.UseInfrastructure();
 app.MapHub<DeployHub>("/agent");

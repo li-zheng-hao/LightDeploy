@@ -2,8 +2,9 @@
 @using LightDeploy.Server.Domain
 @using Masuit.Tools
 @using LightDeploy.Server.Components.Pages.ServiceConfigComponents
+@using LightDeploy.Server.Core
 @using Serilog
-@inject ISqlSugarClient DbClient
+@inject LdDbContext DbClient
 @inject ISnackbar Message
 @inject IDialogService DialogService
 <PageTitle>服务配置</PageTitle>
@@ -117,10 +118,10 @@
 
     void FetchData()
     {
-        _deployServices = DbClient.Queryable<DeployService>()
-            .WhereIF(!_groupName.IsNullOrEmpty(), it => it.GroupName == _groupName)
-            .WhereIF(!_serviceName.IsNullOrEmpty(), it => it.Name.Contains(_serviceName))
-            .WhereIF(!_environmentName.IsNullOrEmpty(), it => it.EnvironmentName == _environmentName)
+        _deployServices = DbClient.Set<DeployService>()
+            .WhereIf(!_groupName.IsNullOrEmpty(), it => it.GroupName == _groupName)
+            .WhereIf(!_serviceName.IsNullOrEmpty(), it => it.Name.Contains(_serviceName))
+            .WhereIf(!_environmentName.IsNullOrEmpty(), it => it.EnvironmentName == _environmentName)
             .ToList();
     }
 

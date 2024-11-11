@@ -1,7 +1,8 @@
-﻿@using LightDeploy.Server.Domain
+﻿@using LightDeploy.Server.Core
+@using LightDeploy.Server.Domain
 @using Masuit.Tools
 @using Serilog
-@inject ISqlSugarClient DbClient
+@inject LdDbContext DbClient
 @inject  ISnackbar Message
 <MudDialog>
     <DialogContent >
@@ -70,7 +71,7 @@
 
     public void FetchData()
     {
-        _deployTargets = DbClient.Queryable<DeployTarget>().Where(it => it.ServiceId == DeployService.Id).ToList();
+        _deployTargets = DbClient.Set<DeployTarget>().Where(it => it.ServiceId == DeployService.Id).ToList();
         Log.Information($"查询到{_deployTargets.Count}条");
     }
 
@@ -82,7 +83,7 @@
             Message.Add("填写的数据存在错误", Severity.Error);
             return;
         }
-        var exist = DbClient.Queryable<DeployTarget>().Any(it => it.ServiceId == DeployService.Id && it.Host == _newDeployTarget.Host && it.Port == _newDeployTarget.Port);
+        var exist = DbClient.Set<DeployTarget>().Any(it => it.ServiceId == DeployService.Id && it.Host == _newDeployTarget.Host && it.Port == _newDeployTarget.Port);
 
         if (exist)
         {
@@ -91,21 +92,17 @@
         else
         {
             _newDeployTarget.ServiceId = DeployService.Id;
-            DbClient.Insertable(_newDeployTarget).ExecuteCommand();
+            DbClient.Add(_newDeployTarget);
+            DbClient.SaveChanges();
             FetchData();
         }
     }
 
-    void UpdateDeployTarget(DeployTarget deployTarget)
-    {
-        DbClient.Updateable(deployTarget).ExecuteCommand();
-        FetchData();
-        Message.Add("更新成功", Severity.Success);
-    }
 
     void DeleteDeployTarget(DeployTarget deployTarget)
     {
-        DbClient.Deleteable(deployTarget).ExecuteCommand();
+        DbClient.Remove(deployTarget);
+        DbClient.SaveChanges();
         FetchData();
         Message.Add("删除成功", Severity.Success);
     }

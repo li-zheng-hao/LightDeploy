@@ -1,8 +1,8 @@
 ﻿@page "/agent-update"
+@using LightDeploy.Server.Core
 @using LightDeploy.Server.Domain
 @using LightDeploy.Server.Dtos
 @using LightDeploy.Server.Services
-@using LightDeploy.Server.ViewModels
 @using Masuit.Tools
 @inject ISnackbar Message
 <div Style="flex: 3">
@@ -36,7 +36,7 @@
         </MudItem>
     </MudGrid>
 </div>
-@inject ISqlSugarClient DbClient
+@inject LdDbContext DbClient
 
 @code {
 
@@ -57,7 +57,7 @@
     {
         base.OnInitialized();
         OperationService.NotifyService = NotifyService;
-        AllTargets = DbClient.Queryable<DeployTarget>().OrderBy(it => it.Host).ToList();
+        AllTargets = DbClient.Set<DeployTarget>().OrderBy(it => it.Host).ToList();
         AgentUpdateDtos = AllTargets.DistinctBy(it => it.Host).Select(it => new AgentUpdateDto()
         {
             Host = it.Host,

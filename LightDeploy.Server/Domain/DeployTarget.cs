@@ -1,11 +1,9 @@
-﻿using LightApi.SqlSugar;
-using SqlSugar;
+﻿using LightApi.EFCore.Entities;
 
 namespace LightDeploy.Server.Domain;
 
-public class DeployTarget:ISugarTable
+public class DeployTarget:IEfEntity
 {
-    [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
     public int Id { get; set; }
     
     /// <summary>
@@ -21,18 +19,15 @@ public class DeployTarget:ISugarTable
     /// <summary>
     /// 健康检查Url
     /// </summary>
-    [SugarColumn(IsNullable = true)]
     public string? HealthCheckUrl { get; set; }
     
     /// <summary>
     /// Token
     /// </summary>
-    [SugarColumn(IsNullable = true)]
     public string? AuthKey { get; set; }
     
     public int? ServiceId { get; set; }
     
-    [Navigate(NavigateType.OneToOne,nameof(ServiceId),nameof(DeployService.Id))]
-    public DeployService? Service { get; set; }
+
 }
 

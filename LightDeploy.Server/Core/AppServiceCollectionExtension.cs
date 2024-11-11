@@ -1,8 +1,6 @@
 ﻿using System.Reflection;
-using LightApi.SqlSugar;
 using Serilog;
 using Serilog.Events;
-using SqlSugar;
 
 namespace LightDeploy.Server.Core;
 

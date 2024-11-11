@@ -3,13 +3,18 @@ using LightApi.Infra;
 using LightDeploy.Common;
 using LightDeploy.Server.Core;
 using LightDeploy.Server.Services;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using App = LightDeploy.Server.Components.App;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogSetup();
 builder.Services.AddLightApiSetup(it => { });
-builder.Services.AddSqlSugarSetup();
+builder.Services.AddInfrastructureEfCoreSqlite<LdDbContext>((sp, op) =>
+{
+    op.UseSqlite("Data Source=lightdeploy.db");
+},typeof(AppEntityInfo));
+
 builder.Host.AddAutofacSetup("LightDeploy");
 // Add services to the container.
 builder.Services.AddRazorComponents(options => 
@@ -35,7 +40,12 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
-MiddlewareExtensions.UseInfrastructure(app);
+using (var dbContext= app.Services.GetRequiredService<LdDbContext>())
+{
+    dbContext.Database.Migrate();
+}
+
+app.UseInfrastructure();
 app.UseStaticFiles();
 app.UseAntiforgery();
 // app.UseInfrastructure();

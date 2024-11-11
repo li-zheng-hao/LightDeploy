@@ -10,9 +10,8 @@
 @using Masuit.Tools
 @using Serilog
 @using ThrottleDebounce
-@using SqlSugar
 @inject NavigationManager Navigation
-@inject ISqlSugarClient DbClient
+@inject LdDbContext DbClient
 @inject ISnackbar Message
 @implements IDisposable
 @inject IDialogService DialogService
@@ -143,9 +142,9 @@
                         <MudGrid>
                             <MudItem xs="12">
                                 <div style="max-height: 500px;overflow-y: scroll">
-                                    @foreach (var log in NotifyService.Logs)
+                                    @for (int index=0;index< NotifyService.Logs.Count;index++)
                                     {
-                                        <div>@log</div>
+                                        <div>@NotifyService.Logs[index]</div>
                                     }
                                 </div>
                             </MudItem>
@@ -217,7 +216,7 @@
 
     void FetchData()
     {
-        DeployServices = DbClient.Queryable<DeployService>().OrderBy(it => it.Name).ToList();
+        DeployServices = DbClient.Set<DeployService>().OrderBy(it => it.Name).ToList();
         Log.Information($"刷新数据 一共有{DeployServices.Count}条数据");
     }
 
@@ -241,7 +240,7 @@
 
     void FetchHistory(int serviceId)
     {
-        DeployHistories = DbClient.Queryable<DeployHistory>().Where(it => it.ServiceId == serviceId)
+        DeployHistories = DbClient.Set<DeployHistory>().Where(it => it.ServiceId == serviceId)
             .OrderByDescending(it => it.PublishTime)
             .Take(10)
             .ToList();
@@ -377,7 +376,7 @@
 
     void FetchDeployTarget(int serviceId)
     {
-        DeployTargets = DbClient.Queryable<DeployTarget>().Where(it => it.ServiceId == serviceId).ToList();
+        DeployTargets = DbClient.Set<DeployTarget>().Where(it => it.ServiceId == serviceId).ToList();
         DeployTargetViewModels = DeployTargets?.Adapt<List<DeployTargetViewModel>>();
         selectDeployTargets?.Clear();
         if (selectDeployTargets == null) selectDeployTargets = new HashSet<DeployTargetViewModel>();

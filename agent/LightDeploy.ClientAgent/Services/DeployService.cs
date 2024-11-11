@@ -11,19 +11,18 @@ using Masuit.Tools;
 using Polly;
 using Serilog;
 using SevenZipExtractor;
-using SqlSugar;
 
 namespace LightDeploy.ClientAgent.Services;
 
 public class DeployService
 {
     private readonly ILogger<DeployService> _logger;
-    private readonly ISqlSugarClient _sqlSugarClient;
+    private readonly LdAgentDbContext _dbClient;
 
-    public DeployService(ILogger<DeployService> logger, ISqlSugarClient sqlSugarClient)
+    public DeployService(ILogger<DeployService> logger, LdAgentDbContext dbClient)
     {
         _logger = logger;
-        _sqlSugarClient = sqlSugarClient;
+        _dbClient = dbClient;
     }
     public async Task Deploy(DeployDto deployDto)
     {
@@ -144,9 +143,8 @@ public class DeployService
     private void UpdateNewFileRecord(string serviceName, List<FileHelper.FileInfoDto>? fileInfoDtos)
     {
         if (fileInfoDtos == null) return;
-        var items = _sqlSugarClient.Queryable<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
+        var items = _dbClient.Set<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
         var timestamp = DateTime.UtcNow.ToFileTimeUtc();
-        _sqlSugarClient.Ado.BeginTran();
         foreach (var fileInfoDto in fileInfoDtos)
         {
             var item = items.FirstOrDefault(it => it.RelativeDirectory == fileInfoDto.RelativeDirectory && it.FileName == fileInfoDto.FileName);
@@ -154,7 +152,6 @@ public class DeployService
             {
                 item.MD5 = fileInfoDto.MD5??string.Empty;
                 item.PublishTimestamp = timestamp;
-                _sqlSugarClient.Updateable(item).ExecuteCommand();
             }
             else
             {
@@ -167,10 +164,10 @@ public class DeployService
                     FileName = fileInfoDto.FileName,
                     MD5 = fileInfoDto.MD5??string.Empty,
                 };
-                _sqlSugarClient.Insertable(item).ExecuteCommand();
+                _dbClient.Add(item);
             }
         }
-        _sqlSugarClient.Ado.CommitTran();
+        _dbClient.SaveChanges();
     }
 
     private async Task<bool> HealthCheck(string deployDtoHealthCheckUrl)
@@ -312,11 +309,7 @@ public class DeployService
 
         string exeDir = Path.GetDirectoryName(exePath)!;
         List<FileHelper.FileInfoDto> result = new();
-        var dbFileRecords = _sqlSugarClient.Queryable<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
-        if (dbFileRecords.IsNullOrEmpty())
-        {
-            dbFileRecords = ScandAndCalInitMd5Records(serviceName, exeDir);
-        }
+        var dbFileRecords = _dbClient.Set<FileRecord>().Where(it => it.ServiceName == serviceName).ToList();
         foreach (var fileInfoDto in fileInfoDtos)
         {
             var filePath = Path.Combine(exeDir, fileInfoDto.RelativeDirectory, fileInfoDto.FileName);
@@ -399,7 +392,8 @@ public class DeployService
 
         if (res.Any())
         {
-            _sqlSugarClient.Insertable<FileRecord>(res).ExecuteCommand();
+            _dbClient.AddRange(res);
+            _dbClient.SaveChanges();
         }
 
         return res;

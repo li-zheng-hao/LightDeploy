@@ -8,8 +8,12 @@
 
     <ItemGroup>
         <PackageReference Include="Flurl.Http" Version="3.2.4" />
-        <PackageReference Include="LightApi.SqlSugar" Version="1.0.0" />
+        <PackageReference Include="LightApi.EFCore.Sqlite" Version="1.2.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.12"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.1" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="System.Management" Version="7.0.2" />

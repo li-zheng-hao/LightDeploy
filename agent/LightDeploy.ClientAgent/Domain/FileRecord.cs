@@ -1,15 +1,13 @@
-﻿using LightApi.SqlSugar;
-using SqlSugar;
+﻿
+using LightApi.EFCore.Entities;
 
 namespace LightDeploy.ClientAgent.Domain;
 
 /// <summary>
 /// 文件md5记录
 /// </summary>
-[SugarIndex("index_servicename",nameof(FileRecord.ServiceName),OrderByType.Asc)]
-public class FileRecord:ISugarTable
+public class FileRecord:IEfEntity
 {
-    [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
     public int Id { get; set; }
     
     /// <summary>

@@ -1,14 +1,11 @@
-﻿using LightApi.SqlSugar;
-using SqlSugar;
+﻿using LightApi.EFCore.Entities;
 
 namespace LightDeploy.Server.Domain;
 
-public class GlobalSetting:ISugarTable
+public class GlobalSetting:IEfEntity
 {
     
-    [SugarColumn(IsPrimaryKey = true,IsIdentity=true)]
     public int Id { get; set; }
 
-    [SugarColumn(IsNullable = true)]
     public string? QiyeWeChatKey { get; set; }
 }

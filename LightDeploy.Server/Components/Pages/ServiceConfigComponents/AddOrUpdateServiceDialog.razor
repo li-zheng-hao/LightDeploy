@@ -1,7 +1,8 @@
-﻿@using LightDeploy.Server.Domain
+﻿@using LightDeploy.Server.Core
+@using LightDeploy.Server.Domain
 @using Masuit.Tools
 @using Serilog
-@inject ISqlSugarClient DbClient
+@inject LdDbContext DbClient
 @inject  ISnackbar Message
 <MudDialog>
     <DialogContent >
@@ -64,13 +65,14 @@
 
         if (DeployService.Id != 0)
         {
-            DbClient.Updateable(DeployService).ExecuteCommand();
+            DbClient.Add(DeployService);
+            DbClient.SaveChanges();
             Message.Add("更新成功", Severity.Success);
             Close();
         }
         else
         {
-            var exist = DbClient.Queryable<DeployService>().Any(it => it.Name == DeployService.Name
+            var exist = DbClient.Set<DeployService>().Any(it => it.Name == DeployService.Name
                                                                       &&it.EnvironmentName==DeployService.EnvironmentName
                                                                       &&it.GroupName==DeployService.GroupName&&it.Id!=DeployService.Id);
 
@@ -80,7 +82,8 @@
             }
             else
             {
-                DbClient.Insertable(DeployService).ExecuteCommand();
+                DbClient.Add(DeployService);
+                DbClient.SaveChanges();
                 Message.Add("添加成功", Severity.Success);
                 Close();
             }
