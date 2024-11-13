@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
             .Enrich.FromLogContext()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .WriteTo.Console(outputTemplate: logTemplate)
             .WriteTo.Conditional(it=>it.Properties.ContainsKey("WsConnectionId"),
                 it=>it.AgentSink())

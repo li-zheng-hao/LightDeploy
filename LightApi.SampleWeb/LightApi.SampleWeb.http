@@ -1,6 +1,0 @@
-@LightApi.SampleWeb_HostAddress = http://localhost:5126
-
-GET {{LightApi.SampleWeb_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
