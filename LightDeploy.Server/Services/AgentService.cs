@@ -225,7 +225,7 @@ public class AgentService : IAsyncDisposable
     {
         try
         {
-            await GetHttpClient("api/deploy/updateself")
+            await GetHttpClient("api/deploy/copy")
                 .PostMultipartAsync(content =>
                 {
                     content.AddFile("file", zipFilePath);

@@ -368,7 +368,7 @@ public class OperationService
     /// </summary>
     public async Task CopyFile(DeployTarget target, string zipFilePath,string targetDir)
     {
-        NotifyService.NotifyMessageToUser($"更新{target.Host}开始");
+        NotifyService.NotifyMessageToUser($"复制{target.Host}开始");
 
         try
         {
