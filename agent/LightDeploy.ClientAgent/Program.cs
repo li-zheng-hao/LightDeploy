@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using LightApi.Infra;
 using LightDeploy.ClientAgent;
 using LightDeploy.ClientAgent.Auth;
@@ -8,6 +9,8 @@ using LightDeploy.Common;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 
+Stopwatch sw= new Stopwatch();
+sw.Start();
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogSetup();
 builder.Services.AddLightApiSetup(it =>
@@ -58,10 +61,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-using (var dbContext= app.Services.GetRequiredService<LdAgentDbContext>())
+// using (var dbContext= app.Services.GetRequiredService<LdAgentDbContext>())
+// {
+//     dbContext.Database.Migrate();
+// }
+app.Lifetime.ApplicationStarted.Register(() =>
 {
-    dbContext.Database.Migrate();
-}
+    Console.WriteLine($"启动用时：{sw.ElapsedMilliseconds}ms");
+});
 app.AddConnectionIdMiddleware();
 app.UseInfrastructure();
 app.MapHub<DeployHub>("/agent");

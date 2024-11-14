@@ -21,35 +21,35 @@ public class AgentService : IAsyncDisposable
 
     public async Task InitTargetConnection(DeployTarget target,CancellationToken cancellationToken)
     {
-        Log.Information("正在连接Agent：" + target.Host + ":" + target.Port + "");
-        if (connection != null)
-        {
-            await DisConnect();
-        }
+        // Log.Information("正在连接Agent：" + target.Host + ":" + target.Port + "");
+        // if (connection != null)
+        // {
+        //     await DisConnect();
+        // }
         _target = target;
-        connection = new HubConnectionBuilder()
-            .WithUrl($"http://{target.Host}:{target.Port}/agent")
-            .ConfigureLogging(logging =>
-            {
-                logging.AddConsole(); // 启用控制台日志
-                logging.SetMinimumLevel(LogLevel.Information); // 设置日志级别
-            })
-            .Build();
-        connection.On("Log", (string msg) =>
-        {
-            NotifyService.NotifyMessageToUser($"Agent: {msg}");
-        });
-        
-        await connection.StartAsync();
+        // connection = new HubConnectionBuilder()
+        //     .WithUrl($"http://{target.Host}:{target.Port}/agent")
+        //     .ConfigureLogging(logging =>
+        //     {
+        //         logging.AddConsole(); // 启用控制台日志
+        //         logging.SetMinimumLevel(LogLevel.Information); // 设置日志级别
+        //     })
+        //     .Build();
+        // connection.On("Log", (string msg) =>
+        // {
+        //     NotifyService.NotifyMessageToUser($"Agent: {msg}");
+        // });
+        //
+        // await connection.StartAsync();
     }
     public async Task DisConnect()
     {
-        Log.Information("正在断开Agent：" + _target.Host + ":" + _target.Port + "");
-        if (connection != null)
-        {
-            await connection!.DisposeAsync();
-            connection = null;
-        }
+        // Log.Information("正在断开Agent：" + _target.Host + ":" + _target.Port + "");
+        // if (connection != null)
+        // {
+        //     await connection!.DisposeAsync();
+        //     connection = null;
+        // }
     }
 
     /// <summary>
@@ -114,17 +114,16 @@ public class AgentService : IAsyncDisposable
             .WithTimeout(TimeSpan.FromMinutes(5))
             .PostMultipartAsync(mp =>
             {
-                mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
-                mp.AddString("ServiceName", serviceName);
-                mp.AddJson("FileInfos", calculateNeedDeployFiles);
-                mp.AddString("TargetDir", targetDir);
-                mp.AddString("OnlyCopyFiles", onlyCopyFiles.ToString());
-                mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
-                mp.AddString("HealthCheckUrl",
+                mp.AddFile("file", new MemoryStream(memoryStream.ToArray()), "file.zip");
+                mp.AddString("serviceName", serviceName);
+                mp.AddJson("fileInfos", calculateNeedDeployFiles);
+                mp.AddString("targetDir", targetDir);
+                mp.AddString("onlyCopyFiles", onlyCopyFiles.ToString());
+                mp.AddString("healthCheckUrl",
                     enableHealthCheck && !string.IsNullOrWhiteSpace(_target.HealthCheckUrl)
                         ? _target.HealthCheckUrl
                         : "");
-                mp.AddString("SkipBackup", skipBackup.ToString());
+                mp.AddString("skipBackup", skipBackup.ToString());
             })
             .ReceiveJson<UnifyResult<object>>();
         if (!response.success)
@@ -190,12 +189,11 @@ public class AgentService : IAsyncDisposable
             .WithTimeout(TimeSpan.FromMinutes(5))
             .PostMultipartAsync(mp =>
             {
-                mp.AddFile("File", new MemoryStream(memoryStream.ToArray()), "file.zip");
-                mp.AddString("ServiceName", service!.Name);
-                mp.AddString("ConnectionId", connection?.ConnectionId ?? "");
-                mp.AddString("Params", request.ExeParams ?? "");
-                mp.AddString("ExeFullPath", Path.Combine(request.TargetDir, request.ExePath) ?? "");
-                mp.AddString("ServiceDescription", request.Description ?? "");
+                mp.AddFile("file", new MemoryStream(memoryStream.ToArray()), "file.zip");
+                mp.AddString("serviceName", service!.Name);
+                mp.AddString("params", request.ExeParams ?? "");
+                mp.AddString("exeFullPath", Path.Combine(request.TargetDir, request.ExePath) ?? "");
+                mp.AddString("serviceDescription", request.Description ?? "");
             })
             .ReceiveJson<UnifyResult<object>>();
         if (!resp.success)
@@ -253,7 +251,7 @@ public class AgentService : IAsyncDisposable
         }
 
         NotifyService.NotifyMessageToUser(response.msg??"获取状态失败");
-        return response.msg??"获取状态失败";
+        return response.data??"获取状态失败";
     }
     public async Task<string?> GetAgentVersion(DeployTarget target)
     {
@@ -265,7 +263,7 @@ public class AgentService : IAsyncDisposable
         {
             return response.data??string.Empty;
         }
-        return response.msg??"获取版本失败";
+        return response.data??"获取版本失败";
     }
 
 
