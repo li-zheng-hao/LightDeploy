@@ -261,22 +261,23 @@
         }
         else
         {
-            var dialogRef = DialogService.Show<DeployConfirmDialog>("发布说明");
+            var dialogRef =await DialogService.ShowAsync<DeployConfirmDialog>("发布说明");
             var dialogResult = await dialogRef.Result;
             if (dialogResult!.Canceled) return;
-            var releaseNote = dialogResult.Data as string;
+            var confirmResult = dialogResult.Data as DeployConfirmResult;
             DeployContext.IsRunning = true;
             NotifyService.ClearLogs();
             NotifyService.NotifyMessageToUser("开始部署" + DateTime.Now);
+            await InvokeAsync(() => { StateHasChanged(); });
             Task.Run(() =>
             {
                 while (DeployContext.IsRunning)
                 {
                     InvokeAsync(() => { StateHasChanged(); });
-                    Thread.Sleep(500);
+                    Thread.Sleep(1000);
                 }
             });
-            await OperationService.Deploy(selectDeployTargets.Adapt<List<DeployTarget>>(), service, releaseNote, DeployContext);
+            await OperationService.Deploy(selectDeployTargets.Adapt<List<DeployTarget>>(), service, confirmResult!, DeployContext);
             DeployContext.Reset();
             FetchHistory(service.Id);
         }

@@ -1,6 +1,38 @@
 ﻿@page "/global-config"
-<PageTitle>全局配置</PageTitle>
-<h3>全局配置</h3>
-@code {
+@using LightDeploy.Server.Core
+@using LightDeploy.Server.Domain
+@using Microsoft.EntityFrameworkCore
+@inject LdDbContext DbClient
 
+<PageTitle>全局配置</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudTextField @bind-Value="globalSetting.QiyeWeChatKey" Label="企业微信机器人Key" />
+    </MudItem>
+    <MudItem xs="12">
+        <MudButton OnClick="SaveChanges" Color="Color.Primary" Variant="Variant.Filled">保存</MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private GlobalSetting globalSetting = new GlobalSetting();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var setting= await DbClient.AsQueryable<GlobalSetting>().FirstOrDefaultAsync();
+        if(setting!=null)
+        {
+            globalSetting = setting;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if(globalSetting.Id==0)
+        {
+            DbClient.Add(globalSetting);
+        }
+        await DbClient.SaveChangesAsync();
+    }
 }
