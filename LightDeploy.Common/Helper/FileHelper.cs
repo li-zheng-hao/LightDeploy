@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.IO.Hashing;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Masuit.Tools;
@@ -81,17 +82,17 @@ public static class FileHelper
         return memoryStream;
     }
 
-    public static List<FileInfoDto> GetFileInfos(string dir, string? serviceIgnoreRules=null)
+    public static List<FileInfoDto> GetFileInfos(string dir, string? serviceIgnoreRules = null)
     {
         var exeDirInfo = new DirectoryInfo(dir);
         var fileInfos = exeDirInfo.GetFiles("*.*", SearchOption.AllDirectories);
         Log.Information($"获取文件信息,文件总数：{fileInfos.Count()}");
         var fileInfoDtos = fileInfos
-            .Where(it=>new[]{".log", ".db", ".db-shm", ".db-wal"}.All(ext=>!ext.Equals(it.Extension, StringComparison.OrdinalIgnoreCase)))
-            .WhereIf(serviceIgnoreRules.IsNullOrEmpty()==false,it =>
+            .Where(it => new[] { ".log", ".db", ".db-shm", ".db-wal" }.All(ext => !ext.Equals(it.Extension, StringComparison.OrdinalIgnoreCase)))
+            .WhereIf(serviceIgnoreRules.IsNullOrEmpty() == false, it =>
             {
                 var ignoreRules = serviceIgnoreRules!.Split(new[] { '|' });
-                return ignoreRules.All(rule=>!Regex.IsMatch(it.FullName, rule));
+                return ignoreRules.All(rule => !Regex.IsMatch(it.FullName, rule));
             })
             .Select(it =>
             {
@@ -102,7 +103,7 @@ public static class FileHelper
                     FileSize = it.Length,
                     AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
                     LastWriteTime = it.LastWriteTime,
-                    MD5 = GetFileMd5(it.FullName)
+                    MD5 = GetFileXxHash64(it.FullName)
                 };
             }).ToList();
         foreach (var fileInfoDto in fileInfoDtos.Where(it => it.RelativeDirectory.StartsWith("/") || it.RelativeDirectory.StartsWith("\\")))
@@ -145,6 +146,24 @@ public static class FileHelper
         var md5 = MD5.Create();
         var hash = md5.ComputeHash(fileStream);
         return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// 计算文件XxHash64
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public static string GetFileXxHash64(string path)
+    {
+        using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var xxHash64 = new XxHash64();
+        var buffer = new byte[8192]; // 使用8KB的缓冲区
+        int bytesRead;
+        while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            xxHash64.Append(buffer.AsSpan(0, bytesRead));
+        }
+        return xxHash64.GetCurrentHashAsUInt64().ToString();
     }
     public class FileInfoDto
     {

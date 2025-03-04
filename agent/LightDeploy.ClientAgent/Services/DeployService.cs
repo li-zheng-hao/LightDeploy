@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.IO.Hashing;
+using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text.Json;
 using Flurl.Http;
@@ -36,7 +37,7 @@ public class DeployService
             var fileInfoDtos = JsonSerializer.Deserialize<List<FileHelper.FileInfoDto>>(deployDto.FileInfos);
             var readStream = deployDto.File.OpenReadStream();
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
-            archiveFile.Extract(subDir,true); // extract all
+            archiveFile.Extract(subDir, true); // extract all
             Log.Information("解压完成");
             if (deployDto.TargetDir.IsNullOrWhiteSpace() && deployDto.OnlyCopyFiles != true)
             {
@@ -117,7 +118,7 @@ public class DeployService
                         Log.Information("健康检查回滚完成,请手动检查服务是否正常");
                         throw new BusinessException("健康检查未通过");
                     }
-                   
+
                 }
                 Log.Information("健康检查完成");
             }
@@ -150,7 +151,7 @@ public class DeployService
             var item = items.FirstOrDefault(it => it.RelativeDirectory == fileInfoDto.RelativeDirectory && it.FileName == fileInfoDto.FileName);
             if (item != null)
             {
-                item.MD5 = fileInfoDto.MD5??string.Empty;
+                item.MD5 = fileInfoDto.MD5 ?? string.Empty;
                 item.PublishTimestamp = timestamp;
             }
             else
@@ -159,10 +160,10 @@ public class DeployService
                 {
                     ServiceName = serviceName,
                     PublishTimestamp = timestamp,
-                    AbsoluteDirectory = fileInfoDto.AbsoluteDirectory??string.Empty,
+                    AbsoluteDirectory = fileInfoDto.AbsoluteDirectory ?? string.Empty,
                     RelativeDirectory = fileInfoDto.RelativeDirectory,
                     FileName = fileInfoDto.FileName,
-                    MD5 = fileInfoDto.MD5??string.Empty,
+                    MD5 = fileInfoDto.MD5 ?? string.Empty,
                 };
                 _dbClient.Add(item);
             }
@@ -183,9 +184,9 @@ public class DeployService
                     return true;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Log.Error(e,$"健康检查异常:{deployDtoHealthCheckUrl} {e.Message}");
+                Log.Error(e, $"健康检查异常:{deployDtoHealthCheckUrl} {e.Message}");
             }
 
             Log.Information($"健康检查失败,休息3秒再检查 第{i + 1}次/10");
@@ -324,11 +325,11 @@ public class DeployService
                     continue;
                 }
                 // 优先比较文件大小
-                FileInfo fileInfo=new FileInfo(filePath);
-                if (fileInfo.Length!=fileInfoDto.FileSize)
+                FileInfo fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length != fileInfoDto.FileSize)
                 {
                     result.Add(fileInfoDto);
-                }          
+                }
                 else if (dbFileRecord.MD5 != fileInfoDto.MD5)
                 {
                     result.Add(fileInfoDto);
@@ -417,13 +418,13 @@ public class DeployService
             else
             {
                 FileInfo fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length != fileInfoDto.FileSize )
+                if (fileInfo.Length != fileInfoDto.FileSize)
                 {
                     result.Add(fileInfoDto);
                 }
                 else
                 {
-                    var md5 = GetFileMd5(filePath, ".log", ".db", ".db-shm", ".db-wal");
+                    var md5 = GetFileXxHash64(filePath, ".log", ".db", ".db-shm", ".db-wal");
                     if (md5 != fileInfoDto.MD5)
                     {
                         result.Add(fileInfoDto);
@@ -457,7 +458,25 @@ public class DeployService
             return string.Empty;
         }
     }
-
+    /// <summary>
+    /// 计算文件XxHash64
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public static string GetFileXxHash64(string path, params string[] ignoreExtensions)
+    {
+        if (ignoreExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            return string.Empty;
+        using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var xxHash64 = new XxHash64();
+        var buffer = new byte[8192]; // 使用8KB的缓冲区
+        int bytesRead;
+        while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            xxHash64.Append(buffer.AsSpan(0, bytesRead));
+        }
+        return xxHash64.GetCurrentHashAsUInt64().ToString();
+    }
 
     public async Task<bool> InstallWindowsService(InstallWindowsServiceDto installWindowsServiceDto)
     {
@@ -498,13 +517,13 @@ public class DeployService
         {
             var readStream = copyDto.File.OpenReadStream();
             using ArchiveFile archiveFile = new ArchiveFile(readStream);
-            archiveFile.Extract(copyDto.TargetDir,true); // extract all
+            archiveFile.Extract(copyDto.TargetDir, true); // extract all
             Log.Information("解压完成");
         }
         catch (Exception e)
         {
-            Log.Error(e,"解压失败");
+            Log.Error(e, "解压失败");
         }
-      
+
     }
 }
