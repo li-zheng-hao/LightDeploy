@@ -18,17 +18,15 @@ public class OperationService
     private readonly IEfRepository<DeployHistory> _repository;
     public NotifyService NotifyService;
 
-    public OperationService(IEfRepository<DeployHistory> repository)
+
+    public OperationService(IEfRepository<DeployHistory> repository
+        )
     {
         _repository = repository;
     }
 
-    public async Task Deploy(
-        List<DeployTarget> targets,
-        DeployService deployService,
-        DeployConfirmResult confirmResult,
-        DeployContext deployContext
-    )
+
+    public async Task Deploy(List<DeployTarget> targets, DeployService deployService, DeployConfirmResult deployConfirmResult, DeployContext deployContext)
     {
         var service = deployService;
         try
@@ -36,18 +34,13 @@ public class OperationService
             string dir = string.Empty;
             if (!string.IsNullOrWhiteSpace(service.BeforeScript))
             {
-                await RunPsScript(
-                    service.BeforeScript,
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    deployContext.CancellationTokenSource?.Token ?? default
-                );
+                await RunPsScript(service.BeforeScript, AppDomain.CurrentDomain.BaseDirectory, deployContext.CancellationTokenSource?.Token ?? default);
             }
             // 编译发布
             if (service.DeployMode == 0)
             {
                 var buildResult = await BuildProject(service, deployContext);
-                if (!buildResult.success)
-                    return;
+                if (!buildResult.success) return;
                 dir = buildResult.dir;
                 NotifyService.NotifyMessageToUser("编译完成");
             }
@@ -56,25 +49,23 @@ public class OperationService
                 dir = service.ProjectPath;
             }
 
-            await DeployFolder(targets, service, dir, deployContext);
+            await DeployFolder(targets, service, dir, deployContext, deployConfirmResult);
 
             if (service.DeployMode == 0 && Directory.Exists(dir))
             {
                 Directory.Delete(dir, true);
             }
 
-            _repository.Add(
-                new DeployHistory()
-                {
-                    ServiceId = targets.First().ServiceId,
-                    Description = confirmResult.ReleaseNote,
-                    PublishTime = DateTime.Now,
-                }
-            );
-            await _repository.SaveChangesAsync();
-            if (confirmResult.NotifyWeChat)
+            _repository.Add(new DeployHistory()
             {
-                if (string.IsNullOrWhiteSpace(confirmResult.ReleaseNote))
+                ServiceId = targets.First().ServiceId,
+                Description = deployConfirmResult.Message,
+                PublishTime = DateTime.Now,
+            });
+            await _repository.SaveChangesAsync();
+            if (deployConfirmResult.NotifyWeChat)
+            {
+                if (string.IsNullOrWhiteSpace(deployConfirmResult.Message))
                     return;
                 var globalSetting = await _repository
                     .AsQueryable<GlobalSetting>()
@@ -83,7 +74,7 @@ public class OperationService
                     globalSetting?.QiyeWeChatKey ?? string.Empty,
                     deployService.EnvironmentName ?? string.Empty,
                     deployService.GroupName ?? string.Empty,
-                    confirmResult.ReleaseNote
+                    deployConfirmResult.Message
                 );
             }
         }
@@ -110,11 +101,7 @@ public class OperationService
         }
     }
 
-    private async Task RunPsScript(
-        string serviceBeforeScript,
-        string workingDir,
-        CancellationToken token
-    )
+    private async Task RunPsScript(string serviceBeforeScript, string workingDir, CancellationToken token)
     {
         var tmpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tmp");
         if (!Directory.Exists(tmpDir))
@@ -124,20 +111,14 @@ public class OperationService
         {
             NotifyService.NotifyMessageToUser($"工作目录:{workingDir}");
             File.WriteAllText(scriptFile, serviceBeforeScript);
-            var res = await Cli.Wrap(
-                    "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
-                )
+            var res = await Cli.Wrap("C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe")
                 .WithWorkingDirectory(workingDir)
                 .WithArguments(scriptFile)
-                .WithStandardOutputPipe(
-                    PipeTarget.ToDelegate(s => NotifyService.NotifyMessageToUser(s))
-                )
-                .WithStandardErrorPipe(
-                    PipeTarget.ToDelegate(s =>
-                    {
-                        NotifyService.NotifyMessageToUser(s);
-                    })
-                )
+                .WithStandardOutputPipe(PipeTarget.ToDelegate(s => NotifyService.NotifyMessageToUser(s)))
+                .WithStandardErrorPipe(PipeTarget.ToDelegate(s =>
+                {
+                    NotifyService.NotifyMessageToUser(s);
+                }))
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteAsync(token);
             NotifyService.NotifyMessageToUser($"脚本执行返回状态码：{res.ExitCode}");
@@ -149,58 +130,32 @@ public class OperationService
             if (File.Exists(scriptFile))
                 File.Delete(scriptFile);
         }
+
     }
 
-    private async Task<(bool success, string dir)> BuildProject(
-        DeployService service,
-        DeployContext deployContext
-    )
+    private async Task<(bool success, string dir)> BuildProject(DeployService service, DeployContext deployContext)
     {
-        var tmpDir = Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory,
-            "tmp",
-            Guid.NewGuid().ToString("N")
-        );
+        var tmpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tmp", Guid.NewGuid().ToString("N"));
         var isSelfContained = service.IsSelfContained ? "--self-contained" : string.Empty;
 
         var result = await Cli.Wrap("dotnet")
-            .WithArguments(
-                $" publish {service.ProjectPath} -c Release -o {tmpDir} {isSelfContained} "
-            )
-            .WithStandardOutputPipe(
-                PipeTarget.ToDelegate(
-                    NotifyService.NotifyMessageToUser,
-                    Encoding.GetEncoding("utf-8")
-                )
-            )
-            .WithStandardErrorPipe(
-                PipeTarget.ToDelegate(
-                    NotifyService.NotifyMessageToUser,
-                    Encoding.GetEncoding("utf-8")
-                )
-            )
+            .WithArguments($" publish {service.ProjectPath} -c Release -o {tmpDir} {isSelfContained} ")
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(NotifyService.NotifyMessageToUser,
+                Encoding.GetEncoding("utf-8")))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(NotifyService.NotifyMessageToUser,
+                Encoding.GetEncoding("utf-8")))
             .WithValidation(CommandResultValidation.ZeroExitCode)
             .ExecuteAsync(deployContext.CancellationTokenSource?.Token ?? default);
         return (result.ExitCode == 0, tmpDir);
     }
 
-    private async Task DeployFolder(
-        List<DeployTarget> targets,
-        DeployService service,
-        string buildOutputDir,
-        DeployContext deployContext
-    )
+    private async Task DeployFolder(List<DeployTarget> targets, DeployService service, string buildOutputDir, DeployContext deployContext, DeployConfirmResult deployConfirmResult)
     {
         NotifyService.NotifyMessageToUser($"-------开始计算发布文件信息------------");
 
-        var currentFileInfos = await Task.Run(
-            () => FileHelper.GetFileInfos(buildOutputDir, service.IgnoreRules),
-            deployContext.CancellationTokenSource?.Token ?? default
-        );
+        var currentFileInfos = FileHelper.GetFileInfos(buildOutputDir, service.IgnoreRules, deployConfirmResult.UseFastMode);
 
-        NotifyService.NotifyMessageToUser(
-            $"-------计算发布文件信息完成，一共有{currentFileInfos.Count}待比较------------"
-        );
+        NotifyService.NotifyMessageToUser($"-------计算发布文件信息完成，一共有{currentFileInfos.Count}待比较------------");
 
         foreach (var deployTarget in targets)
         {
@@ -209,40 +164,25 @@ public class OperationService
 
             NotifyService.SetHost(deployTarget.Host);
 
-            NotifyService.NotifyMessageToUser(
-                $"-------开始处理【{deployTarget.Host}】------------"
-            );
+            NotifyService.NotifyMessageToUser($"-------开始处理【{deployTarget.Host}】------------");
 
-            await agentService.InitTargetConnection(
-                deployTarget,
-                deployContext.CancellationTokenSource?.Token ?? default
-            );
+            await agentService.InitTargetConnection(deployTarget, deployContext.CancellationTokenSource?.Token ?? default);
 
             List<FileHelper.FileInfoDto>? needCopiedFiles;
             NotifyService.NotifyMessageToUser("开始对比文件");
 
             if (!string.IsNullOrWhiteSpace(service.TargetDir))
             {
-                needCopiedFiles = await agentService.CompareInDir(
-                    currentFileInfos,
-                    service.TargetDir!,
-                    deployContext.CancellationTokenSource?.Token ?? default
-                );
+                needCopiedFiles = await agentService.CompareInDir(currentFileInfos, service.TargetDir!, deployConfirmResult.UseFastMode, deployContext.CancellationTokenSource?.Token ?? default);
             }
             else
-                needCopiedFiles = await agentService.Compare(
-                    currentFileInfos,
-                    service.Name,
-                    deployContext.CancellationTokenSource?.Token ?? default
-                );
+                needCopiedFiles = await agentService.Compare(currentFileInfos, service.Name, deployConfirmResult.UseFastMode, deployContext.CancellationTokenSource?.Token ?? default);
 
             NotifyService.NotifyMessageToUser("文件对比完成");
 
             if (needCopiedFiles.IsNullOrEmpty())
             {
-                NotifyService.NotifyMessageToUser(
-                    $"{deployTarget.Host}:{deployTarget.Port}无需更新,跳过"
-                );
+                NotifyService.NotifyMessageToUser($"{deployTarget.Host}:{deployTarget.Port}无需更新,跳过");
 
                 continue;
             }
@@ -250,58 +190,36 @@ public class OperationService
             {
                 if (!string.IsNullOrWhiteSpace(service.IgnoreRules))
                 {
-                    NotifyService.NotifyMessageToUser(
-                        $"正则表达式匹配开始忽略文件，匹配规则:{service.IgnoreRules}"
-                    );
+                    NotifyService.NotifyMessageToUser($"正则表达式匹配开始忽略文件，匹配规则:{service.IgnoreRules}");
 
                     var ignoreRules = service.IgnoreRules!.Split(new[] { '|' });
 
                     // 正则表达式匹配过滤
-                    needCopiedFiles = needCopiedFiles!
-                        .Where(it =>
-                        {
-                            return !ignoreRules.Any(rule =>
-                                Regex.IsMatch(Path.Combine(it.RelativeDirectory, it.FileName), rule)
-                            );
-                        })
-                        .ToList();
+                    needCopiedFiles = needCopiedFiles!.Where(it =>
+                    {
+                        return !ignoreRules.Any(rule =>
+                            Regex.IsMatch(Path.Combine(it.RelativeDirectory, it.FileName), rule));
+                    }).ToList();
                 }
-                NotifyService.NotifyMessageToUser(
-                    $"-------文件对比完成，一共有{needCopiedFiles!.Count}个文件待发布------------"
-                );
+                NotifyService.NotifyMessageToUser($"-------文件对比完成，一共有{needCopiedFiles!.Count}个文件待发布------------");
 
                 foreach (var needCopiedFile in needCopiedFiles!)
                 {
                     NotifyService.NotifyMessageToUser($"需要复制文件【{needCopiedFile.FileName}】");
                 }
             }
-            NotifyService.NotifyMessageToUser("开始制作安装包");
-            var memoryStream = await Task.Run(
-                () =>
-                    FileHelper.CreateZipFile(
-                        needCopiedFiles,
-                        deployContext.CancellationTokenSource?.Token ?? default
-                    ),
-                deployContext.CancellationTokenSource?.Token ?? default
-            );
-            NotifyService.NotifyMessageToUser("安装包制作完成");
+
+            var memoryStream = FileHelper.CreateZipFile(needCopiedFiles, deployContext.CancellationTokenSource?.Token ?? default);
+
             deployContext.CanCanel = false;
+
 
             bool skipBackup = service.EnvironmentName != "生产";
             NotifyService.NotifyMessageToUser($"开始上传并部署文件,跳过备份:{skipBackup}");
-            await agentService.Upload(
-                memoryStream,
-                service.Name,
-                needCopiedFiles,
-                service.TargetDir ?? "",
-                service.OnlyCopyFiles ?? false,
-                service.EnableHealthCheck,
-                skipBackup
-            );
-            NotifyService.NotifyMessageToUser("文件上传并部署完成");
-            NotifyService.NotifyMessageToUser(
-                $"-------处理完成【{deployTarget.Host}】------------"
-            );
+            await agentService.Upload(memoryStream, service.Name, needCopiedFiles,
+                service.TargetDir ?? "", service.OnlyCopyFiles ?? false, service.EnableHealthCheck, skipBackup);
+
+            NotifyService.NotifyMessageToUser($"-------处理完成【{deployTarget.Host}】------------");
 
             NotifyService.ClearHost();
 
@@ -309,12 +227,10 @@ public class OperationService
         }
     }
 
-    public async Task Install(
-        List<DeployTarget> targets,
-        DeployService service,
-        InstallServiceRequest request,
-        DeployContext deployContext
-    )
+
+
+
+    public async Task Install(List<DeployTarget> targets, DeployService service, InstallServiceRequest request, DeployContext deployContext)
     {
         try
         {
@@ -323,8 +239,7 @@ public class OperationService
             if (service.DeployMode == 0)
             {
                 var buildResult = await BuildProject(service, deployContext);
-                if (!buildResult.success)
-                    return;
+                if (!buildResult.success) return;
                 dir = buildResult.dir;
                 NotifyService.NotifyMessageToUser("编译完成");
             }
@@ -359,13 +274,8 @@ public class OperationService
     /// <param name="service"></param>
     /// <param name="dir"></param>
     /// <exception cref="NotImplementedException"></exception>
-    private async Task InstallService(
-        List<DeployTarget> targets,
-        DeployService service,
-        string dir,
-        InstallServiceRequest request,
-        DeployContext deployContext
-    )
+    private async Task InstallService(List<DeployTarget> targets, DeployService service, string dir,
+        InstallServiceRequest request, DeployContext deployContext)
     {
         var currentFileInfos = FileHelper.GetFileInfos(dir);
 
@@ -374,10 +284,8 @@ public class OperationService
             var agentService = App.GetRequiredService<AgentService>();
 
             agentService.NotifyService = NotifyService;
-            await agentService.InitTargetConnection(
-                deployTarget,
-                deployContext.CancellationTokenSource?.Token ?? default
-            );
+            await agentService.InitTargetConnection(deployTarget, deployContext.CancellationTokenSource?.Token ?? default);
+
 
             foreach (var needCopiedFile in currentFileInfos!)
             {
@@ -386,10 +294,7 @@ public class OperationService
 
             NotifyService.NotifyMessageToUser($"开始制作安装包");
 
-            var memoryStream = FileHelper.CreateZipFile(
-                currentFileInfos,
-                deployContext.CancellationTokenSource?.Token ?? default
-            );
+            var memoryStream = FileHelper.CreateZipFile(currentFileInfos, deployContext.CancellationTokenSource?.Token ?? default);
 
             NotifyService.NotifyMessageToUser($"开始上传安装包，开始安装");
 
@@ -471,8 +376,8 @@ public class OperationService
             return;
         }
         NotifyService.NotifyMessageToUser($"更新{target.Host}完成");
-    }
 
+    }
     /// <summary>
     /// 复制文件
     /// </summary>
@@ -497,10 +402,12 @@ public class OperationService
             return;
         }
         NotifyService.NotifyMessageToUser($"{target.Host}复制完成");
+
     }
 
     public async Task<string> GetStatus(DeployTarget deployTarget, string serviceName)
     {
+
         var agentService = App.GetRequiredService<AgentService>();
         try
         {
@@ -511,9 +418,7 @@ public class OperationService
 
             await agentService.DisConnect();
 
-            NotifyService.NotifyMessageToUser(
-                $"查询到目标：{deployTarget.Host}服务器上的服务状态为{status}"
-            );
+            NotifyService.NotifyMessageToUser($"查询到目标：{deployTarget.Host}服务器上的服务状态为{status}");
             return status ?? "查询失败";
         }
         catch (Exception e)
@@ -521,8 +426,8 @@ public class OperationService
             Log.Error(e, e.Message);
             return e.Message;
         }
-    }
 
+    }
     public async Task<string> GetAgentVersion(DeployTarget deployTarget)
     {
         try
@@ -539,5 +444,6 @@ public class OperationService
             NotifyService.NotifyMessageToUser($"{deployTarget.Host}获取版本失败:{e.Message}");
             return "查询失败";
         }
+
     }
 }

@@ -301,7 +301,7 @@ public class DeployService
         return fileInfoDtos;
     }
 
-    public List<FileHelper.FileInfoDto> CompareFileInfos(string serviceName, List<FileHelper.FileInfoDto> fileInfoDtos)
+    public List<FileHelper.FileInfoDto> CompareFileInfos(string serviceName, List<FileHelper.FileInfoDto> fileInfoDtos, bool useFastMode = false)
     {
         string exePath = WindowsServiceHelper.GetWindowsServiceLocation(serviceName);
 
@@ -330,6 +330,11 @@ public class DeployService
                 {
                     result.Add(fileInfoDto);
                 }
+                // 如果使用快速模式，则不比较文件md5
+                else if (useFastMode)
+                {
+                    continue;
+                }
                 else if (dbFileRecord.MD5 != fileInfoDto.MD5)
                 {
                     result.Add(fileInfoDto);
@@ -347,6 +352,11 @@ public class DeployService
                     if (fileInfo.Length != fileInfoDto.FileSize)
                     {
                         result.Add(fileInfoDto);
+                    }
+                    // 如果使用快速模式，则不比较文件md5
+                    else if (useFastMode)
+                    {
+                        continue;
                     }
                     else
                     {
@@ -400,7 +410,7 @@ public class DeployService
         return res;
     }
 
-    public List<FileHelper.FileInfoDto> CompareFileInfosInDir(string dir, List<FileHelper.FileInfoDto> fileInfoDtos)
+    public List<FileHelper.FileInfoDto> CompareFileInfosInDir(string dir, List<FileHelper.FileInfoDto> fileInfoDtos, bool useFastMode = false)
     {
         if (!Directory.Exists(dir))
         {

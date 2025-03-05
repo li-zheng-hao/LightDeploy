@@ -19,21 +19,21 @@ public class DeployController : ControllerBase
     private readonly ILogger<DeployController> _logger;
     private readonly DeployService _deployService;
 
-    public DeployController(ILogger<DeployController> logger,DeployService deployService)
+    public DeployController(ILogger<DeployController> logger, DeployService deployService)
     {
         _logger = logger;
         _deployService = deployService;
     }
 
     [HttpPost]
-    public async Task<IActionResult> Deploy([FromForm]DeployDto deployDto)
+    public async Task<IActionResult> Deploy([FromForm] DeployDto deployDto)
     {
         _logger.LogInformation($"请求更新服务:{deployDto.ServiceName}");
         await _deployService.Deploy(deployDto);
-       
+
         return Ok();
     }
-    
+
     /// <summary>
     /// 和目录比较文件
     /// </summary>
@@ -41,21 +41,21 @@ public class DeployController : ControllerBase
     /// <param name="fileInfoDtos"></param>
     /// <returns></returns>
     [HttpPost()]
-    public IActionResult CompareDir([FromQuery] string targetDir,[FromBody] List<FileHelper.FileInfoDto> fileInfoDtos)
+    public IActionResult CompareDir([FromQuery] string targetDir, [FromBody] List<FileHelper.FileInfoDto> fileInfoDtos, [FromQuery] bool useFastMode = false)
     {
-        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfosInDir(targetDir,fileInfoDtos);
+        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfosInDir(targetDir, fileInfoDtos, useFastMode);
         return Ok(newFileInfos);
     }
-    
-    [HttpPost()]
-    public IActionResult Compare([FromQuery] string serviceName,[FromBody] List<FileHelper.FileInfoDto> fileInfoDtos)
-    {
-        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName,fileInfoDtos);
-        return Ok(newFileInfos);
-    }
-   
 
-    [HttpGet,AllowAnonymous]
+    [HttpPost()]
+    public IActionResult Compare([FromQuery] string serviceName, [FromBody] List<FileHelper.FileInfoDto> fileInfoDtos, [FromQuery] bool useFastMode = false)
+    {
+        List<FileHelper.FileInfoDto> newFileInfos = _deployService.CompareFileInfos(serviceName, fileInfoDtos, useFastMode);
+        return Ok(newFileInfos);
+    }
+
+
+    [HttpGet, AllowAnonymous]
     public IActionResult Ping()
     {
         return Ok();
@@ -64,9 +64,9 @@ public class DeployController : ControllerBase
     [HttpPost()]
     public IActionResult UpdateSelf()
     {
-        var file=HttpContext.Request.Form.Files["file"];
+        var file = HttpContext.Request.Form.Files["file"];
         var parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory);
-        var targetPath=Path.Combine(parent!.Parent.FullName, "LightDeployUpdateService","UpdatePackages");
+        var targetPath = Path.Combine(parent!.Parent.FullName, "LightDeployUpdateService", "UpdatePackages");
         if (!Directory.Exists(targetPath))
         {
             Directory.CreateDirectory(targetPath);
@@ -87,12 +87,12 @@ public class DeployController : ControllerBase
     /// <param name="serviceName"></param>
     /// <returns></returns>
     [HttpPost]
-    public IActionResult CheckServiceExist([FromQuery]string serviceName)
+    public IActionResult CheckServiceExist([FromQuery] string serviceName)
     {
-        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
+        var exist = WindowsServiceHelper.ServiceIsExisted(serviceName);
         return Ok(exist);
     }
-    
+
     /// <summary>
     /// 安装windows服务
     /// </summary>
@@ -102,26 +102,26 @@ public class DeployController : ControllerBase
     public async Task<IActionResult> InstallWindowsService([FromForm] InstallWindowsServiceDto installWindowsServiceDto)
     {
         Log.Information(installWindowsServiceDto.ToJsonString());
-        var exist=WindowsServiceHelper.ServiceIsExisted(installWindowsServiceDto.ServiceName);
-        Check.ThrowIf(exist,"服务已存在");
-        var result=await _deployService.InstallWindowsService(installWindowsServiceDto);
-        Check.ThrowIf(result,"安装失败");
+        var exist = WindowsServiceHelper.ServiceIsExisted(installWindowsServiceDto.ServiceName);
+        Check.ThrowIf(exist, "服务已存在");
+        var result = await _deployService.InstallWindowsService(installWindowsServiceDto);
+        Check.ThrowIf(result, "安装失败");
         return Ok();
     }
 
     [HttpPost]
     public IActionResult StartService([FromQuery] string serviceName)
     {
-        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(!exist,"服务不存在");
+        var exist = WindowsServiceHelper.ServiceIsExisted(serviceName);
+        Check.ThrowIf(!exist, "服务不存在");
         WindowsServiceHelper.StartService(serviceName);
         return Ok();
     }
     [HttpPost]
     public IActionResult StopService([FromQuery] string serviceName)
     {
-        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(!exist,"服务不存在");
+        var exist = WindowsServiceHelper.ServiceIsExisted(serviceName);
+        Check.ThrowIf(!exist, "服务不存在");
         WindowsServiceHelper.StopService(serviceName);
         return Ok();
 
@@ -135,8 +135,8 @@ public class DeployController : ControllerBase
     [HttpGet()]
     public IActionResult GetStatus([FromQuery] string serviceName)
     {
-        var exist=WindowsServiceHelper.ServiceIsExisted(serviceName);
-        Check.ThrowIf(!exist,"服务不存在");
+        var exist = WindowsServiceHelper.ServiceIsExisted(serviceName);
+        Check.ThrowIf(!exist, "服务不存在");
         return Ok(WindowsServiceHelper.GetStatus(serviceName));
 
     }
@@ -148,7 +148,7 @@ public class DeployController : ControllerBase
     [HttpGet]
     public IActionResult GetAgentVersion()
     {
-        return Ok(App.GetConfig<string>("Version")??"未知");
+        return Ok(App.GetConfig<string>("Version") ?? "未知");
     }
 
     /// <summary>

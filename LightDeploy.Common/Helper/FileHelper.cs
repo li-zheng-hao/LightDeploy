@@ -82,7 +82,7 @@ public static class FileHelper
         return memoryStream;
     }
 
-    public static List<FileInfoDto> GetFileInfos(string dir, string? serviceIgnoreRules = null)
+    public static List<FileInfoDto> GetFileInfos(string dir, string? serviceIgnoreRules = null, bool useFastMode = false)
     {
         var exeDirInfo = new DirectoryInfo(dir);
         var fileInfos = exeDirInfo.GetFiles("*.*", SearchOption.AllDirectories);
@@ -103,7 +103,7 @@ public static class FileHelper
                     FileSize = it.Length,
                     AbsoluteDirectory = Path.GetDirectoryName(it.FullName),
                     LastWriteTime = it.LastWriteTime,
-                    MD5 = GetFileXxHash64(it.FullName)
+                    MD5 = useFastMode ? string.Empty : GetFileXxHash64(it.FullName)
                 };
             }).ToList();
         foreach (var fileInfoDto in fileInfoDtos.Where(it => it.RelativeDirectory.StartsWith("/") || it.RelativeDirectory.StartsWith("\\")))

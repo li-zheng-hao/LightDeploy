@@ -19,7 +19,7 @@ public class AgentService : IAsyncDisposable
 
     private DeployTarget _target;
 
-    public async Task InitTargetConnection(DeployTarget target,CancellationToken cancellationToken)
+    public async Task InitTargetConnection(DeployTarget target, CancellationToken cancellationToken)
     {
         Log.Information("正在连接Agent：" + target.Host + ":" + target.Port + "");
         if (connection != null)
@@ -39,7 +39,7 @@ public class AgentService : IAsyncDisposable
         {
             NotifyService.NotifyMessageToUser($"Agent: {msg}");
         });
-        
+
         await connection.StartAsync();
     }
     public async Task DisConnect()
@@ -61,7 +61,7 @@ public class AgentService : IAsyncDisposable
     {
         var client = $"http://{_target.Host}:{_target.Port}/{endpoint}"
                 .WithHeader("Authorization", _target.AuthKey ?? "")
-                .WithHeader("WsConnectionId", connection?.ConnectionId??string.Empty)
+                .WithHeader("WsConnectionId", connection?.ConnectionId ?? string.Empty)
             ;
         client.Settings.JsonSerializer = new NewtonsoftJsonSerializer(new JsonSerializerSettings()
         {
@@ -80,11 +80,12 @@ public class AgentService : IAsyncDisposable
     /// <param name="serviceName"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<List<FileHelper.FileInfoDto>?> Compare(List<FileHelper.FileInfoDto> source, string serviceName,
-        CancellationToken cancellationToken )
+    public async Task<List<FileHelper.FileInfoDto>?> Compare(List<FileHelper.FileInfoDto> source, string serviceName, bool useFastMode,
+        CancellationToken cancellationToken)
     {
         var result = await GetHttpClient("api/deploy/compare")
             .SetQueryParam("serviceName", serviceName)
+            .SetQueryParam("useFastMode", useFastMode)
             .WithHeader("Authorization", _target.AuthKey ?? "")
             .PostJsonAsync(source, cancellationToken)
             .ReceiveJson<UnifyResult<List<FileHelper.FileInfoDto>>>();
@@ -108,7 +109,7 @@ public class AgentService : IAsyncDisposable
     /// <param name="skipBackup"></param>
     /// <returns></returns>
     public async Task<bool> Upload(Stream memoryStream, string serviceName,
-        List<FileHelper.FileInfoDto> calculateNeedDeployFiles,string targetDir,bool onlyCopyFiles,bool enableHealthCheck,bool skipBackup)
+        List<FileHelper.FileInfoDto> calculateNeedDeployFiles, string targetDir, bool onlyCopyFiles, bool enableHealthCheck, bool skipBackup)
     {
         var response = await GetHttpClient("api/deploy/deploy")
             .WithTimeout(TimeSpan.FromMinutes(5))
@@ -220,8 +221,8 @@ public class AgentService : IAsyncDisposable
             NotifyService.NotifyMessageToUser($"返回消息 {body}");
         }
     }
-    
-    public async Task CopyFile(string zipFilePath,string targetDirPath, DeployTarget deployTarget)
+
+    public async Task CopyFile(string zipFilePath, string targetDirPath, DeployTarget deployTarget)
     {
         try
         {
@@ -249,11 +250,11 @@ public class AgentService : IAsyncDisposable
             .GetJsonAsync<UnifyResult<string>>();
         if (response.success)
         {
-            return response.data??string.Empty;
+            return response.data ?? string.Empty;
         }
 
-        NotifyService.NotifyMessageToUser(response.msg??"获取状态失败");
-        return response.msg??"获取状态失败";
+        NotifyService.NotifyMessageToUser(response.msg ?? "获取状态失败");
+        return response.msg ?? "获取状态失败";
     }
     public async Task<string?> GetAgentVersion(DeployTarget target)
     {
@@ -263,26 +264,27 @@ public class AgentService : IAsyncDisposable
             .GetJsonAsync<UnifyResult<string>>();
         if (response.success)
         {
-            return response.data??string.Empty;
+            return response.data ?? string.Empty;
         }
-        return response.msg??"获取版本失败";
+        return response.msg ?? "获取版本失败";
     }
 
 
-    public async Task<List<FileHelper.FileInfoDto>?> CompareInDir(List<FileHelper.FileInfoDto> currentFileInfos, string targetDir,CancellationToken cancellationToken)
+    public async Task<List<FileHelper.FileInfoDto>?> CompareInDir(List<FileHelper.FileInfoDto> currentFileInfos, string targetDir, bool useFastMode, CancellationToken cancellationToken)
     {
         var result = await GetHttpClient("api/deploy/comparedir")
             .SetQueryParam("targetDir", targetDir)
-            .PostJsonAsync(currentFileInfos,cancellationToken)
+            .SetQueryParam("useFastMode", useFastMode)
+            .PostJsonAsync(currentFileInfos, cancellationToken)
             .ReceiveJson<UnifyResult<List<FileHelper.FileInfoDto>>>();
-        
+
         if (result.success)
         {
             return result.data;
         }
         else
         {
-            NotifyService.NotifyMessageToUser(result.msg??string.Empty);
+            NotifyService.NotifyMessageToUser(result.msg ?? string.Empty);
             return null;
         }
     }
