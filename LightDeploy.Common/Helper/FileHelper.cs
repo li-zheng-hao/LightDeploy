@@ -65,16 +65,36 @@ public static class FileHelper
         return result;
     }
 
-    public static Stream CompressFiles(List<(Stream Stream, string fileName)> files)
+    /// <summary>
+    /// 压缩文件到内存流
+    /// </summary>
+    /// <param name="files">文件路径列表 (源文件路径, 压缩包内相对路径)</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>包含压缩文件的内存流</returns>
+    public static MemoryStream CompressFiles(List<(string SourcePath, string EntryPath)> files, CancellationToken cancellationToken = default)
     {
         var memoryStream = new MemoryStream();
+
         using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
         {
-            foreach (var file in files)
+            foreach (var (sourcePath, entryPath) in files)
             {
-                var zipArchiveEntry = archive.CreateEntry(file.fileName);
-                using var zipStream = zipArchiveEntry.Open();
-                file.Stream.CopyTo(zipStream);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // 创建压缩条目
+                var entry = archive.CreateEntry(entryPath);
+
+                // 设置条目的 LastWriteTime 为源文件的 LastWriteTime
+                var fileInfo = new FileInfo(sourcePath);
+                entry.LastWriteTime = fileInfo.LastWriteTime;
+                Log.Information($"设置条目的 LastWriteTime 为源文件的 LastWriteTime:{entryPath} {fileInfo.LastWriteTime}");
+
+                // 写入文件内容
+                using (var entryStream = entry.Open())
+                using (var fileStream = File.OpenRead(sourcePath))
+                {
+                    fileStream.CopyTo(entryStream);
+                }
             }
         }
 
@@ -111,28 +131,6 @@ public static class FileHelper
             fileInfoDto.RelativeDirectory = fileInfoDto.RelativeDirectory.Substring(1);
         }
         return fileInfoDtos;
-    }
-
-    public static MemoryStream CompressFiles(List<(string sourcePath, string entryPath)> files,
-        CancellationToken cancellationToken = default)
-    {
-        var memoryStream = new MemoryStream();
-        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-        {
-            foreach (var file in files)
-            {
-                if (cancellationToken.IsCancellationRequested) throw new TaskCanceledException();
-
-                var zipArchiveEntry = archive.CreateEntry(file.entryPath);
-                using var zipStream = zipArchiveEntry.Open();
-
-                using var stream = File.OpenRead(file.sourcePath);
-                stream.CopyTo(zipStream);
-            }
-        }
-
-        memoryStream.Position = 0;
-        return memoryStream;
     }
 
     /// <summary>

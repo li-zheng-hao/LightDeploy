@@ -12,6 +12,8 @@ using Masuit.Tools;
 using Polly;
 using Serilog;
 using SevenZipExtractor;
+using SharpCompress.Archives;
+using SharpCompress.Common;
 
 namespace LightDeploy.ClientAgent.Services;
 
@@ -36,9 +38,23 @@ public class DeployService
         {
             var fileInfoDtos = JsonSerializer.Deserialize<List<FileHelper.FileInfoDto>>(deployDto.FileInfos);
             var readStream = deployDto.File.OpenReadStream();
-            using ArchiveFile archiveFile = new ArchiveFile(readStream);
-            archiveFile.Extract(subDir, true); // extract all
-            Log.Information("解压完成");
+
+            // 使用 SharpCompress 替代 ArchiveFile
+            var archive = ArchiveFactory.Open(readStream);
+            foreach (var entry in archive.Entries)
+            {
+                if (!entry.IsDirectory)
+                {
+                    entry.WriteToDirectory(subDir, new ExtractionOptions()
+                    {
+                        ExtractFullPath = true,
+                        Overwrite = true,
+                        PreserveFileTime = true // 保留文件时间
+                    });
+                }
+            }
+
+            Log.Information("解压完成，并保留了原始时间戳");
             if (deployDto.TargetDir.IsNullOrWhiteSpace() && deployDto.OnlyCopyFiles != true)
             {
                 // 获取当前系统服务
@@ -232,11 +248,10 @@ public class DeployService
     }
 
     /// <summary>
-    /// 比较两个目录以及子目录下所有文件
+    /// 复制文件夹下所有文件
     /// </summary>
     /// <param name="sourceDir"></param>
     /// <param name="targetDir"></param>
-    /// <exception cref="NotImplementedException"></exception>
     public void CopyFilesRecursively(string sourceDir, string targetDir)
     {
         var sourceDirInfo = new DirectoryInfo(sourceDir);
@@ -252,21 +267,23 @@ public class DeployService
             CopyFilesRecursively(directoryInfo.FullName, subdir.FullName);
         }
 
-
         foreach (var sourceFile in sourceDirInfo.GetFiles())
         {
+            var targetFilePath = Path.Combine(targetDir, sourceFile.Name);
             var exeFile = exeDirInfo.GetFiles().FirstOrDefault(it => it.Name == sourceFile.Name);
+
             if (exeFile is null)
             {
-                File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name));
-                _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
+                File.Copy(sourceFile.FullName, targetFilePath);
+                _logger.LogInformation($"复制文件到{targetFilePath}");
             }
             else
             {
-
-                File.Copy(sourceFile.FullName, Path.Combine(targetDir, sourceFile.Name), true);
-                _logger.LogInformation($"复制文件到{Path.Combine(targetDir, sourceFile.Name)}");
+                File.Copy(sourceFile.FullName, targetFilePath, true);
+                _logger.LogInformation($"复制文件到{targetFilePath}");
             }
+            // 复制后设置目标文件的 LastWriteTime 与源文件一致
+            File.SetLastWriteTime(targetFilePath, sourceFile.LastWriteTime);
         }
     }
 
@@ -333,7 +350,14 @@ public class DeployService
                 // 如果使用快速模式，则不比较文件md5
                 else if (useFastMode)
                 {
-                    continue;
+                    if (Math.Abs((fileInfo.LastWriteTime - fileInfoDto.LastWriteTime).TotalSeconds) > 3)
+                    {
+                        result.Add(fileInfoDto);
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 else if (dbFileRecord.MD5 != fileInfoDto.MD5)
                 {
@@ -431,6 +455,18 @@ public class DeployService
                 if (fileInfo.Length != fileInfoDto.FileSize)
                 {
                     result.Add(fileInfoDto);
+                }
+                // 如果使用快速模式，则不比较文件md5
+                else if (useFastMode)
+                {
+                    if (Math.Abs((fileInfo.LastWriteTime - fileInfoDto.LastWriteTime).TotalSeconds) > 3)
+                    {
+                        result.Add(fileInfoDto);
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 else
                 {
