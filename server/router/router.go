@@ -1,20 +1,19 @@
 package router
 
 import (
-	"net/http"
-
 	"ld_server/controller/agent"
 	"ld_server/controller/deploy"
 	"ld_server/controller/history"
 	"ld_server/controller/service"
 	"ld_server/controller/sse"
 	"ld_server/controller/target"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterRoutes(r *gin.Engine) {
-	r.GET("/", func(c *gin.Context) {
+	r.GET("/api/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})

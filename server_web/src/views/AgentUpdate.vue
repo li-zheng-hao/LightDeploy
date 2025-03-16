@@ -127,7 +127,7 @@ const handleUpload = async ({ file }: { file: any }) => {
     }
     message.success('更新文件上传成功')
     fetchAgents()
-  } catch (error) {
+  } catch (error:any) {
     if (error.message === '用户取消') {
       return // 用户取消操作，静默处理
     }

@@ -38,7 +38,8 @@ class ApiClient {
         if (error.response) {
           switch (error.response.status) {
             case 400:
-              window.$message.error('请求参数错误');
+              const errorMessage = (error.response.data as { message?: string }).message || '请求失败(400)';
+              window.$message.error(errorMessage);
               break;
             case 401:
               window.$message.error('未授权，请重新登录(401)');

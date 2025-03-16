@@ -13,6 +13,7 @@ import (
 	"ld_server/controller/sse"
 	"ld_server/db"
 	"ld_server/router"
+	"ld_server/static"
 	_ "ld_shared/log"
 
 	"github.com/gin-gonic/gin"
@@ -143,6 +144,10 @@ func runInteractive() error {
 }
 
 func registerRoutes(r *gin.Engine) {
+	// 注册静态文件服务
+	r.StaticFS("/ui", static.GetDistFS())
+
+	// 注册API路由
 	router.RegisterRoutes(r)
 }
 
