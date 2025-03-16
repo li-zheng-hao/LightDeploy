@@ -1,0 +1,1 @@
+go build -o bin/server/server.exe -ldflags="-s -w" ../server/main.go

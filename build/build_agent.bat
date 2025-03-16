@@ -1,0 +1,1 @@
+go build -o bin/agent/agent.exe -ldflags="-s -w" ../agent/main.go

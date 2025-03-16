@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,24 +10,27 @@ import (
 	"syscall"
 	"time"
 
-	"ld_agent/router"
-	"ld_shared/env"
+	"ld_server/controller/sse"
+	"ld_server/db"
+	"ld_server/router"
 	_ "ld_shared/log"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sys/windows/svc"
 )
-var(
-	// 服务端口
-	PORT=9002
-)
+
 func main() {
-	flag.IntVar(&PORT, "p", 9002, "服务端口")
-	flag.Parse()
-	if !env.IsDebugMode() {
-		gin.SetMode(gin.ReleaseMode)
+	// 确保日志已经初始化
+	slog.Info("开始初始化服务...")
+
+	if err := db.Init(); err != nil {
+		slog.Error("数据库初始化失败", "error", err)
+		return
 	}
-	slog.Info("服务启动", "port", PORT)
+	slog.Info("数据库初始化成功")
+
+	gin.SetMode(gin.ReleaseMode)
+
 	// 检查是否以服务模式运行
 	isService, err := svc.IsWindowsService()
 	if err != nil {
@@ -48,13 +50,11 @@ func main() {
 	}
 }
 
-
-
-type agentService struct {
+type serverService struct {
 	srv *http.Server
 }
 
-func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (s *serverService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 
@@ -74,6 +74,8 @@ func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, change
 			changes <- c.CurrentStatus
 		case svc.Stop, svc.Shutdown:
 			changes <- svc.Status{State: svc.StopPending}
+			// 通知所有SSE连接关闭
+			sse.ShutdownSSE()
 			// 优雅关闭服务器
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -90,26 +92,28 @@ func runService() error {
 	slog.Info("以Windows服务模式运行")
 
 	r := gin.Default()
-	router.RegisterRoutes(r)
+	registerRoutes(r)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", PORT),
+		Addr:    fmt.Sprintf("localhost:%d", 31003),
 		Handler: r,
 	}
+	slog.Info("服务器将在以下地址启动", "address", srv.Addr)
 
-	return svc.Run("", &agentService{srv: srv})
+	return svc.Run("", &serverService{srv: srv})
 }
 
 func runInteractive() error {
 	slog.Info("以交互模式运行")
 
 	r := gin.Default()
-	router.RegisterRoutes(r)
+	registerRoutes(r)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", PORT),
+		Addr:    fmt.Sprintf("localhost:%d", 31003),
 		Handler: r,
 	}
+	slog.Info("服务器将在以下地址启动", "address", srv.Addr)
 
 	// 在单独的 goroutine 中启动服务器
 	go func() {
@@ -123,7 +127,8 @@ func runInteractive() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	slog.Info("正在关闭服务器...")
-
+	// 通知所有SSE连接关闭
+	sse.ShutdownSSE()
 	// 设置超时时间为5秒的上下文
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -135,6 +140,10 @@ func runInteractive() error {
 
 	slog.Info("服务器已退出")
 	return nil
+}
+
+func registerRoutes(r *gin.Engine) {
+	router.RegisterRoutes(r)
 }
 
 
