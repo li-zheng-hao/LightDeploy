@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	VERSION = "1.0.6"
+	VERSION = "1.0.7"
 )
 
 func GetVersion(c *gin.Context) {

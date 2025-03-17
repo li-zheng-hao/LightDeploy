@@ -75,3 +75,24 @@ func InstallService(serviceName string, exePath string, exeParams string) error 
 
 	return nil
 }
+
+func GetServiceStatus(serviceName string) (*svc.State, error) {
+	// 连接服务管理器
+	m, err := mgr.Connect()
+	if err != nil {
+		return nil, err
+	}
+	defer m.Disconnect()
+
+	// 打开指定服务
+	s, err := m.OpenService(serviceName)
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
+	status, err := s.Query()
+	if err != nil {
+		return nil, err
+	}
+	return &status.State, nil
+}

@@ -165,7 +165,7 @@ func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
 	}
 
 	client := &http.Client{
-		Timeout: time.Second * 5,
+		Timeout: time.Minute * 5,
 	}
 	resp, err := client.Get(fmt.Sprintf("http://%s:%d/api/sse/sse", host, port))
 	if err != nil {

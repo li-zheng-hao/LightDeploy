@@ -18,6 +18,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sys/windows/svc"
 )
 
 type DeployWindowsServiceRequest struct {
@@ -59,7 +60,13 @@ func DeployWindowsService(c *gin.Context) {
 		error_response.NewErrorResponse(c, "请上传zip文件")
 		return
 	}
-	if !request.OnlyCopyFile {
+	status, err := windows_service.GetServiceStatus(request.ServiceName)
+	if err != nil {
+		slog.Error("获取服务状态失败", "error", err)
+		error_response.NewErrorResponse(c, err.Error())
+		return
+	}
+	if !request.OnlyCopyFile && *status == svc.Running {
 		slog.Info("准备停止服务", "serviceName", request.ServiceName)
 		err := windows_service.StopService(request.ServiceName)
 		if err != nil {
