@@ -14,7 +14,7 @@ import (
 	"ld_server/db"
 	"ld_server/router"
 	"ld_server/static"
-	_ "ld_shared/log"
+	_ "ld_shared/clog"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sys/windows/svc"
@@ -150,5 +150,3 @@ func registerRoutes(r *gin.Engine) {
 	// 注册API路由
 	router.RegisterRoutes(r)
 }
-
-

@@ -5,7 +5,7 @@ import (
 
 	"ld_server/db"
 	"ld_server/model"
-	"ld_server/service"
+	"ld_server/service/target"
 	"ld_shared/error_response"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +38,7 @@ func GetServiceStatus(c *gin.Context) {
 		return
 	}
 
-	results, err := service.GetServiceStatus(int(serviceModel.Id))
+	results, err := target.GetServiceStatus(int(serviceModel.Id))
 	if err != nil {
 		error_response.NewErrorResponse(c, err.Error())
 		return
@@ -105,7 +105,7 @@ func GetDeployServices(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK,services)
+	c.JSON(http.StatusOK, services)
 }
 
 // 删除部署服务

@@ -16,4 +16,3 @@ func GetDistFS() http.FileSystem {
 	}
 	return http.FS(fsys)
 }
-

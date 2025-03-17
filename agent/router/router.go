@@ -24,6 +24,9 @@ func RegisterRoutes(r *gin.Engine) {
 
 	deployGroup := r.Group("/api/deploy")
 	deployGroup.POST("/deploy-windows-service", deploy.DeployWindowsService)
+	deployGroup.POST("/compare-files", deploy.CompareFiles)
+	deployGroup.POST("/start-service", deploy.StartService)
+	deployGroup.POST("/stop-service", deploy.StopService)
 
 	versionGroup := r.Group("/api/version")
 	versionGroup.GET("", version.GetVersion)

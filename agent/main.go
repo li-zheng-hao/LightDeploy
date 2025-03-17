@@ -11,17 +11,20 @@ import (
 	"syscall"
 	"time"
 
+	"ld_agent/controller/sse"
 	"ld_agent/router"
+	_ "ld_shared/clog"
 	"ld_shared/env"
-	_ "ld_shared/log"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sys/windows/svc"
 )
-var(
+
+var (
 	// 服务端口
-	PORT=9002
+	PORT = 9002
 )
+
 func main() {
 	flag.IntVar(&PORT, "p", 9002, "服务端口")
 	flag.Parse()
@@ -48,8 +51,6 @@ func main() {
 	}
 }
 
-
-
 type agentService struct {
 	srv *http.Server
 }
@@ -74,6 +75,8 @@ func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, change
 			changes <- c.CurrentStatus
 		case svc.Stop, svc.Shutdown:
 			changes <- svc.Status{State: svc.StopPending}
+			// 通知所有SSE连接关闭
+			sse.ShutdownSSE()
 			// 优雅关闭服务器
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -136,5 +139,3 @@ func runInteractive() error {
 	slog.Info("服务器已退出")
 	return nil
 }
-
-

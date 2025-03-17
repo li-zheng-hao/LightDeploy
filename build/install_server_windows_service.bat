@@ -23,5 +23,6 @@ if %errorLevel% equ 0 (
 ) else (
     echo Install Failed!
 )
-
+REM 启动服务
+sc start "%SERVICE_NAME%"
 pause

@@ -33,21 +33,38 @@
               />
             </n-form-item>
             <n-space>
-              <n-button type="primary" @click="handleDeploy" :disabled="!selectedServiceId || !hasSelectedTargets">
+              <n-button
+                type="primary"
+                @click="handleDeploy"
+                :disabled="!selectedServiceId || !hasSelectedTargets"
+              >
                 开始部署
               </n-button>
-              <n-button @click="handleInstall" :disabled="!selectedServiceId || !hasSelectedTargets">
+              <n-button
+                @click="handleInstall"
+                :disabled="!selectedServiceId || !hasSelectedTargets"
+              >
                 安装服务
               </n-button>
-              <n-button @click="handleStart" :disabled="!selectedServiceId || !hasSelectedTargets">
+              <n-button
+                @click="handleStart"
+                :disabled="!selectedServiceId || !hasSelectedTargets"
+              >
                 启动服务
               </n-button>
-              <n-button @click="handleStop" :disabled="!selectedServiceId || !hasSelectedTargets">
+              <n-button
+                @click="handleStop"
+                :disabled="!selectedServiceId || !hasSelectedTargets"
+              >
                 停止服务
               </n-button>
-              <n-button @click="()=>{
-                deployLogs.splice(0, deployLogs.length)
-              }">
+              <n-button
+                @click="
+                  () => {
+                    deployLogs.splice(0, deployLogs.length);
+                  }
+                "
+              >
                 清空日志
               </n-button>
             </n-space>
@@ -65,7 +82,9 @@
                 </div>
                 <div class="flex" v-if="history.comment">
                   <span class="w-20 font-medium">发布说明：</span>
-                  <span class="text-sm text-gray-500">{{ history.comment }}</span>
+                  <span class="text-sm text-gray-500">{{
+                    history.comment
+                  }}</span>
                 </div>
               </div>
             </n-list-item>
@@ -90,7 +109,7 @@
         <n-card title="部署日志" class="mt-4">
           <div class="h-[300px] overflow-auto bg-black p-4 rounded">
             <n-text type="info" v-for="(log, index) in deployLogs" :key="index">
-              {{ log }}<br>
+              {{ log }}<br />
             </n-text>
           </div>
         </n-card>
@@ -104,11 +123,17 @@
       positive-text="确认"
       negative-text="取消"
       @positive-click="confirmDeploy"
-      @negative-click="() => {
-        showDeployModal = false
-        deployComment = ''
-      }"
+      @negative-click="
+        () => {
+          showDeployModal = false;
+          deployComment = '';
+          useFastMode = false;
+        }
+      "
     >
+      <n-checkbox v-model:checked="useFastMode">
+        使用快速发布模式(仅对比文件大小和修改时间)
+      </n-checkbox>
       <n-input
         v-model:value="deployComment"
         type="textarea"
@@ -120,289 +145,305 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useMessage } from 'naive-ui'  // 添加 NInput, NModal
-import type { DataTableColumns } from 'naive-ui'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useMessage } from "naive-ui"; // 添加 NInput, NModal
+import type { DataTableColumns } from "naive-ui";
 import {
   getDeployHistory,
   deployService,
   installService,
   startService,
   stopService,
-  type DeployHistory
-} from '../api/deploy'
-import { getServiceList, getServiceStatus, type DeployService } from '../api/service'
-import { getTargetList, type DeployTarget } from '@/api/target'
-import { SSEClient } from '@/util/sse'
+  type DeployHistory,
+} from "../api/deploy";
+import {
+  getServiceList,
+  getServiceStatus,
+  type DeployService,
+} from "../api/service";
+import { getTargetList, type DeployTarget } from "@/api/target";
+import { SSEClient } from "@/util/sse";
 
-const message = useMessage()
+const message = useMessage();
 
 // 服务选择相关数据
-const allServices = ref<DeployService[]>([])
-const selectedGroup = ref<string | null>(null)
-const selectedServiceName = ref<string | null>(null)
-const selectedEnvironment = ref<number | null>(null)
-const selectedServiceId = ref<number | null>(null)
-const checkedRowKeys = ref<number[]>([])
+const allServices = ref<DeployService[]>([]);
+const selectedGroup = ref<string | null>(null);
+const selectedServiceName = ref<string | null>(null);
+const selectedEnvironment = ref<number | null>(null);
+const selectedServiceId = ref<number | null>(null);
+const checkedRowKeys = ref<number[]>([]);
 
 // 从 localStorage 读取保存的 serviceId
 const loadSelectedServiceId = () => {
-  const savedId = localStorage.getItem('selectedServiceId')
+  const savedId = localStorage.getItem("selectedServiceId");
   if (savedId) {
-    selectedServiceId.value = parseInt(savedId)
-    return parseInt(savedId)
+    selectedServiceId.value = parseInt(savedId);
+    return parseInt(savedId);
   }
-  return null
-}
+  return null;
+};
 
 // 保存 serviceId 到 localStorage
 const saveSelectedServiceId = (id: number | null) => {
   if (id) {
-    localStorage.setItem('selectedServiceId', id.toString())
+    localStorage.setItem("selectedServiceId", id.toString());
   } else {
-    localStorage.removeItem('selectedServiceId')
+    localStorage.removeItem("selectedServiceId");
   }
-}
+};
 
 // 修改 handleEnvironmentChange 函数
 const handleEnvironmentChange = async (value: number | null) => {
-  selectedEnvironment.value = value ?? null
-  selectedServiceId.value = value ?? null
-  saveSelectedServiceId(value) // 保存选中的服务ID
+  selectedEnvironment.value = value ?? null;
+  selectedServiceId.value = value ?? null;
+  saveSelectedServiceId(value); // 保存选中的服务ID
   if (value) {
-    await handleServiceChange(selectedServiceId.value)
+    await handleServiceChange(selectedServiceId.value);
   } else {
-    resetTargetData()
+    resetTargetData();
   }
-}
+};
 
 // 修改 onMounted
 onMounted(async () => {
   try {
-    const response = await getServiceList()
-    allServices.value = response.data
-    
+    const response = await getServiceList();
+    allServices.value = response.data;
+
     // 恢复保存的服务ID
-    const savedServiceId = loadSelectedServiceId()
+    const savedServiceId = loadSelectedServiceId();
     if (savedServiceId) {
-      const service = allServices.value.find(s => s.id === savedServiceId)
+      const service = allServices.value.find((s) => s.id === savedServiceId);
       if (service) {
-        selectedGroup.value = service.groupName
-        selectedServiceName.value = service.serviceName
-        selectedEnvironment.value = savedServiceId
-        selectedServiceId.value = savedServiceId
-        await handleServiceChange(savedServiceId)
+        selectedGroup.value = service.groupName;
+        selectedServiceName.value = service.serviceName;
+        selectedEnvironment.value = savedServiceId;
+        selectedServiceId.value = savedServiceId;
+        await handleServiceChange(savedServiceId);
       }
     }
   } catch (error) {
-    message.error('加载服务列表失败')
+    message.error("加载服务列表失败");
   }
-})
-const hasSelectedTargets = computed(() => checkedRowKeys.value.length > 0)
+});
+const hasSelectedTargets = computed(() => checkedRowKeys.value.length > 0);
 
 // 选项数据
 const groupOptions = computed(() => {
-  const groups = new Set(allServices.value.map(service => service.groupName))
-  return Array.from(groups).map(group => ({
+  const groups = new Set(allServices.value.map((service) => service.groupName));
+  return Array.from(groups).map((group) => ({
     label: group,
-    value: group
-  }))
-})
+    value: group,
+  }));
+});
 
 const serviceNameOptions = computed(() => {
-  if (!selectedGroup.value) return []
-  const services = allServices.value.filter(service => service.groupName === selectedGroup.value)
-  const serviceNames = new Set(services.map(service => service.serviceName))
-  return Array.from(serviceNames).map(name => ({
+  if (!selectedGroup.value) return [];
+  const services = allServices.value.filter(
+    (service) => service.groupName === selectedGroup.value
+  );
+  const serviceNames = new Set(services.map((service) => service.serviceName));
+  return Array.from(serviceNames).map((name) => ({
     label: name,
-    value: name
-  }))
-})
+    value: name,
+  }));
+});
 
 const environmentOptions = computed(() => {
-  if (!selectedGroup.value || !selectedServiceName.value) return []
+  if (!selectedGroup.value || !selectedServiceName.value) return [];
   const services = allServices.value.filter(
-    service => 
-      service.groupName === selectedGroup.value && 
+    (service) =>
+      service.groupName === selectedGroup.value &&
       service.serviceName === selectedServiceName.value
-  )
-  return services.map(service => ({
-    label: service.environment || '默认环境',
-    value: service.id
-  }))
-})
+  );
+  return services.map((service) => ({
+    label: service.environment || "默认环境",
+    value: service.id,
+  }));
+});
 
 // 处理选择变更
 const handleGroupChange = (value: string | null) => {
-  selectedGroup.value = value
-  selectedServiceName.value = null
-  selectedEnvironment.value = null
-  selectedServiceId.value = null
-  resetTargetData()
-}
+  selectedGroup.value = value;
+  selectedServiceName.value = null;
+  selectedEnvironment.value = null;
+  selectedServiceId.value = null;
+  resetTargetData();
+};
 
 const handleServiceNameChange = (value: string | null) => {
-  selectedServiceName.value = value
-  selectedEnvironment.value = null
-  selectedServiceId.value = null
-  resetTargetData()
-}
+  selectedServiceName.value = value;
+  selectedEnvironment.value = null;
+  selectedServiceId.value = null;
+  resetTargetData();
+};
 
 // 重置目标数据
 const resetTargetData = () => {
-  targetData.value = []
-  deployHistory.value = []
-  deployLogs.value = []
-  checkedRowKeys.value = []
-}
+  targetData.value = [];
+  deployHistory.value = [];
+  deployLogs.value = [];
+  checkedRowKeys.value = [];
+};
 
 // 发布目标表格列定义
 const targetColumns: DataTableColumns<DeployTarget> = [
-  { type: 'selection' },
-  { title: '编号', key: 'id' },
-  { title: '状态', key: 'status' },
-  { title: 'IP', key: 'host' },
-  { title: '端口', key: 'port' }
-]
+  { type: "selection" },
+  { title: "编号", key: "id" },
+  { title: "状态", key: "status" },
+  { title: "IP", key: "host" },
+  { title: "端口", key: "port" },
+];
 
 // 发布目标数据
-const targetData = ref<DeployTarget[]>([])
+const targetData = ref<DeployTarget[]>([]);
 
 // 发布历史
-const deployHistory = ref<DeployHistory[]>([])
+const deployHistory = ref<DeployHistory[]>([]);
 
 // 部署日志
-const deployLogs = ref<string[]>([])
+const deployLogs = ref<string[]>([]);
 
 // 初始化数据
 onMounted(async () => {
   try {
-    const response = await getServiceList()
-    allServices.value = response.data
+    const response = await getServiceList();
+    allServices.value = response.data;
   } catch (error) {
-    message.error('加载服务列表失败')
+    message.error("加载服务列表失败");
   }
-})
+});
 
 // 处理选中行变更
 const handleCheckedRowKeysChange = (keys: number[]) => {
-  checkedRowKeys.value = keys
-}
+  checkedRowKeys.value = keys;
+};
 
 // 处理服务变更
 const handleServiceChange = async (value: number | null) => {
   if (!value) {
-    targetData.value = []
-    deployHistory.value = []
-    deployLogs.value = []
-    return
+    targetData.value = [];
+    deployHistory.value = [];
+    deployLogs.value = [];
+    return;
   }
 
   try {
     // 加载发布目标
-    const targetsResponse = await getTargetList(value)
-    targetData.value = targetsResponse.data
-    const statusResponse = await getServiceStatus(value)
+    const targetsResponse = await getTargetList(value);
+    targetData.value = targetsResponse.data;
+    const statusResponse = await getServiceStatus(value);
     if (statusResponse && statusResponse.data) {
-      targetData.value.forEach(target => {
-        const status = statusResponse.data!.find(s => s.targetId === target.id)
+      targetData.value.forEach((target) => {
+        const status = statusResponse.data!.find(
+          (s) => s.targetId === target.id
+        );
         if (status) {
-          target.status = status.status
-          target.message = status.message
+          target.status = status.status;
+          target.message = status.message;
         }
-        if(status?.message){
-            window.$message.error(status.message || "未知错误")
+        if (status?.message) {
+          window.$message.error(status.message || "未知错误");
         }
-      })
+      });
     }
     // 加载发布历史
-    const historyResponse = await getDeployHistory(value)
-    deployHistory.value = historyResponse.data
+    const historyResponse = await getDeployHistory(value);
+    deployHistory.value = historyResponse.data;
   } catch (error) {
-    message.error('加载服务数据失败')
+    message.error("加载服务数据失败");
   }
-}
+};
 
 // 添加对话框相关的状态
-const showDeployModal = ref(false)
-const deployComment = ref('')
+const showDeployModal = ref(false);
+const deployComment = ref("");
+const useFastMode = ref(false);
 
 // 修改部署操作处理函数
 const handleDeploy = async () => {
-  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return
-  showDeployModal.value = true
-}
+  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
+  showDeployModal.value = true;
+};
 
 // 添加实际的部署处理函数
 const confirmDeploy = async () => {
   try {
-    await deployService(selectedServiceId.value!, checkedRowKeys.value, deployComment.value)
-    message.success('开始部署服务')
-    showDeployModal.value = false
-    deployComment.value = ''
+    showDeployModal.value = false;
+    await deployService(
+      selectedServiceId.value!,
+      checkedRowKeys.value,
+      deployComment.value,
+      useFastMode.value
+    );
+    message.success("开始部署服务");
+    deployComment.value = "";
+    useFastMode.value = false;
     // 重新加载数据
-    await handleServiceChange(selectedServiceId.value)
+    await handleServiceChange(selectedServiceId.value);
   } catch (error) {
-    message.error('部署失败')
+    console.error(error);
+    message.error("部署失败");
   }
-}
+};
 
 // 处理安装服务
 const handleInstall = async () => {
-  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return
+  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
-    await installService(selectedServiceId.value, checkedRowKeys.value)
-    message.success('开始安装服务')
-    await handleServiceChange(selectedServiceId.value)
+    await installService(selectedServiceId.value, checkedRowKeys.value);
+    message.success("开始安装服务");
+    await handleServiceChange(selectedServiceId.value);
   } catch (error) {
-    message.error('安装失败')
+    message.error("安装失败");
   }
-}
+};
 
 // 处理启动服务
 const handleStart = async () => {
-  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return
+  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
-    await startService(selectedServiceId.value, checkedRowKeys.value)
-    message.success('开始启动服务')
-    await handleServiceChange(selectedServiceId.value)
+    await startService(selectedServiceId.value, checkedRowKeys.value);
+    message.success("开始启动服务");
+    await handleServiceChange(selectedServiceId.value);
   } catch (error) {
-    message.error('启动失败')
+    message.error("启动失败");
   }
-}
+};
 
 // 处理停止服务
 const handleStop = async () => {
-  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return
+  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
-    await stopService(selectedServiceId.value, checkedRowKeys.value)
-    message.success('开始停止服务')
-    await handleServiceChange(selectedServiceId.value)
+    await stopService(selectedServiceId.value, checkedRowKeys.value);
+    message.success("开始停止服务");
+    await handleServiceChange(selectedServiceId.value);
   } catch (error) {
-    message.error('停止失败')
+    message.error("停止失败");
   }
-}
-var sseClient: SSEClient | null = null
+};
+var sseClient: SSEClient | null = null;
 onMounted(() => {
-  sseClient = new SSEClient("/api/sse/connect", (message: string) => {
-    console.log("sse message",message)
-    deployLogs.value.push(message)
-  }, (error: Event) => {
-    console.error(error)
-  })
-  sseClient.start()
-})
+  sseClient = new SSEClient(
+    "/api/sse/connect",
+    (message: string) => {
+      console.log("sse message", message);
+      deployLogs.value.push(message);
+    },
+    (error: Event) => {
+      console.error(error);
+    }
+  );
+  sseClient.start();
+});
 
 onUnmounted(() => {
-  sseClient?.stop()
-})
-
+  sseClient?.stop();
+});
 </script>
 
-<style scoped>
-
-</style>
-
+<style scoped></style>

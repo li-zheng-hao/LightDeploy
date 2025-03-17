@@ -20,8 +20,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:31003',
+        target: 'http://127.0.0.1:31003',
         changeOrigin: true,
+        timeout: 300000
       }
     }
   },
@@ -44,7 +45,11 @@ export default defineConfig({
     Components({
       resolvers: [NaiveUiResolver()]
     })
-  ]
+  ],
+  build: {
+    outDir: path.resolve(__dirname, '../server/static/dist'),
+    emptyOutDir: true
+  }
 })
 
 

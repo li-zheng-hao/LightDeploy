@@ -37,6 +37,8 @@ func RegisterRoutes(r *gin.Engine) {
 
 	deployGroup := r.Group("/api/deploy")
 	deployGroup.POST("/deploy-service", deploy.DeployService)
+	deployGroup.POST("/start-service", deploy.StartService)
+	deployGroup.POST("/stop-service", deploy.StopService)
 
 	historyGroup := r.Group("/api/history")
 	historyGroup.GET("/:serviceId", history.GetHistory)
