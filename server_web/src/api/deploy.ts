@@ -24,10 +24,6 @@ export const deployService = (serviceId: number, targetIds: number[],comment:str
   return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds,comment,useFastMode })
 }
 
-// 安装服务
-export const installService = (serviceId: number, targetIds: number[]) => {
-  return apiClient.post('/api/deploy/install', { serviceId, targetIds })
-}
 
 // 启动服务
 export const startService = (serviceId: number, targetIds: number[]) => {

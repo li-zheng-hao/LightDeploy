@@ -53,3 +53,7 @@ export const deleteDeployService = (id: number | string) => {
     return apiClient.post<{ affected: number }>(`/api/service/delete/${id}`)
 }
 
+// 安装服务
+export const installService = (serviceId: number, targetIds: number[]) => {
+  return apiClient.post('/api/service/install-service', { serviceId, targetIds })
+}

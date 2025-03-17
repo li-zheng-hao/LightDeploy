@@ -8,6 +8,10 @@ export interface DeployTarget {
     secretKey?: string;
     servicePath?: string;
     comment?: string;
+    // 程序执行路径
+	exePath?: string;
+    // 程序执行参数
+    exeParams?: string;
     // 目标状态
     status?: string; //状态
     message?: string; //消息

@@ -1,6 +1,8 @@
 package windows_service
 
 import (
+	"log/slog"
+
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -51,20 +53,21 @@ func StopService(serviceName string) error {
 	return nil
 }
 
-func InstallService(serviceName string, servicePath string, description string) error {
-	// 连接服务管理器	
+func InstallService(serviceName string, exePath string, exeParams string) error {
+	// 连接服务管理器
 	m, err := mgr.Connect()
 	if err != nil {
 		return err
 	}
 	defer m.Disconnect()
-
+	slog.Info("安装服务", "exePath", exePath)
 	// 创建服务
-	s, err := m.CreateService(serviceName, servicePath, mgr.Config{
-		StartType: mgr.StartAutomatic,
-		Description: description,
+	s, err := m.CreateService(serviceName, exePath, mgr.Config{
+		StartType:        mgr.StartAutomatic,
 		DelayedAutoStart: true,
-	})
+		DisplayName:      serviceName,                     // 显示名称
+		Description:      "Installed by ld_agent service", // 服务描述
+	}, exeParams)
 	if err != nil {
 		return err
 	}
@@ -72,4 +75,3 @@ func InstallService(serviceName string, servicePath string, description string) 
 
 	return nil
 }
-

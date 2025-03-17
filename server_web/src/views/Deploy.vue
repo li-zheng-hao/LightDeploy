@@ -151,12 +151,12 @@ import type { DataTableColumns } from "naive-ui";
 import {
   getDeployHistory,
   deployService,
-  installService,
   startService,
   stopService,
   type DeployHistory,
 } from "../api/deploy";
 import {
+  installService,
   getServiceList,
   getServiceStatus,
   type DeployService,
@@ -377,14 +377,16 @@ const confirmDeploy = async () => {
       deployComment.value,
       useFastMode.value
     );
-    message.success("开始部署服务");
+    deployLogs.value = [];
+    deployLogs.value.push("开始部署服务");
     deployComment.value = "";
     useFastMode.value = false;
     // 重新加载数据
     await handleServiceChange(selectedServiceId.value);
+    deployLogs.value.push("部署成功");
   } catch (error) {
     console.error(error);
-    message.error("部署失败");
+    deployLogs.value.push("部署失败 error: " + error);
   }
 };
 
@@ -393,11 +395,15 @@ const handleInstall = async () => {
   if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
+    deployLogs.value = [];
+    deployLogs.value.push("开始安装服务");
+
     await installService(selectedServiceId.value, checkedRowKeys.value);
-    message.success("开始安装服务");
+
     await handleServiceChange(selectedServiceId.value);
+    deployLogs.value.push("安装成功");
   } catch (error) {
-    message.error("安装失败");
+    deployLogs.value.push("安装失败 error: " + error);
   }
 };
 
@@ -406,11 +412,13 @@ const handleStart = async () => {
   if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
+    deployLogs.value = [];
+    deployLogs.value.push("开始启动服务");
     await startService(selectedServiceId.value, checkedRowKeys.value);
-    message.success("开始启动服务");
     await handleServiceChange(selectedServiceId.value);
+    deployLogs.value.push("启动服务成功");
   } catch (error) {
-    message.error("启动失败");
+    deployLogs.value.push("启动失败 error: " + error);
   }
 };
 
@@ -419,11 +427,13 @@ const handleStop = async () => {
   if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
 
   try {
+    deployLogs.value = [];
+    deployLogs.value.push("开始停止服务");
     await stopService(selectedServiceId.value, checkedRowKeys.value);
-    message.success("开始停止服务");
     await handleServiceChange(selectedServiceId.value);
+    deployLogs.value.push("停止服务成功");
   } catch (error) {
-    message.error("停止失败");
+    deployLogs.value.push("停止失败 error: " + error);
   }
 };
 var sseClient: SSEClient | null = null;
