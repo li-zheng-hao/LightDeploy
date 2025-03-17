@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"compress/flate"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -51,6 +52,7 @@ func CompressFolderWithLevel(sourceDir string, targetFile string, level int) err
 			}
 			header.Name = relPath + "/"
 			header.Method = zip.Deflate
+			header.Modified = info.ModTime()
 			_, err = zipWriter.CreateHeader(header)
 			return err
 		}
@@ -62,6 +64,7 @@ func CompressFolderWithLevel(sourceDir string, targetFile string, level int) err
 		}
 		header.Name = relPath
 		header.Method = zip.Deflate
+		header.Modified = info.ModTime()
 
 		writer, err := zipWriter.CreateHeader(header)
 		if err != nil {
@@ -79,15 +82,9 @@ func CompressFolderWithLevel(sourceDir string, targetFile string, level int) err
 	})
 }
 
-// UncompressFolder 解压zip文件到指定目录
-func UncompressZipFileHeader(zipFile *multipart.FileHeader, targetDir string) error {
-	file, err := zipFile.Open() // 使用 zipFile.Open() 打开文件
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	reader, err := zip.NewReader(file, zipFile.Size) // 使用 zip.NewReader 创建读取器
+// UncompressZipReader 从io.ReaderAt解压zip文件到指定目录
+func UncompressZipReader(reader io.ReaderAt, size int64, targetDir string) error {
+	zipReader, err := zip.NewReader(reader, size)
 	if err != nil {
 		return err
 	}
@@ -98,7 +95,7 @@ func UncompressZipFileHeader(zipFile *multipart.FileHeader, targetDir string) er
 	}
 
 	// 遍历压缩文件中的所有文件和目录
-	for _, file := range reader.File {
+	for _, file := range zipReader.File {
 		// 构建目标路径
 		path := filepath.Join(targetDir, file.Name)
 
@@ -141,12 +138,24 @@ func UncompressZipFileHeader(zipFile *multipart.FileHeader, targetDir string) er
 
 		// 设置解压后文件的修改时间
 		modTime := file.Modified
+		slog.Info("解压文件", "path", path, "modTime", modTime)
 		if err := os.Chtimes(path, modTime, modTime); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// UncompressZipFileHeader 解压zip文件到指定目录
+func UncompressZipFileHeader(zipFile *multipart.FileHeader, targetDir string) error {
+	file, err := zipFile.Open()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return UncompressZipReader(file, zipFile.Size, targetDir)
 }
 
 func UncompressFolder(zipFile string, targetDir string) error {

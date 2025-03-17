@@ -107,7 +107,10 @@
 
         <!-- 部署日志 -->
         <n-card title="部署日志" class="mt-4">
-          <div class="h-[300px] overflow-auto bg-black p-4 rounded">
+          <div
+            class="h-[300px] overflow-auto bg-black p-4 rounded"
+            ref="logContainer"
+          >
             <n-text type="info" v-for="(log, index) in deployLogs" :key="index">
               {{ log }}<br />
             </n-text>
@@ -145,7 +148,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useMessage } from "naive-ui"; // 添加 NInput, NModal
 import type { DataTableColumns } from "naive-ui";
 import {
@@ -370,15 +373,15 @@ const handleDeploy = async () => {
 // 添加实际的部署处理函数
 const confirmDeploy = async () => {
   try {
+    deployLogs.value = [];
     showDeployModal.value = false;
+    deployLogs.value.push("开始部署服务");
     await deployService(
       selectedServiceId.value!,
       checkedRowKeys.value,
       deployComment.value,
       useFastMode.value
     );
-    deployLogs.value = [];
-    deployLogs.value.push("开始部署服务");
     deployComment.value = "";
     useFastMode.value = false;
     // 重新加载数据
@@ -453,6 +456,17 @@ onMounted(() => {
 
 onUnmounted(() => {
   sseClient?.stop();
+});
+
+const logContainer = ref<HTMLElement | null>(null);
+
+// 监听 deployLogs 变化
+watch(deployLogs, () => {
+  nextTick(() => {
+    if (logContainer.value) {
+      logContainer.value.scrollTop = logContainer.value.scrollHeight;
+    }
+  });
 });
 </script>
 

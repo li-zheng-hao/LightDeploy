@@ -1,15 +1,25 @@
 package zip
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
+// 自定义的File实现
+type testFile struct {
+	*bytes.Reader
+}
+
+func (f *testFile) Close() error {
+	return nil
+}
+
 func TestZipOperations(t *testing.T) {
 	t.Run("1. Compress", func(t *testing.T) {
-		sourceDir, err := filepath.Abs("E:/Code/EntQuoteOnlineBackend/src/FB.AppSrv/bin/Release/net8.0/win-x64/publish")
+		sourceDir, err := filepath.Abs("../../test/files")
 		if err != nil {
 			t.Fatalf("获取源目录的绝对路径失败: %v", err)
 		}
@@ -75,20 +85,53 @@ func TestZipOperations(t *testing.T) {
 
 		t.Logf("解压完成: %s", targetDir)
 	})
-	// t.Run("3. Clean Up", func(t *testing.T) {
-	// 	targetFile := "../../test/target.zip"
-	// 	targetDir := "../../test/uncompressed"
+	t.Run("3. UncompressZipFileHeader", func(t *testing.T) {
+		// 压缩测试文件
+		testZipFile, err := filepath.Abs("../../test/target.zip")
+		if err != nil {
+			t.Fatalf("获取测试zip文件的绝对路径失败: %v", err)
+		}
 
-	// 	// 删除压缩文件
-	// 	if err := os.Remove(targetFile); err != nil {
-	// 		t.Fatalf("删除压缩文件失败: %v", err)
-	// 	}
-	// 	t.Logf("成功删除压缩文件: %s", targetFile)
+		// 读取zip文件内容
+		zipContent, err := os.ReadFile(testZipFile)
+		if err != nil {
+			t.Fatalf("读取zip文件失败: %v", err)
+		}
 
-	// 	// 删除解压目录
-	// 	if err := os.RemoveAll(targetDir); err != nil {
-	// 		t.Fatalf("删除解压目录失败: %v", err)
-	// 	}
-	// 	t.Logf("成功删除解压目录: %s", targetDir)
-	// })
+		// 设置目标目录
+		targetDir := "../../test/uncompressedWithFileHeader"
+		targetDir, err = filepath.Abs(targetDir)
+		if err != nil {
+			t.Fatalf("获取目标目录的绝对路径失败: %v", err)
+		}
+
+		// 执行解压
+		err = UncompressZipReader(bytes.NewReader(zipContent), int64(len(zipContent)), targetDir)
+		if err != nil {
+			t.Fatalf("解压失败: %v", err)
+		}
+
+		// 验证解压结果
+		if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+			t.Fatalf("解压目录不存在: %s", targetDir)
+		}
+
+		t.Logf("测试完成")
+	})
+	t.Run("3. Clean Up", func(t *testing.T) {
+		targetFile := "../../test/target.zip"
+		targetDir := "../../test/uncompressed"
+
+		// 删除压缩文件
+		if err := os.Remove(targetFile); err != nil {
+			t.Fatalf("删除压缩文件失败: %v", err)
+		}
+		t.Logf("成功删除压缩文件: %s", targetFile)
+
+		// 删除解压目录
+		if err := os.RemoveAll(targetDir); err != nil {
+			t.Fatalf("删除解压目录失败: %v", err)
+		}
+		t.Logf("成功删除解压目录: %s", targetDir)
+	})
 }

@@ -344,7 +344,11 @@ func PrepareUpdateFiles(sourceDir string, compareResult *dto.CompareFilesRespons
 	}
 
 	// 创建新的临时目录
-	newTempDir := filepath.Join(filepath.Dir(sourceDir), fmt.Sprintf("filtered_%s", uuid.New().String()))
+	executablePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	newTempDir := filepath.Join(filepath.Dir(executablePath), "ld_deploy_temp", fmt.Sprintf("filtered_%s", uuid.New().String()))
 	if err := os.MkdirAll(newTempDir, 0755); err != nil {
 		return "", err
 	}
@@ -409,8 +413,11 @@ func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployS
 		return fmt.Errorf("压缩文件失败: %v", err)
 	}
 	defer os.Remove(zipFilePath)
-
-	sse.SendMessage(fmt.Sprintf("目标机器 %s 需要更新 %d 个文件", target.Host, len(compareResult.FileInfos)))
+	fileNames := make([]string, 0, len(compareResult.FileInfos))
+	for _, fileInfo := range compareResult.FileInfos {
+		fileNames = append(fileNames, fileInfo.FileRelativePath)
+	}
+	sse.SendMessage(fmt.Sprintf("目标机器 %s 需要更新 %d 个文件: %s", target.Host, len(compareResult.FileInfos), strings.Join(fileNames, ", ")))
 
 	// 部署到目标机器
 	if err := DeployToTarget(*target, deployService, zipFilePath); err != nil {
@@ -421,9 +428,23 @@ func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployS
 }
 
 func copyFile(src, dst string) error {
+	// 读取源文件
 	input, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, input, 0644)
+
+	// 写入目标文件
+	if err := os.WriteFile(dst, input, 0644); err != nil {
+		return err
+	}
+
+	// 获取源文件信息
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	// 设置目标文件修改时间
+	return os.Chtimes(dst, srcInfo.ModTime(), srcInfo.ModTime())
 }
