@@ -39,29 +39,53 @@ class ApiClient {
           switch (error.response.status) {
             case 400:
               const errorMessage = (error.response.data as { message?: string }).message || '请求失败(400)';
-              window.$message.error(errorMessage);
+              window.$notify.error({
+                title: '错误',
+                content: errorMessage,
+              });
               break;
             case 401:
-              window.$message.error('未授权，请重新登录(401)');
+              window.$notify.error({
+                title: "错误",
+                content: "未授权，请重新登录(401)",
+              });
               // 可以在这里处理登出逻辑
               //   localStorage.removeItem('token');
               break;
             case 403:
-              window.$message.error('权限不足(403)');
+              window.$notify.error({
+                title: "错误",
+                content: "权限不足(403)",
+              });
               break;
             case 404:
-              window.$message.error('请求的资源不存在(404)');
+              window.$notify.error({
+                title: "错误",
+                content: "请求的资源不存在(404)",
+              });
               break;
             case 500:
-              window.$message.error('服务器错误(500)');
+              window.$notify.error({
+                title: "错误",
+                content: "服务器错误(500)",
+              });
               break;
             default:
-              window.$message.error(`请求失败: ${error.response.status}`);
+              window.$notify.error({
+                title: "错误",
+                content: `请求失败: ${error.response.status}`,
+              });
           }
         } else if (error.request) {
-          window.$message.error('网络错误，请检查网络连接(error.request)');
+          window.$notify.error({
+            title: '错误',
+            content: '网络错误，请检查网络连接(error.request)',
+          });
         } else {
-          window.$message.error('请求配置错误(error.request)');
+          window.$notify.error({
+            title: "错误",
+            content: "请求配置错误(error.request)",
+          });
         }
         return Promise.reject(error);
       }

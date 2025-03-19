@@ -101,6 +101,7 @@
             :pagination="{ pageSize: 10 }"
             :bordered="false"
             :row-key="(row: DeployTarget) => row.id"
+            :checked-row-keys="checkedRowKeys"
             @update:checked-row-keys="handleCheckedRowKeysChange"
           />
         </n-card>
@@ -325,19 +326,17 @@ const handleCheckedRowKeysChange = (keys: number[]) => {
 
 // 处理服务变更
 const handleServiceChange = async (value: number | null) => {
-  if (!value) {
-    targetData.value = [];
-    deployHistory.value = [];
-    deployLogs.value = [];
-    return;
-  }
-
+  targetData.value = [];
+  deployHistory.value = [];
+  deployLogs.value = [];
+  checkedRowKeys.value = [];
   try {
     // 加载发布目标
+    if (value === null) return;
     const targetsResponse = await getTargetList(value);
     targetData.value = targetsResponse.data;
     const statusResponse = await getServiceStatus(value);
-    if (statusResponse && statusResponse.data) {
+    if (statusResponse?.data) {
       targetData.value.forEach((target) => {
         const status = statusResponse.data!.find(
           (s) => s.targetId === target.id
@@ -347,7 +346,10 @@ const handleServiceChange = async (value: number | null) => {
           target.message = status.message;
         }
         if (status?.message) {
-          window.$message.error(status.message || "未知错误");
+          window.$notify.error({
+            title: "错误",
+            content: status.message || "未知错误",
+          });
         }
       });
     }

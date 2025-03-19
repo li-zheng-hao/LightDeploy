@@ -20,7 +20,6 @@ export const getDeployHistory = (serviceId: string|number) => {
 
 // 部署服务
 export const deployService = (serviceId: number, targetIds: number[],comment:string,useFastMode:boolean) => {
-  debugger;
   return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds,comment,useFastMode })
 }
 
