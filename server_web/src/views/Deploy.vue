@@ -328,7 +328,6 @@ const handleCheckedRowKeysChange = (keys: number[]) => {
 const handleServiceChange = async (value: number | null) => {
   targetData.value = [];
   deployHistory.value = [];
-  deployLogs.value = [];
   checkedRowKeys.value = [];
   try {
     // 加载发布目标
