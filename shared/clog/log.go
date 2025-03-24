@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gin-contrib/requestid"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -89,4 +91,17 @@ func init() {
 	// 设置全局logger
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+}
+
+func SetContextLogger(c *gin.Context) {
+	logger := slog.Default()
+	requestID := requestid.Get(c)
+	contextLogger := logger.With("requestID", requestID).
+		With("path", c.Request.URL.Path).
+		With("method", c.Request.Method)
+	c.Set("logger", contextLogger)
+}
+
+func GetContextLogger(c *gin.Context) *slog.Logger {
+	return c.Value("logger").(*slog.Logger)
 }

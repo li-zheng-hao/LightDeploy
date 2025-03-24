@@ -7,13 +7,17 @@ import (
 )
 
 type ErrorResponse struct {
-    Code    int    `json:"code"`
-    Message string `json:"message"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
-func NewErrorResponse(c *gin.Context, message string)  {
-    c.JSON(http.StatusBadRequest, &ErrorResponse{
-        Code:    400,
-        Message: message,
-    })
+func (e *ErrorResponse) Error() string {
+	return e.Message
+}
+
+func NewErrorResponse(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Code:    400,
+		Message: message,
+	})
 }
