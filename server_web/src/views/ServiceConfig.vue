@@ -295,11 +295,30 @@ const pagination = ref({
 
 // 表格列定义
 const columns: DataTableColumns<DeployService> = [
-  { title: "环境", key: "environment" },
-  { title: "服务分组", key: "groupName" },
-  { title: "服务名称", key: "serviceName" },
-  { title: "项目路径", key: "projectPath" },
-  { title: "端口", key: "port" },
+  {
+    title: "环境",
+    key: "environment",
+    sorter: "default",
+  },
+  {
+    title: "服务分组",
+    key: "groupName",
+    sorter: "default",
+  },
+  {
+    title: "服务名称",
+    key: "serviceName",
+    sorter: "default",
+  },
+  {
+    title: "项目路径",
+    key: "projectPath",
+  },
+  {
+    title: "端口",
+    key: "port",
+    sorter: (row1, row2) => row1.port - row2.port,
+  },
   {
     title: "仅复制文件",
     key: "onlyCopyFile",
@@ -317,7 +336,10 @@ const columns: DataTableColumns<DeployService> = [
       return option ? option.label : "未知";
     },
   },
-  { title: "备注", key: "comment" },
+  {
+    title: "备注",
+    key: "comment",
+  },
   {
     title: "操作",
     key: "actions",
