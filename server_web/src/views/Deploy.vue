@@ -6,11 +6,20 @@
         <n-card title="服务选择">
           <n-space vertical>
             <!-- 服务选择三级联动 -->
+            <n-form-item label="环境">
+              <n-select
+                v-model:value="selectedEnvironment"
+                :options="environmentOptions"
+                placeholder="请选择环境"
+                @update:value="handleEnvironmentChange"
+              />
+            </n-form-item>
             <n-form-item label="服务分组">
               <n-select
                 v-model:value="selectedGroup"
                 :options="groupOptions"
                 placeholder="请选择服务分组"
+                :disabled="!selectedEnvironment"
                 @update:value="handleGroupChange"
               />
             </n-form-item>
@@ -21,15 +30,6 @@
                 placeholder="请选择服务名称"
                 :disabled="!selectedGroup"
                 @update:value="handleServiceNameChange"
-              />
-            </n-form-item>
-            <n-form-item label="环境">
-              <n-select
-                v-model:value="selectedEnvironment"
-                :options="environmentOptions"
-                placeholder="请选择环境"
-                :disabled="!selectedServiceName"
-                @update:value="handleEnvironmentChange"
               />
             </n-form-item>
             <n-space>
@@ -174,7 +174,7 @@ const message = useMessage();
 const allServices = ref<DeployService[]>([]);
 const selectedGroup = ref<string | null>(null);
 const selectedServiceName = ref<string | null>(null);
-const selectedEnvironment = ref<number | null>(null);
+const selectedEnvironment = ref<string | null>(null);
 const selectedServiceId = ref<number | null>(null);
 const checkedRowKeys = ref<number[]>([]);
 
@@ -198,15 +198,12 @@ const saveSelectedServiceId = (id: number | null) => {
 };
 
 // 修改 handleEnvironmentChange 函数
-const handleEnvironmentChange = async (value: number | null) => {
-  selectedEnvironment.value = value ?? null;
-  selectedServiceId.value = value ?? null;
-  saveSelectedServiceId(value); // 保存选中的服务ID
-  if (value) {
-    await handleServiceChange(selectedServiceId.value);
-  } else {
-    resetTargetData();
-  }
+const handleEnvironmentChange = (value: string | null) => {
+  selectedEnvironment.value = value;
+  selectedGroup.value = null;
+  selectedServiceName.value = null;
+  selectedServiceId.value = null;
+  resetTargetData();
 };
 
 // 修改 onMounted
@@ -222,7 +219,7 @@ onMounted(async () => {
       if (service) {
         selectedGroup.value = service.groupName;
         selectedServiceName.value = service.serviceName;
-        selectedEnvironment.value = savedServiceId;
+        selectedEnvironment.value = service.environment || "默认环境";
         selectedServiceId.value = savedServiceId;
         await handleServiceChange(savedServiceId);
       }
@@ -234,8 +231,23 @@ onMounted(async () => {
 const hasSelectedTargets = computed(() => checkedRowKeys.value.length > 0);
 
 // 选项数据
+const environmentOptions = computed(() => {
+  const environments = new Set(
+    allServices.value.map((service) => service.environment || "默认环境")
+  );
+  return Array.from(environments).map((env) => ({
+    label: env,
+    value: env,
+  }));
+});
+
 const groupOptions = computed(() => {
-  const groups = new Set(allServices.value.map((service) => service.groupName));
+  if (!selectedEnvironment.value) return [];
+  const groups = new Set(
+    allServices.value
+      .filter((service) => service.environment === selectedEnvironment.value)
+      .map((service) => service.groupName)
+  );
   return Array.from(groups).map((group) => ({
     label: group,
     value: group,
@@ -245,7 +257,9 @@ const groupOptions = computed(() => {
 const serviceNameOptions = computed(() => {
   if (!selectedGroup.value) return [];
   const services = allServices.value.filter(
-    (service) => service.groupName === selectedGroup.value
+    (service) =>
+      service.groupName === selectedGroup.value &&
+      service.environment === selectedEnvironment.value
   );
   const serviceNames = new Set(services.map((service) => service.serviceName));
   return Array.from(serviceNames).map((name) => ({
@@ -254,32 +268,29 @@ const serviceNameOptions = computed(() => {
   }));
 });
 
-const environmentOptions = computed(() => {
-  if (!selectedGroup.value || !selectedServiceName.value) return [];
-  const services = allServices.value.filter(
-    (service) =>
-      service.groupName === selectedGroup.value &&
-      service.serviceName === selectedServiceName.value
-  );
-  return services.map((service) => ({
-    label: service.environment || "默认环境",
-    value: service.id,
-  }));
-});
-
 // 处理选择变更
 const handleGroupChange = (value: string | null) => {
   selectedGroup.value = value;
   selectedServiceName.value = null;
-  selectedEnvironment.value = null;
   selectedServiceId.value = null;
   resetTargetData();
 };
 
 const handleServiceNameChange = (value: string | null) => {
   selectedServiceName.value = value;
-  selectedEnvironment.value = null;
   selectedServiceId.value = null;
+  if (value) {
+    const service = allServices.value.find(
+      (s) =>
+        s.serviceName === value &&
+        s.groupName === selectedGroup.value &&
+        s.environment === selectedEnvironment.value
+    );
+    if (service) {
+      selectedServiceId.value = service.id;
+      handleServiceChange(service.id);
+    }
+  }
   resetTargetData();
 };
 
