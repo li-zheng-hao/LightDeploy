@@ -29,7 +29,6 @@ func DeployService(c *gin.Context) {
 		error_response.NewErrorResponse(c, err.Error())
 		return
 	}
-
 	deployService, targets, err := deploy.ValidateDeployRequest(request.ServiceId, request.TargetIds)
 	if err != nil {
 		error_response.NewErrorResponse(c, err.Error())

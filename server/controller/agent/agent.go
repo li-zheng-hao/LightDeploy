@@ -66,14 +66,13 @@ func GetVersion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK,result)
+	c.JSON(http.StatusOK, result)
 }
 
-
 type UpdateAgentRequest struct {
-    File *multipart.FileHeader `form:"file"`
-	AgentServiceName string `form:"agentServiceName"`
-	TargetId int `form:"targetId"`
+	File             *multipart.FileHeader `form:"file"`
+	AgentServiceName string                `form:"agentServiceName"`
+	TargetId         int                   `form:"targetId"`
 }
 
 func UpdateAgent(c *gin.Context) {

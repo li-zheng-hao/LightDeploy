@@ -5,11 +5,11 @@ type DeployService struct {
 	// 组名
 	GroupName string `xorm:"TEXT notnull index 'group_name'" json:"groupName"`
 	// 服务名
-	ServiceName string `xorm:"TEXT notnull unique 'service_name'" json:"serviceName"`
+	ServiceName string `xorm:"TEXT notnull 'service_name'" json:"serviceName"`
 	// 项目路径
 	ProjectPath string `xorm:"TEXT notnull 'project_path'" json:"projectPath"`
 	// 端口
-	Port int `xorm:"INTEGER notnull unique 'port'" json:"port"`
+	Port int `xorm:"INTEGER notnull 'port'" json:"port"`
 	// 项目类型
 	// 1 .NET Core Projet项目 2. 文件夹发布
 	ProjectType int `xorm:"INTEGER notnull 'project_type'" json:"projectType"`
