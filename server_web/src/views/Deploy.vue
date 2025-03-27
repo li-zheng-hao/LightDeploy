@@ -288,6 +288,7 @@ const handleServiceNameChange = (value: string | null) => {
     );
     if (service) {
       selectedServiceId.value = service.id;
+      saveSelectedServiceId(service.id);
       handleServiceChange(service.id);
     }
   }
@@ -319,16 +320,6 @@ const deployHistory = ref<DeployHistory[]>([]);
 
 // 部署日志
 const deployLogs = ref<string[]>([]);
-
-// 初始化数据
-onMounted(async () => {
-  try {
-    const response = await getServiceList();
-    allServices.value = response.data;
-  } catch (error) {
-    message.error("加载服务列表失败");
-  }
-});
 
 // 处理选中行变更
 const handleCheckedRowKeysChange = (keys: number[]) => {
