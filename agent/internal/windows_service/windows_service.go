@@ -2,6 +2,7 @@ package windows_service
 
 import (
 	"log/slog"
+	"strings"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -61,13 +62,17 @@ func InstallService(serviceName string, exePath string, exeParams string) error 
 	}
 	defer m.Disconnect()
 	slog.Info("安装服务", "exePath", exePath)
+
+	// 将 exeParams 按空格拆分成数组
+	params := strings.Fields(exeParams)
+
 	// 创建服务
 	s, err := m.CreateService(serviceName, exePath, mgr.Config{
 		StartType:        mgr.StartAutomatic,
 		DelayedAutoStart: true,
 		DisplayName:      serviceName,                     // 显示名称
 		Description:      "Installed by ld_agent service", // 服务描述
-	}, exeParams)
+	}, params...)
 	if err != nil {
 		return err
 	}

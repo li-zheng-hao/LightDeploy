@@ -102,15 +102,27 @@ func DeployWindowsService(c *gin.Context) {
 		return
 	}
 	if !request.OnlyCopyFile {
-		slog.Info("准备启动服务", "serviceName", request.ServiceName)
-		err := windows_service.StartService(request.ServiceName)
-		if err != nil {
-			slog.Error("启动服务失败", "error", err)
-			sse.SendMessage("启动服务失败: " + err.Error())
-			error_response.NewErrorResponse(c, err.Error())
+		maxRetries := 3
+		retryInterval := 2 * time.Second
+		var startErr error
+		for i := 0; i < maxRetries; i++ {
+			slog.Info("准备启动服务", "serviceName", request.ServiceName, "attempt", i+1)
+			startErr = windows_service.StartService(request.ServiceName)
+			if startErr == nil {
+				slog.Info("服务已启动", "serviceName", request.ServiceName)
+				break
+			}
+			slog.Error("启动服务失败，准备重试", "attempt", i+1, "error", startErr)
+			sse.SendMessage(fmt.Sprintf("启动服务失败，第%d次重试: %s", i+1, startErr.Error()))
+			time.Sleep(retryInterval)
+		}
+
+		if startErr != nil {
+			slog.Error("启动服务最终失败", "error", startErr)
+			sse.SendMessage("启动服务最终失败: " + startErr.Error())
+			error_response.NewErrorResponse(c, startErr.Error())
 			return
 		}
-		slog.Info("服务已启动", "serviceName", request.ServiceName)
 	}
 
 	slog.Info("部署完成")
