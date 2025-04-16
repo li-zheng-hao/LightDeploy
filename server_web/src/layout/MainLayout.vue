@@ -8,6 +8,7 @@ import {
   NMenu,
   NIcon,
   useDialog,
+  useNotification,
 } from "naive-ui";
 import { ref, watchEffect, nextTick } from "vue";
 import { useRoute } from "vue-router";
@@ -18,6 +19,7 @@ import { useMessage } from "naive-ui";
 
 window.$message = useMessage();
 window.$dialog = useDialog();
+window.$notify = useNotification();
 const route = useRoute();
 const collapsed = ref(false);
 const activeKey = ref<string>("");

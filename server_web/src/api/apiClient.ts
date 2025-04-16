@@ -42,12 +42,14 @@ class ApiClient {
               window.$notify.error({
                 title: '错误',
                 content: errorMessage,
+                duration: 5000,
               });
               break;
             case 401:
               window.$notify.error({
                 title: "错误",
                 content: "未授权，请重新登录(401)",
+                duration: 5000,
               });
               // 可以在这里处理登出逻辑
               //   localStorage.removeItem('token');
@@ -56,35 +58,48 @@ class ApiClient {
               window.$notify.error({
                 title: "错误",
                 content: "权限不足(403)",
+                duration: 5000,
               });
               break;
             case 404:
               window.$notify.error({
                 title: "错误",
                 content: "请求的资源不存在(404)",
+                duration: 5000,
               });
               break;
             case 500:
               window.$notify.error({
                 title: "错误",
                 content: "服务器错误(500)",
+                duration: 5000,
+              });
+              break;
+            case 502:
+              window.$notify.error({
+                title: "错误",
+                content: "服务器错误(502)",
+                duration: 5000,
               });
               break;
             default:
               window.$notify.error({
                 title: "错误",
                 content: `请求失败: ${error.response.status}`,
+                duration: 5000,
               });
           }
         } else if (error.request) {
           window.$notify.error({
             title: '错误',
             content: '网络错误，请检查网络连接(error.request)',
+            duration: 5000,
           });
         } else {
           window.$notify.error({
             title: "错误",
             content: "请求配置错误(error.request)",
+            duration: 5000,
           });
         }
         return Promise.reject(error);

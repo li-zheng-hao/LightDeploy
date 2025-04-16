@@ -349,7 +349,8 @@ const handleServiceChange = async (value: number | null) => {
         if (status?.message) {
           window.$notify.error({
             title: "错误",
-            content: status.message || "未知错误",
+            content: status?.message || "未知错误",
+            duration: 3000,
           });
         }
       });
@@ -358,7 +359,7 @@ const handleServiceChange = async (value: number | null) => {
     const historyResponse = await getDeployHistory(value);
     deployHistory.value = historyResponse.data;
   } catch (error) {
-    message.error("加载服务数据失败");
+    message.error("加载服务数据失败" + error);
   }
 };
 
