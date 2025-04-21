@@ -265,15 +265,20 @@ const tableData = ref<DeployService[]>([]);
 const filteredData = computed(() => {
   if (!tableData.value) return [];
   return tableData.value.filter((item) => {
-    const environmentMatch = item.environment
-      ?.toLowerCase()
-      .includes(searchForm.value.environment.toLowerCase());
-    const groupNameMatch = item.groupName
-      .toLowerCase()
-      .includes(searchForm.value.groupName.toLowerCase());
-    const serviceNameMatch = item.serviceName
-      .toLowerCase()
-      .includes(searchForm.value.serviceName.toLowerCase());
+    const environmentMatch =
+      !searchForm.value.environment ||
+      item.environment?.toLowerCase() ===
+        searchForm.value.environment.toLowerCase();
+    const groupNameMatch =
+      !searchForm.value.groupName ||
+      item.groupName
+        .toLowerCase()
+        .includes(searchForm.value.groupName.toLowerCase());
+    const serviceNameMatch =
+      !searchForm.value.serviceName ||
+      item.serviceName
+        .toLowerCase()
+        .includes(searchForm.value.serviceName.toLowerCase());
     return environmentMatch && groupNameMatch && serviceNameMatch;
   });
 });
