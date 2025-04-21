@@ -26,6 +26,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'AgentUpdate',
     component: () => import('../views/AgentUpdate.vue')},
   {
+    path: '/history',
+    name: 'DeployHistory',
+    component: () => import('../views/DeployHistory.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../components/NotFound.vue')

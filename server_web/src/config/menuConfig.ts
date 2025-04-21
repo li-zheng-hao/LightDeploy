@@ -29,8 +29,8 @@ export const menuOptions = [
         key: '/deploy'
       },
       {
-        label: () => h(RouterLink, { to: '/deploy/history' }, { default: () => '部署历史' }),
-        key: '/deploy-history'
+        label: () => h(RouterLink, { to: '/history' }, { default: () => '部署历史' }),
+        key: '/history'
       },
        {
         label: () => h(RouterLink, { to: '/agent-update' }, { default: () => '代理管理' }),

@@ -43,6 +43,7 @@ func RegisterRoutes(r *gin.Engine) {
 	deployGroup.POST("/stop-service", deploy.StopService)
 	historyGroup := r.Group("/api/history")
 	historyGroup.GET("/:serviceId", history.GetHistory)
+	historyGroup.GET("/page-list", history.GetHistoryPageList)
 
 	agentGroup := r.Group("/api/agent")
 	agentGroup.GET("/version", agent.GetVersion)

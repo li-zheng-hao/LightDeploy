@@ -8,11 +8,6 @@ export interface DeployHistory {
   comment?: string // 修改message为comment
 }
 
-// 获取服务列表
-export const getServiceList = () => {
-  return apiClient.get<{ label: string; value: string }[]>('/api/deploy/services')
-}
-
 // 获取部署历史
 export const getDeployHistory = (serviceId: string|number) => {
   return apiClient.get<DeployHistory[]>(`/api/history/${serviceId}`)
@@ -38,3 +33,28 @@ export const stopService = (serviceId: number, targetIds: number[]) => {
 export const getDeployLogs = (serviceId: number|string) => {
   return apiClient.get<DeployHistory[]|null>(`/api/history/${serviceId}`)
 } 
+
+
+// 历史记录响应类型
+export interface HistoryResponse {
+  id: number
+  serviceId: number
+  serviceName: string
+  deployTime: string
+  comment: string
+  environment: string
+}
+
+
+export interface HistoryPageListResponse {
+  data: HistoryResponse[]
+  total: number
+}
+
+// 获取历史部署记录分页列表
+export const getDeployHistoryPageList = (page: number, pageSize: number,serviceId:number|undefined|null) => {
+  return apiClient.get<HistoryPageListResponse>(`/api/history/page-list?page=${page}&pageSize=${pageSize}&serviceId=${serviceId}`)
+}
+
+
+

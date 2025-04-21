@@ -6,26 +6,35 @@
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center">
             <span class="min-w-[60px] text-left mr-2">环境：</span>
-            <n-input
+            <n-select
               v-model:value="searchForm.environment"
-              placeholder="请输入环境"
+              :options="environmentOptions"
+              placeholder="请选择环境"
               clearable
+              filterable
+              style="width: 160px"
             />
           </div>
           <div class="flex items-center">
             <span class="min-w-[80px] text-left mr-2">服务分组：</span>
-            <n-input
+            <n-select
               v-model:value="searchForm.groupName"
-              placeholder="请输入服务分组"
+              :options="groupNameOptions"
+              placeholder="请选择服务分组"
               clearable
+              filterable
+              style="width: 180px"
             />
           </div>
           <div class="flex items-center">
             <span class="min-w-[80px] text-left mr-2">服务名称：</span>
-            <n-input
+            <n-select
               v-model:value="searchForm.serviceName"
-              placeholder="请输入服务名称"
+              :options="serviceNameOptions"
+              placeholder="请选择服务名称"
               clearable
+              filterable
+              style="width: 180px"
             />
           </div>
           <div class="flex items-center">
@@ -683,6 +692,26 @@ const handleSubmitTarget = async () => {
     message.error("提交失败");
   }
 };
+
+// 添加新的 computed
+const environmentOptions = computed(() => {
+  const set = new Set(tableData.value.map((item) => item.environment));
+  return Array.from(set)
+    .filter(Boolean)
+    .map((env) => ({ label: env, value: env }));
+});
+const groupNameOptions = computed(() => {
+  const set = new Set(tableData.value.map((item) => item.groupName));
+  return Array.from(set)
+    .filter(Boolean)
+    .map((group) => ({ label: group, value: group }));
+});
+const serviceNameOptions = computed(() => {
+  const set = new Set(tableData.value.map((item) => item.serviceName));
+  return Array.from(set)
+    .filter(Boolean)
+    .map((name) => ({ label: name, value: name }));
+});
 </script>
 
 <style scoped>

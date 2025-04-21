@@ -9,7 +9,7 @@
     },
     "types": ["node"],
     "lib": ["ES2015", "DOM"],
-
+    "esModuleInterop": true,
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
