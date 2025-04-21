@@ -22,6 +22,7 @@ func RegisterRoutes(r *gin.Engine) {
 	serviceGroup := r.Group("/api/service")
 	serviceGroup.GET("/get-windows-service-status", service.GetWindowsServiceStatus)
 	serviceGroup.POST("/install-service", service.InstallService)
+	serviceGroup.POST("/delete-service", service.DeleteService)
 
 	deployGroup := r.Group("/api/deploy")
 	deployGroup.POST("/deploy-windows-service", deploy.DeployWindowsService)

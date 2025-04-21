@@ -21,7 +21,11 @@
             @change="handleUpload"
           >
             <n-button :disabled="!selectedAgentIds.length">
-              {{ selectedAgentIds.length ? '选择更新文件' : '请先选择要更新的Agent' }}
+              {{
+                selectedAgentIds.length
+                  ? "选择更新文件"
+                  : "请先选择要更新的Agent"
+              }}
             </n-button>
           </n-upload>
         </n-space>
@@ -31,117 +35,111 @@
 </template>
 
 <script lang="ts" setup>
-import { ref,  onMounted } from 'vue'
-import { useMessage, useDialog } from 'naive-ui'
-import type { DataTableColumns } from 'naive-ui'
-import { getAgentVersion, getAllAgent, updateAgent } from '@/api/agent'
+import { ref, onMounted } from "vue";
+import { useMessage, useDialog } from "naive-ui";
+import type { DataTableColumns } from "naive-ui";
+import { getAgentVersion, getAllAgent, updateAgent } from "@/api/agent";
 
 interface Agent {
-  id: string
-  name: string
-  version: string
-  status: string
-  lastHeartbeat: string
+  id: string;
+  name: string;
+  version: string;
+  status: string;
+  lastHeartbeat: string;
 }
 
-const message = useMessage()
-const dialog = useDialog()
-const loading = ref(false)
-const agents = ref<Agent[]>([])
-const selectedAgentIds = ref<number[]>([])
+const message = useMessage();
+const dialog = useDialog();
+const loading = ref(false);
+const agents = ref<Agent[]>([]);
+const selectedAgentIds = ref<number[]>([]);
 
 const columns: DataTableColumns<Agent> = [
   {
-    type: 'selection',
+    type: "selection",
   },
   {
-    title: '地址',
-    key: 'host',
+    title: "地址",
+    key: "host",
   },
   {
-    title: '版本号',
-    key: 'version',
-  }
-]
+    title: "版本号",
+    key: "version",
+  },
+];
 
 const fetchAgents = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await getAllAgent()
-    const agentsData = response.data
-    
-    // 并行获取所有Agent的版本信息
-    const agentsWithVersion = await Promise.all(
-      agentsData.map(async (agent:any) => {
-        try {
-          const versionResponse = await getAgentVersion(agent.id)
-          return {
-            ...agent,
-            version: versionResponse.data.version
-          }
-        } catch (error) {
-          console.error(`获取Agent ${agent.id} 版本信息失败:`, error)
-          return {
-            ...agent,
-            version: '获取失败'
-          }
-        }
-      })
-    )
-    
-    agents.value = agentsWithVersion
+    const response = await getAllAgent();
+    const agentsData = response.data;
+    // 先渲染基础信息
+    agents.value = agentsData.map((agent: any) => ({
+      ...agent,
+      version: "加载中...",
+    }));
+    loading.value = false; // 这里提前关闭loading
+
+    // 异步逐个获取版本号
+    agentsData.forEach(async (agent: any, idx: number) => {
+      try {
+        const versionResponse = await getAgentVersion(agent.id);
+        agents.value[idx].version = versionResponse.data.version;
+      } catch (error) {
+        agents.value[idx].version = "获取失败";
+      }
+    });
   } catch (error) {
-    message.error('获取Agent列表失败')
-  } finally {
-    loading.value = false
+    message.error("获取Agent列表失败");
+    loading.value = false;
   }
-}
+};
 
 const handleUpload = async ({ file }: { file: any }) => {
-  if (!file) return
+  if (!file) return;
 
   try {
     // 使用 Promise 方式等待用户确认
     await new Promise((resolve, reject) => {
       dialog.warning({
-        title: '确认更新',
+        title: "确认更新",
         content: `确定要更新选中的 ${selectedAgentIds.value.length} 个Agent吗？`,
-        positiveText: '确定',
-        negativeText: '取消',
+        positiveText: "确定",
+        negativeText: "取消",
         onPositiveClick: () => {
-          resolve(true)
+          resolve(true);
         },
         onNegativeClick: () => {
-          reject(new Error('用户取消'))
-        }
-      })
-    })
+          reject(new Error("用户取消"));
+        },
+      });
+    });
 
     // 用户点击确定后，才会执行以下更新操作
     for (const agentId of selectedAgentIds.value) {
       await updateAgent({
         file: file.file,
-        agentServiceName: 'LightDeployAgentV2',
-        targetId: agentId
-      })
+        agentServiceName: "LightDeployAgentV2",
+        targetId: agentId,
+      });
     }
-    message.success('更新文件上传成功')
-    fetchAgents()
-  } catch (error:any) {
-    if (error.message === '用户取消') {
-      return // 用户取消操作，静默处理
+    message.success("更新文件上传成功");
+    fetchAgents();
+  } catch (error: any) {
+    if (error.message === "用户取消") {
+      return; // 用户取消操作，静默处理
     }
-    message.error('更新文件上传失败')
+    message.error("更新文件上传失败");
   }
-}
+};
 
 const handleSelectionChange = (rowKeys: number[]) => {
-  selectedAgentIds.value = rowKeys
-}
+  selectedAgentIds.value = rowKeys;
+};
 
 onMounted(() => {
-  fetchAgents()
-})
+  fetchAgents();
+});
 </script>
 
 <style scoped>

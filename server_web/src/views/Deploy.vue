@@ -59,6 +59,13 @@
                 停止服务
               </n-button>
               <n-button
+                @click="handleDeleteWindowsService"
+                :disabled="!selectedServiceId || !hasSelectedTargets"
+                type="error"
+              >
+                删除Windows服务
+              </n-button>
+              <n-button
                 @click="
                   () => {
                     deployLogs.splice(0, deployLogs.length);
@@ -164,6 +171,7 @@ import {
   getServiceList,
   getServiceStatus,
   type DeployService,
+  deleteService,
 } from "../api/service";
 import { getTargetList, type DeployTarget } from "@/api/target";
 import { SSEClient } from "@/util/sse";
@@ -443,6 +451,23 @@ const handleStop = async () => {
     deployLogs.value.push("停止失败 error: " + error);
   }
 };
+
+// 删除Windows服务
+const handleDeleteWindowsService = async () => {
+  if (!selectedServiceName.value || checkedRowKeys.value.length === 0) return;
+  try {
+    deployLogs.value = [];
+    deployLogs.value.push("开始删除Windows服务");
+    await deleteService(selectedServiceName.value, checkedRowKeys.value);
+    await handleServiceChange(selectedServiceId.value);
+    deployLogs.value.push("删除Windows服务成功");
+    message.success("删除Windows服务成功");
+  } catch (error) {
+    deployLogs.value.push("删除Windows服务失败 error: " + error);
+    message.error("删除Windows服务失败");
+  }
+};
+
 var sseClient: SSEClient | null = null;
 onMounted(() => {
   sseClient = new SSEClient(

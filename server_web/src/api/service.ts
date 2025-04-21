@@ -57,3 +57,8 @@ export const deleteDeployService = (id: number | string) => {
 export const installService = (serviceId: number, targetIds: number[]) => {
   return apiClient.post('/api/service/install-service', { serviceId, targetIds })
 }
+
+// 删除服务
+export const deleteService = (serviceName: string, targetIds: number[]) => {
+  return apiClient.post('/api/service/delete-service', { serviceName, targetIds })
+}

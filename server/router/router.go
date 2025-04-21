@@ -29,6 +29,7 @@ func RegisterRoutes(r *gin.Engine) {
 	serviceGroup.POST("/update", service.UpdateDeployService)
 	serviceGroup.POST("/delete/:id", service.DeleteDeployService)
 	serviceGroup.POST("/install-service", service.InstallService)
+	serviceGroup.POST("/delete-service", service.DeleteService)
 
 	targetGroup := r.Group("/api/target")
 	targetGroup.GET("/list", target.ListTargets)

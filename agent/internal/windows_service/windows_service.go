@@ -1,8 +1,10 @@
 package windows_service
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -100,4 +102,54 @@ func GetServiceStatus(serviceName string) (*svc.State, error) {
 		return nil, err
 	}
 	return &status.State, nil
+}
+
+func DeleteService(serviceName string) error {
+	m, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer m.Disconnect()
+
+	s, err := m.OpenService(serviceName)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	// 查询服务状态
+	status, err := s.Query()
+	if err != nil {
+		return err
+	}
+
+	if status.State == svc.Running || status.State == svc.StartPending {
+		slog.Info("服务正在运行，尝试停止", "service", serviceName)
+		_, err := s.Control(svc.Stop)
+		if err != nil {
+			return err
+		}
+		// 等待服务停止
+		for i := 0; i < 30; i++ { // 最多等30秒
+			status, err = s.Query()
+			if err != nil {
+				return err
+			}
+			if status.State == svc.Stopped {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+		if status.State != svc.Stopped {
+			return fmt.Errorf("服务停止超时: %s", serviceName)
+		}
+	}
+	time.Sleep(1 * time.Second)
+	// 删除服务
+	err = s.Delete()
+	if err != nil {
+		return err
+	}
+	slog.Info("服务删除成功", "service", serviceName)
+	return nil
 }
