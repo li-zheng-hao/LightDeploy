@@ -35,4 +35,30 @@ export const updateDeployTarget = (target: DeployTarget) => {
 // 删除部署目标
 export const deleteDeployTarget = (id: number | string) => {
     return apiClient.post<{ message: string }>(`/api/target/delete/${id}`)
-} 
+}
+
+// 获取所有主机响应
+export interface GetAllHostsResponse {
+    host: string;
+}
+
+// 获取所有服务响应
+export interface GetAllServiceResponse {
+    host: string;
+    serviceName: string;
+    environment: string;
+    groupName: string;
+    port: number;
+}
+
+// 获取所有目标主机
+export const getAllHosts = () => {
+    return apiClient.get<GetAllHostsResponse[]>('/api/target/hosts');
+}
+
+// 获取指定目标主机的服务
+export const getAllServices = (host?: string) => {
+    const params = host ? { host } : {};
+    return apiClient.get<GetAllServiceResponse[]>('/api/target/service', { params });
+}
+ 

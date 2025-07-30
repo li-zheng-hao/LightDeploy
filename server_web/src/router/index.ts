@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/DeployHistory.vue')
   },
   {
+    path: '/server-management',
+    name: 'ServerManagement',
+    component: () => import('../views/ServerManagement.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../components/NotFound.vue')

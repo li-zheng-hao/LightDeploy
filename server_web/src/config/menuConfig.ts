@@ -36,6 +36,10 @@ export const menuOptions = [
         label: () => h(RouterLink, { to: '/agent-update' }, { default: () => '代理管理' }),
         key: '/agent-update'
       },
+      {
+        label: () => h(RouterLink, { to: '/server-management' }, { default: () => '服务器管理' }),
+        key: '/server-management'
+      },
     ]
   },
   {
