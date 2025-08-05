@@ -11,6 +11,7 @@ export interface DeployService {
     comment?: string;
     environment?: string;
     onlyCopyFile?: boolean;
+    ignoreFileRegex?: string;
 }
 
 

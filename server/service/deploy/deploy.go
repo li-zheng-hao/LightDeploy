@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -141,7 +142,14 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 		zip.CompressFolderWithLevel(tempDir, zipFilePath, 3)
 	} else {
 		sse.SendMessage("开始压缩文件")
-		zip.CompressFolderWithLevel(service.ProjectPath, zipFilePath, 3)
+		// 对于文件夹发布，先过滤文件再压缩
+		filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex)
+		if err != nil {
+			return "", "", fmt.Errorf("准备过滤目录失败: %v", err)
+		}
+		defer os.RemoveAll(filteredDir)
+
+		zip.CompressFolderWithLevel(filteredDir, zipFilePath, 3)
 	}
 	sse.SendMessage("压缩完成")
 
@@ -151,6 +159,36 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 	}
 
 	return tempDir, zipFilePath, nil
+}
+
+func prepareFilteredDirectory(projectPath string, ignoreFileRegex string) (string, error) {
+	re, err := regexp.Compile(ignoreFileRegex)
+	if err != nil {
+		return "", fmt.Errorf("编译正则表达式失败: %v", err)
+	}
+
+	filteredDir := filepath.Join(projectPath, "filtered")
+	if err := os.MkdirAll(filteredDir, 0755); err != nil {
+		return "", fmt.Errorf("创建过滤目录失败: %v", err)
+	}
+
+	err = filepath.Walk(projectPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !info.IsDir() {
+			relPath, err := filepath.Rel(projectPath, path)
+			if err != nil {
+				return nil
+			}
+			if re.MatchString(relPath) {
+				return nil
+			}
+		}
+		return nil
+	})
+
+	return filteredDir, nil
 }
 
 // agentSSEConnection 用于管理agent SSE连接
@@ -281,9 +319,20 @@ func SaveDeployHistory(serviceId int, comment string) error {
 }
 
 // CollectSourceFileInfos 收集源目录下所有文件的信息
-func CollectSourceFileInfos(sourceDir string) ([]dto.CompareFileInfo, error) {
+func CollectSourceFileInfos(sourceDir string, ignoreFileRegex string) ([]dto.CompareFileInfo, error) {
 	var fileInfos []dto.CompareFileInfo
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	var re *regexp.Regexp
+	var err error
+
+	// 如果正则表达式不为空，则编译正则表达式
+	if ignoreFileRegex != "" {
+		re, err = regexp.Compile(ignoreFileRegex)
+		if err != nil {
+			return nil, fmt.Errorf("编译正则表达式失败: %v", err)
+		}
+	}
+
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -292,11 +341,20 @@ func CollectSourceFileInfos(sourceDir string) ([]dto.CompareFileInfo, error) {
 			if err != nil {
 				return err
 			}
-			fileInfos = append(fileInfos, dto.CompareFileInfo{
-				FileRelativePath: relPath,
-				FileSize:         info.Size(),
-				ModifyTimeStamp:  info.ModTime().Unix(),
-			})
+
+			// 如果正则表达式为空，则不进行匹配，直接添加文件
+			matched := false
+			if re != nil {
+				matched = re.MatchString(relPath)
+			}
+
+			if !matched {
+				fileInfos = append(fileInfos, dto.CompareFileInfo{
+					FileRelativePath: relPath,
+					FileSize:         info.Size(),
+					ModifyTimeStamp:  info.ModTime().Unix(),
+				})
+			}
 		}
 		return nil
 	})
@@ -381,7 +439,7 @@ func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployS
 	defer closeAgentSSE(conn)
 
 	// 收集文件信息
-	fileInfos, err := CollectSourceFileInfos(sourceDir)
+	fileInfos, err := CollectSourceFileInfos(sourceDir, deployService.IgnoreFileRegex)
 	if err != nil {
 		return fmt.Errorf("收集文件信息失败: %v", err)
 	}

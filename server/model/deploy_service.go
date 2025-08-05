@@ -19,6 +19,8 @@ type DeployService struct {
 	Environment string `xorm:"TEXT 'environment'" json:"environment"`
 	// 是否只复制文件 不启动和停止服务 0 否 1 是
 	OnlyCopyFile bool `xorm:"BOOLEAN 'only_copy_file'" json:"onlyCopyFile"`
+	// 忽略文件列表，支持正则表达式，多个用|分割
+	IgnoreFileRegex string `xorm:"TEXT 'ignore_file_regex'" json:"ignoreFileRegex"`
 }
 
 const (

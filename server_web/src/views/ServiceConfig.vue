@@ -133,6 +133,13 @@
             >仅复制文件</n-checkbox
           >
         </n-form-item>
+        <n-form-item label="忽略文件正则" path="ignoreFileRegex">
+          <n-input
+            v-model:value="formData.ignoreFileRegex"
+            placeholder="请输入忽略文件正则表达式，多个用|分割，如：*.log|temp/*"
+            type="textarea"
+          />
+        </n-form-item>
       </n-form>
       <template #action>
         <n-space>
@@ -341,6 +348,13 @@ const columns: DataTableColumns<DeployService> = [
     },
   },
   {
+    title: "忽略文件正则",
+    key: "ignoreFileRegex",
+    render(row) {
+      return row.ignoreFileRegex || "-";
+    },
+  },
+  {
     title: "项目类型",
     key: "projectType",
     render(row) {
@@ -412,6 +426,7 @@ const formData = ref<Partial<DeployService>>({
   projectType: undefined,
   comment: "",
   onlyCopyFile: false,
+  ignoreFileRegex: "",
 });
 
 // 表单校验规则
@@ -569,6 +584,8 @@ const handleAdd = () => {
     port: undefined,
     projectType: undefined,
     comment: "",
+    onlyCopyFile: false,
+    ignoreFileRegex: "",
   };
   showModal.value = true;
 };
