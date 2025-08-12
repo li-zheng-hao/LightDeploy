@@ -143,7 +143,7 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 	} else {
 		sse.SendMessage("开始压缩文件")
 		// 对于文件夹发布，先过滤文件再压缩
-		filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex)
+		filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex, tempDir)
 		if err != nil {
 			return "", "", fmt.Errorf("准备过滤目录失败: %v", err)
 		}
@@ -161,13 +161,24 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 	return tempDir, zipFilePath, nil
 }
 
-func prepareFilteredDirectory(projectPath string, ignoreFileRegex string) (string, error) {
-	re, err := regexp.Compile(ignoreFileRegex)
-	if err != nil {
-		return "", fmt.Errorf("编译正则表达式失败: %v", err)
+func prepareFilteredDirectory(projectPath string, ignoreFileRegex string, tempDir string) (string, error) {
+	var re *regexp.Regexp
+	var err error
+	// 当 ignoreFileRegex 为空时，不进行正则编译与匹配
+	if strings.TrimSpace(ignoreFileRegex) != "" {
+		re, err = regexp.Compile(ignoreFileRegex)
+		if err != nil {
+			return "", fmt.Errorf("编译正则表达式失败: %v", err)
+		}
 	}
 
-	filteredDir := filepath.Join(projectPath, "filtered")
+	filteredDir := filepath.Join(tempDir, "filtered")
+	// 确保过滤目录是干净的
+	if _, statErr := os.Stat(filteredDir); statErr == nil {
+		if rmErr := os.RemoveAll(filteredDir); rmErr != nil {
+			return "", fmt.Errorf("清理过滤目录失败: %v", rmErr)
+		}
+	}
 	if err := os.MkdirAll(filteredDir, 0755); err != nil {
 		return "", fmt.Errorf("创建过滤目录失败: %v", err)
 	}
@@ -176,13 +187,29 @@ func prepareFilteredDirectory(projectPath string, ignoreFileRegex string) (strin
 		if err != nil {
 			return nil
 		}
+		// 跳过自身生成的过滤目录，避免递归复制
+		if info.IsDir() {
+			if path == filteredDir {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		if !info.IsDir() {
 			relPath, err := filepath.Rel(projectPath, path)
 			if err != nil {
 				return nil
 			}
-			if re.MatchString(relPath) {
+			if re != nil && re.MatchString(relPath) {
 				return nil
+			}
+			// 复制文件到过滤目录中保持相对路径
+			dstPath := filepath.Join(filteredDir, relPath)
+			if mkErr := os.MkdirAll(filepath.Dir(dstPath), 0755); mkErr != nil {
+				return mkErr
+			}
+			if cpErr := copyFile(path, dstPath); cpErr != nil {
+				return cpErr
 			}
 		}
 		return nil
