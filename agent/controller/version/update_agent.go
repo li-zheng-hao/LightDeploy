@@ -14,16 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	VERSION = "1.1.1"
-)
-
-func GetVersion(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"version": VERSION,
-	})
-}
-
 type UpdateAgentRequest struct {
 	File             *multipart.FileHeader `form:"file"`
 	AgentServiceName string                `form:"agentServiceName"`
@@ -60,14 +50,7 @@ func UpdateAgent(c *gin.Context) {
 	}
 
 	// 创建更新批处理文件
-	batContent := fmt.Sprintf(`@echo off
-net stop %s
-timeout /t 2 /nobreak
-copy /y "%s" "%s"
-net start %s
-del "%s"
-del "%%~f0"
-`, request.AgentServiceName, newExePath, exePath, request.AgentServiceName, newExePath)
+	batContent := fmt.Sprintf(`@echo off\r\nnet stop %s\r\ntimeout /t 2 /nobreak\r\ncopy /y \"%s\" \"%s\"\r\nnet start %s\r\ndel \"%s\"\r\ndel \"%%~f0\"\r\n`, request.AgentServiceName, newExePath, exePath, request.AgentServiceName, newExePath)
 
 	batPath := filepath.Join(tempDir, "update.bat")
 	if err := os.WriteFile(batPath, []byte(batContent), 0755); err != nil {
