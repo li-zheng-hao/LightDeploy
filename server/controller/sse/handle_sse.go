@@ -57,12 +57,3 @@ func HandleSSE(c *gin.Context) {
 		}
 	}
 }
-
-
-func SendMessage(c *gin.Context) {
-	message := c.Query("message")
-	sse.MessageChan <- message
-	c.JSON(200, gin.H{
-		"message": "message sent",
-	})
-}

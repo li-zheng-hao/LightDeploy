@@ -36,5 +36,5 @@ var Database = DatabaseConfig{
 	MaxOpenConns: 1,
 	ShowSQL:      true,
 	// 添加 SQLite 特定配置
-	ConnectOptions: "?_journal=WAL&_timeout=5000",
+	ConnectOptions: "?_journal=WAL&_timeout=5000&_foreign_keys=on",
 }

@@ -2,7 +2,6 @@ package router
 
 import (
 	"ld_agent/controller/deploy"
-	"ld_agent/controller/service"
 	"ld_agent/controller/sse"
 	"ld_agent/controller/version"
 	"net/http"
@@ -20,9 +19,9 @@ func RegisterRoutes(r *gin.Engine) {
 	sseGroup.GET("/sse", sse.HandleSSE)
 
 	serviceGroup := r.Group("/api/service")
-	serviceGroup.GET("/get-windows-service-status", service.GetWindowsServiceStatus)
-	serviceGroup.POST("/install-service", service.InstallService)
-	serviceGroup.POST("/delete-service", service.DeleteService)
+	serviceGroup.GET("/get-windows-service-status", deploy.GetWindowsServiceStatus)
+	serviceGroup.POST("/install-service", deploy.InstallService)
+	serviceGroup.POST("/delete-service", deploy.DeleteService)
 
 	deployGroup := r.Group("/api/deploy")
 	deployGroup.POST("/deploy-windows-service", deploy.DeployWindowsService)

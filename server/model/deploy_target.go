@@ -1,21 +1,26 @@
 package model
 
 type DeployTarget struct {
-	Id int `xorm:"pk autoincr 'id'" json:"id"`
+	Id int `gorm:"primaryKey;autoIncrement" json:"id"`
 	// 服务id
-	ServiceId int `xorm:"INTEGER notnull 'service_id'" json:"serviceId"`
+	ServiceId int `gorm:"type:integer;not null" json:"serviceId"`
 	// 目标主机
-	Host string `xorm:"TEXT notnull 'host'" json:"host"`
+	Host string `gorm:"type:text;not null" json:"host"`
 	// 目标端口
-	Port int `xorm:"INTEGER notnull 'port'" json:"port"`
+	Port int `gorm:"type:integer;not null" json:"port"`
 	// 密钥
-	SecretKey string `xorm:"TEXT 'secret_key'" json:"secretKey"`
+	SecretKey string `gorm:"type:text" json:"secretKey"`
 	// 服务路径 文件夹路径
-	ServicePath string `xorm:"TEXT 'service_path'" json:"servicePath"`
+	ServicePath string `gorm:"type:text" json:"servicePath"`
 	// 备注
-	Comment string `xorm:"TEXT 'comment'" json:"comment"`
+	Comment string `gorm:"type:text" json:"comment"`
 	// 程序执行完整路径
-	ExePath string `xorm:"TEXT 'exe_path'" json:"exePath"`
+	ExePath string `gorm:"type:text" json:"exePath"`
 	// 程序执行参数
-	ExeParams string `xorm:"TEXT 'exe_params'" json:"exeParams"`
+	ExeParams string `gorm:"type:text" json:"exeParams"`
+}
+
+// TableName 指定表名
+func (DeployTarget) TableName() string {
+	return "deploy_target"
 }

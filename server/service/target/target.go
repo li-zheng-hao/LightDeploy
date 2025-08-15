@@ -18,15 +18,13 @@ type TargetStatus struct {
 }
 
 func GetServiceStatus(serviceId int) ([]TargetStatus, error) {
-	service := new(model.DeployService)
-	_, err := db.Engine.ID(serviceId).Get(service)
-	if err != nil {
+	var service model.DeployService
+	if err := db.DB.First(&service, serviceId).Error; err != nil {
 		return nil, err
 	}
 
-	targets := make([]model.DeployTarget, 0)
-	err = db.Engine.Where("service_id = ?", serviceId).Find(&targets)
-	if err != nil {
+	var targets []model.DeployTarget
+	if err := db.DB.Where("service_id = ?", serviceId).Find(&targets).Error; err != nil {
 		return nil, err
 	}
 

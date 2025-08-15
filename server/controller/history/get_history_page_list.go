@@ -7,40 +7,11 @@ import (
 	"time"
 
 	"ld_server/db"
-	"ld_server/model"
 	"ld_shared/clog"
 	"ld_shared/error_response"
 
 	"github.com/gin-gonic/gin"
 )
-
-func GetHistory(c *gin.Context) {
-	serviceId := c.Param("serviceId")
-	if serviceId == "" {
-		error_response.NewErrorResponse(c, "serviceId is required")
-		return
-	}
-
-	// 将 serviceId 转换为整数
-	sId, err := strconv.Atoi(serviceId)
-	if err != nil {
-		error_response.NewErrorResponse(c, "invalid serviceId")
-		return
-	}
-
-	// 查询部署历史记录，限制最多10个
-	var histories []model.DeployHistory
-	err = db.Engine.Where("service_id = ?", sId).
-		Desc("deploy_time"). // 按部署时间倒序排序
-		Limit(10).           // 限制最多10个
-		Find(&histories)
-	if err != nil {
-		error_response.NewErrorResponse(c, "查询部署历史记录失败: "+err.Error())
-		return
-	}
-
-	c.JSON(http.StatusOK, histories)
-}
 
 type HistoryResponse struct {
 	Id          int       `json:"id"`
@@ -71,26 +42,26 @@ func GetHistoryPageList(c *gin.Context) {
 	offset := (pageInt - 1) * pageSizeInt
 
 	var histories []HistoryResponse
-	query := db.Engine.Table("deploy_history").
-		Alias("h").
-		Join("LEFT", []string{"deploy_service", "s"}, "h.service_id = s.id").
-		Select("h.id, h.service_id, s.service_name, h.deploy_time, h.comment, s.environment").
-		Desc("h.deploy_time").
-		Limit(pageSizeInt, offset)
+	query := db.DB.Table("deploy_history").
+		Select("deploy_history.id, deploy_history.service_id, deploy_service.service_name, deploy_history.deploy_time, deploy_history.comment, deploy_service.environment").
+		Joins("LEFT JOIN deploy_service ON deploy_history.service_id = deploy_service.id").
+		Order("deploy_history.deploy_time DESC").
+		Offset(offset).
+		Limit(pageSizeInt)
+
 	serviceIdInt, _ := strconv.Atoi(serviceId)
 	clog.GetContextLogger(c).Info(fmt.Sprintf("serviceIdInt: %d", serviceIdInt))
 	if serviceIdInt > 0 {
-		query = query.Where("h.service_id = ?", serviceIdInt)
+		query = query.Where("deploy_history.service_id = ?", serviceIdInt)
 	}
-	err = query.Find(&histories)
-	if err != nil {
+
+	if err := query.Find(&histories).Error; err != nil {
 		error_response.NewErrorResponse(c, "查询部署历史记录失败: "+err.Error())
 		return
 	}
 
 	var total int64
-	total, err = db.Engine.Table("deploy_history").Count()
-	if err != nil {
+	if err := db.DB.Table("deploy_history").Count(&total).Error; err != nil {
 		error_response.NewErrorResponse(c, "查询部署历史记录总数失败: "+err.Error())
 		return
 	}

@@ -6,30 +6,42 @@ import (
 
 	"ld_server/model" // 导入 model 包
 
-	_ "modernc.org/sqlite"
-	"xorm.io/xorm"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var Engine *xorm.Engine
+var DB *gorm.DB
 
 func Init() error {
 	var err error
-	Engine, err = xorm.NewEngine(Database.Type, 
-		Database.Path + Database.ConnectOptions)
+
+	// 配置日志级别
+	logLevel := logger.Silent
+	if Database.ShowSQL {
+		logLevel = logger.Info
+	}
+
+	DB, err = gorm.Open(sqlite.Open(Database.Path+Database.ConnectOptions), &gorm.Config{
+		Logger: logger.Default.LogMode(logLevel),
+	})
 	if err != nil {
 		return fmt.Errorf("初始化数据库失败: %v", err)
 	}
 
-	// 基本配置
-	Engine.SetMaxIdleConns(Database.MaxIdleConns)
-	Engine.SetMaxOpenConns(Database.MaxOpenConns)
-	Engine.ShowSQL(Database.ShowSQL)
+	// 获取底层的sql.DB对象来设置连接池
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("获取数据库连接失败: %v", err)
+	}
 
-	// SQLite 优化配置
+	// 基本配置
+	sqlDB.SetMaxIdleConns(Database.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(Database.MaxOpenConns)
 	// 设置连接生命周期
-	Engine.SetConnMaxLifetime(time.Minute * 5)
+	sqlDB.SetConnMaxLifetime(time.Minute * 5)
 	// 设置空闲连接超时
-	Engine.SetConnMaxIdleTime(time.Minute)
+	sqlDB.SetConnMaxIdleTime(time.Minute)
 
 	// 同步所有表结构
 	if err := syncTables(); err != nil {
@@ -41,9 +53,9 @@ func Init() error {
 
 // 同步所有表结构
 func syncTables() error {
-	return Engine.Sync2(
-		new(model.DeployService),
-		new(model.DeployTarget),
-		new(model.DeployHistory),
+	return DB.AutoMigrate(
+		&model.DeployService{},
+		&model.DeployTarget{},
+		&model.DeployHistory{},
 	)
 }

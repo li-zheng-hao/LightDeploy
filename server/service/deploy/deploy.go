@@ -94,17 +94,12 @@ func StopServiceOnTarget(target *model.DeployTarget, service *model.DeployServic
 // ValidateDeployRequest 验证部署请求并获取服务和目标信息
 func ValidateDeployRequest(serviceId int, targetIds []int) (*model.DeployService, *[]model.DeployTarget, error) {
 	var service model.DeployService
-	has, err := db.Engine.ID(serviceId).Get(&service)
-	if err != nil {
-		return nil, nil, fmt.Errorf("查询服务失败: %v", err)
-	}
-	if !has {
+	if err := db.DB.First(&service, serviceId).Error; err != nil {
 		return nil, nil, fmt.Errorf("服务不存在")
 	}
 
 	var targets []model.DeployTarget
-	err = db.Engine.In("id", targetIds).Find(&targets)
-	if err != nil {
+	if err := db.DB.Where("id IN ?", targetIds).Find(&targets).Error; err != nil {
 		return nil, nil, fmt.Errorf("查询目标失败: %v", err)
 	}
 	if len(targets) == 0 {
@@ -338,8 +333,7 @@ func SaveDeployHistory(serviceId int, comment string) error {
 		Comment:    comment,
 	}
 
-	_, err := db.Engine.Insert(history)
-	if err != nil {
+	if err := db.DB.Create(history).Error; err != nil {
 		return fmt.Errorf("保存部署历史失败: %v", err)
 	}
 	return nil

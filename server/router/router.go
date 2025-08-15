@@ -33,6 +33,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	targetGroup := r.Group("/api/target")
 	targetGroup.GET("/list", target.ListTargets)
+	targetGroup.GET("/:id", target.GetTarget)
 	targetGroup.GET("/service", target.GetAllService)
 	targetGroup.GET("/hosts", target.GetAllHosts)
 	targetGroup.POST("/create", target.CreateTarget)
