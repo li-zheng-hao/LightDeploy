@@ -2,48 +2,43 @@ package deploy
 
 import (
 	"ld_shared/error_response"
-	"net/http"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func GetWindowsServiceStatus(c *gin.Context) {
+func GetWindowsServiceStatus(c *fiber.Ctx) error {
 	serviceName := c.Query("serviceName")
 	if serviceName == "" {
-		error_response.NewErrorResponse(c, "serviceName is required")
-		return
+		return error_response.NewErrorResponse(c, "serviceName is required")
 	}
 
 	// 连接服务管理器
 	m, err := mgr.Connect()
 	if err != nil {
-		error_response.NewErrorResponse(c, "无法连接服务管理器: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "无法连接服务管理器: "+err.Error())
 	}
 	defer m.Disconnect()
 
 	// 打开指定服务
 	s, err := m.OpenService(serviceName)
 	if err != nil {
-		error_response.NewErrorResponse(c, "服务不存在: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "服务不存在: "+err.Error())
 	}
 	defer s.Close()
 
 	// 查询服务状态
 	status, err := s.Query()
 	if err != nil {
-		error_response.NewErrorResponse(c, "无法查询服务状态: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "无法查询服务状态: "+err.Error())
 	}
 
 	// 将状态码转换为可读的状态描述
 	statusText := getStatusText(status.State)
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"serviceName": serviceName,
 		"status":      statusText,
 		"state":       status.State,

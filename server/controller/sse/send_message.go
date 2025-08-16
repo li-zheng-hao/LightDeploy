@@ -3,13 +3,13 @@ package sse
 import (
 	"ld_shared/sse"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func SendMessage(c *gin.Context) {
+func SendMessage(c *fiber.Ctx) error {
 	message := c.Query("message")
 	sse.MessageChan <- message
-	c.JSON(200, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "message sent",
 	})
 }

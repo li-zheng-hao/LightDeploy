@@ -3,24 +3,21 @@ package deploy
 import (
 	"ld_agent/internal/windows_service"
 	"ld_shared/error_response"
-	"net/http"
 
 	"log/slog"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func StartService(c *gin.Context) {
+func StartService(c *fiber.Ctx) error {
 	slog.Info("开始启动服务")
 	serviceName := c.Query("serviceName")
 	if serviceName == "" {
-		error_response.NewErrorResponse(c, "服务名称不能为空")
-		return
+		return error_response.NewErrorResponse(c, "服务名称不能为空")
 	}
 	err := windows_service.StartService(serviceName)
 	if err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
-	c.JSON(http.StatusOK, nil)
+	return c.JSON(nil)
 }

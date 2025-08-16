@@ -7,50 +7,50 @@ import (
 	"ld_server/controller/service"
 	"ld_server/controller/sse"
 	"ld_server/controller/target"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(r *gin.Engine) {
-	r.GET("/api/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+func RegisterRoutes(app *fiber.App) {
+	app.Get("/api/ping", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
 			"message": "pong",
 		})
 	})
-	sseGroup := r.Group("/api/sse")
-	sseGroup.GET("/connect", sse.HandleSSE)
-	sseGroup.GET("/send", sse.SendMessage)
+	sseGroup := app.Group("/api/sse")
+	sseGroup.Get("/connect", sse.HandleSSE)
+	sseGroup.Get("/send", sse.SendMessage)
 
-	serviceGroup := r.Group("/api/service")
-	serviceGroup.GET("/status/:serviceId", service.GetServiceStatus)
-	serviceGroup.GET("/list", service.GetDeployServices)
-	serviceGroup.POST("/create", service.CreateDeployService)
-	serviceGroup.POST("/update", service.UpdateDeployService)
-	serviceGroup.POST("/delete/:id", service.DeleteDeployService)
-	serviceGroup.POST("/install-service", service.InstallService)
-	serviceGroup.POST("/delete-service", service.DeleteService)
+	serviceGroup := app.Group("/api/service")
+	serviceGroup.Get("/status/:serviceId", service.GetServiceStatus)
+	serviceGroup.Get("/list", service.GetDeployServices)
+	serviceGroup.Post("/create", service.CreateDeployService)
+	serviceGroup.Post("/update", service.UpdateDeployService)
+	serviceGroup.Post("/delete/:id", service.DeleteDeployService)
+	serviceGroup.Post("/install-service", service.InstallService)
+	serviceGroup.Post("/delete-service", service.DeleteService)
 
-	targetGroup := r.Group("/api/target")
-	targetGroup.GET("/list", target.ListTargets)
-	targetGroup.GET("/:id", target.GetTarget)
-	targetGroup.GET("/service", target.GetAllService)
-	targetGroup.GET("/hosts", target.GetAllHosts)
-	targetGroup.POST("/create", target.CreateTarget)
-	targetGroup.POST("/update", target.UpdateTarget)
-	targetGroup.POST("/delete/:id", target.DeleteTarget)
+	targetGroup := app.Group("/api/target")
+	targetGroup.Get("/list", target.ListTargets)
+	targetGroup.Get("/service", target.GetAllService)
+	targetGroup.Get("/hosts", target.GetAllHosts)
+	targetGroup.Post("/create", target.CreateTarget)
+	targetGroup.Post("/update", target.UpdateTarget)
+	targetGroup.Post("/delete/:id", target.DeleteTarget)
+	targetGroup.Get("/:id", target.GetTarget)
 
-	deployGroup := r.Group("/api/deploy")
-	deployGroup.POST("/deploy-service", deploy.DeployService)
-	deployGroup.POST("/start-service", deploy.StartService)
-	deployGroup.POST("/stop-service", deploy.StopService)
-	historyGroup := r.Group("/api/history")
-	historyGroup.GET("/:serviceId", history.GetHistory)
-	historyGroup.GET("/page-list", history.GetHistoryPageList)
+	deployGroup := app.Group("/api/deploy")
+	deployGroup.Post("/deploy-service", deploy.DeployService)
+	deployGroup.Post("/start-service", deploy.StartService)
+	deployGroup.Post("/stop-service", deploy.StopService)
 
-	agentGroup := r.Group("/api/agent")
-	agentGroup.GET("/version", agent.GetVersion)
-	agentGroup.GET("/all", agent.GetAllAgent)
-	agentGroup.POST("/update", agent.UpdateAgent)
+	historyGroup := app.Group("/api/history")
+	historyGroup.Get("/page-list", history.GetHistoryPageList)
+	historyGroup.Get("/:serviceId", history.GetHistory)
+
+	agentGroup := app.Group("/api/agent")
+	agentGroup.Get("/version", agent.GetVersion)
+	agentGroup.Get("/all", agent.GetAllAgent)
+	agentGroup.Post("/update", agent.UpdateAgent)
 
 }

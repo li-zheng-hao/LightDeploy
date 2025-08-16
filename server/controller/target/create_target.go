@@ -4,16 +4,15 @@ import (
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // CreateTargetRequest 创建部署目标的请求结构
 type CreateTargetRequest struct {
-	ServiceId   int    `json:"serviceId" binding:"required"`
-	Host        string `json:"host" binding:"required"`
-	Port        int    `json:"port" binding:"required"`
+	ServiceId   int    `json:"serviceId"`
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
 	SecretKey   string `json:"secretKey"`
 	ServicePath string `json:"servicePath"`
 	Comment     string `json:"comment"`
@@ -22,17 +21,15 @@ type CreateTargetRequest struct {
 }
 
 // CreateTarget 创建部署目标
-func CreateTarget(c *gin.Context) {
+func CreateTarget(c *fiber.Ctx) error {
 	var req CreateTargetRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		error_response.NewErrorResponse(c, "参数无效")
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return error_response.NewErrorResponse(c, "参数无效")
 	}
 
 	// 验证必填字段
 	if req.ServiceId == 0 || req.Host == "" || req.Port == 0 {
-		error_response.NewErrorResponse(c, "服务ID、主机地址和端口为必填项")
-		return
+		return error_response.NewErrorResponse(c, "服务ID、主机地址和端口为必填项")
 	}
 
 	// 构建模型对象
@@ -49,9 +46,8 @@ func CreateTarget(c *gin.Context) {
 
 	// 插入数据库
 	if err := db.DB.Create(&target).Error; err != nil {
-		error_response.NewErrorResponse(c, "创建部署目标失败,"+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "创建部署目标失败,"+err.Error())
 	}
 
-	c.JSON(http.StatusOK, target)
+	return c.JSON(target)
 }

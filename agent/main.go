@@ -14,9 +14,8 @@ import (
 	"ld_agent/controller/sse"
 	"ld_agent/router"
 	_ "ld_shared/clog"
-	"ld_shared/env"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -28,9 +27,7 @@ var (
 func main() {
 	flag.IntVar(&PORT, "p", 9002, "服务端口")
 	flag.Parse()
-	if !env.IsDebugMode() {
-		gin.SetMode(gin.ReleaseMode)
-	}
+
 	slog.Info("服务启动", "port", PORT)
 	// 检查是否以服务模式运行
 	isService, err := svc.IsWindowsService()
@@ -52,7 +49,7 @@ func main() {
 }
 
 type agentService struct {
-	srv *http.Server
+	app *fiber.App
 }
 
 func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -61,7 +58,7 @@ func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, change
 
 	// 启动HTTP服务
 	go func() {
-		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.app.Listen(fmt.Sprintf(":%d", PORT)); err != nil && err != http.ErrServerClosed {
 			slog.Error("监听失败", "error", err)
 		}
 	}()
@@ -80,7 +77,7 @@ func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, change
 			// 优雅关闭服务器
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			if err := s.srv.Shutdown(ctx); err != nil {
+			if err := s.app.ShutdownWithContext(ctx); err != nil {
 				slog.Error("服务器强制关闭", "error", err)
 			}
 			slog.Info("服务器已退出")
@@ -92,31 +89,25 @@ func (s *agentService) Execute(args []string, r <-chan svc.ChangeRequest, change
 func runService() error {
 	slog.Info("以Windows服务模式运行")
 
-	r := gin.Default()
-	router.RegisterRoutes(r)
+	app := fiber.New(fiber.Config{
+		BodyLimit: 5 * 1024 * 1024 * 1024, // 5GB 限制
+	})
+	router.RegisterRoutes(app)
 
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", PORT),
-		Handler: r,
-	}
-
-	return svc.Run("", &agentService{srv: srv})
+	return svc.Run("", &agentService{app: app})
 }
 
 func runInteractive() error {
 	slog.Info("以交互模式运行")
 
-	r := gin.Default()
-	router.RegisterRoutes(r)
-
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", PORT),
-		Handler: r,
-	}
+	app := fiber.New(fiber.Config{
+		BodyLimit: 5 * 1024 * 1024 * 1024, // 5GB 限制
+	})
+	router.RegisterRoutes(app)
 
 	// 在单独的 goroutine 中启动服务器
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := app.Listen(fmt.Sprintf(":%d", PORT)); err != nil && err != http.ErrServerClosed {
 			slog.Error("监听失败", "error", err)
 		}
 	}()
@@ -127,15 +118,22 @@ func runInteractive() error {
 	<-quit
 	slog.Info("正在关闭服务器...")
 
-	// 设置超时时间为5秒的上下文
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	// 优雅地关闭服务器
-	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("服务器强制关闭", "error", err)
-	}
-
-	slog.Info("服务器已退出")
+	gracefulShutdown(app)
 	return nil
+}
+
+func gracefulShutdown(app *fiber.App) {
+	slog.Info("正在关闭服务器...")
+
+	// 启动SSE关闭
+	// sse.ShutdownSSE()
+	// slog.Info("SSE连接已关闭")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err := app.ShutdownWithContext(ctx); err != nil {
+		slog.Error("服务器关闭失败", "error", err)
+	}
+	slog.Info("服务器已退出")
 }

@@ -3,26 +3,23 @@ package deploy
 import (
 	"ld_agent/internal/windows_service"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // 删除Windows服务接口
-func DeleteService(c *gin.Context) {
+func DeleteService(c *fiber.Ctx) error {
 	serviceName := c.Query("serviceName")
 	if serviceName == "" {
-		error_response.NewErrorResponse(c, "serviceName is required")
-		return
+		return error_response.NewErrorResponse(c, "serviceName is required")
 	}
 
 	err := windows_service.DeleteService(serviceName)
 	if err != nil {
-		error_response.NewErrorResponse(c, "删除服务失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "删除服务失败: "+err.Error())
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "服务删除成功",
 	})
 }

@@ -6,12 +6,12 @@ import (
 	"ld_server/service/deploy"
 	"ld_shared/error_response"
 	"ld_shared/process"
-	sse_utils "ld_shared/sse"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/gin-gonic/gin"
+	sse_utils "ld_shared/sse"
+
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
@@ -23,28 +23,24 @@ type DeployServiceRequest struct {
 	UseFastMode bool `json:"useFastMode"`
 }
 
-func DeployService(c *gin.Context) {
+func DeployService(c *fiber.Ctx) error {
 	var request DeployServiceRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+	if err := c.BodyParser(&request); err != nil {
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 	deployService, targets, err := deploy.ValidateDeployRequest(request.ServiceId, request.TargetIds)
 	if err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 	if request.UseFastMode {
 		sse_utils.SendMessage("开始快速模式部署")
 		executablePath, err := os.Executable()
 		if err != nil {
-			error_response.NewErrorResponse(c, err.Error())
-			return
+			return error_response.NewErrorResponse(c, err.Error())
 		}
 		tempDir := filepath.Join(filepath.Dir(executablePath), "ld_deploy_temp", uuid.New().String())
 		if err := os.MkdirAll(tempDir, 0755); err != nil {
-			error_response.NewErrorResponse(c, err.Error())
-			return
+			return error_response.NewErrorResponse(c, err.Error())
 		}
 		defer os.RemoveAll(tempDir)
 
@@ -60,34 +56,30 @@ func DeployService(c *gin.Context) {
 		for _, target := range *targets {
 			sse_utils.SendMessage(fmt.Sprintf("开始处理目标机器: %s", target.Host))
 			if err := deploy.FastDeployToTarget(&target, deployService, tempDir); err != nil {
-				error_response.NewErrorResponse(c, err.Error())
-				return
+				return error_response.NewErrorResponse(c, err.Error())
 			}
 		}
 	} else {
 		tempDir, zipFilePath, err := deploy.PrepareDeployPackage(deployService)
 		if err != nil {
-			error_response.NewErrorResponse(c, err.Error())
-			return
+			return error_response.NewErrorResponse(c, err.Error())
 		}
 		defer os.RemoveAll(tempDir)
 
 		// 部署到所有目标机器
 		for _, target := range *targets {
 			if err := deploy.DeployToTarget(target, deployService, zipFilePath); err != nil {
-				error_response.NewErrorResponse(c, err.Error())
-				return
+				return error_response.NewErrorResponse(c, err.Error())
 			}
 		}
 	}
 
 	// 保存部署历史
 	if err := deploy.SaveDeployHistory(deployService.Id, request.Comment); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "部署成功",
 	})
 }

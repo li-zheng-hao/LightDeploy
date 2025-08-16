@@ -1,35 +1,30 @@
 package service
 
 import (
-	"net/http"
-
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // 更新部署服务
-func UpdateDeployService(c *gin.Context) {
+func UpdateDeployService(c *fiber.Ctx) error {
 	var service model.DeployService
-	if err := c.ShouldBindJSON(&service); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+	if err := c.BodyParser(&service); err != nil {
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	if service.Id <= 0 {
-		error_response.NewErrorResponse(c, "id is required")
-		return
+		return error_response.NewErrorResponse(c, "id is required")
 	}
 
 	// 调用数据库更新
 	if err := db.DB.Save(&service).Error; err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"affected": 1,
 	})
 }

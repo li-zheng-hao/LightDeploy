@@ -2,7 +2,6 @@ package history
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 	"ld_shared/clog"
 	"ld_shared/error_response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type HistoryResponse struct {
@@ -22,21 +21,19 @@ type HistoryResponse struct {
 	Environment string    `json:"environment"`
 }
 
-func GetHistoryPageList(c *gin.Context) {
+func GetHistoryPageList(c *fiber.Ctx) error {
 	page := c.Query("page")
 	pageSize := c.Query("pageSize")
 	serviceId := c.Query("serviceId")
 
 	pageInt, err := strconv.Atoi(page)
 	if err != nil {
-		error_response.NewErrorResponse(c, "invalid page")
-		return
+		return error_response.NewErrorResponse(c, "invalid page")
 	}
 
 	pageSizeInt, err := strconv.Atoi(pageSize)
 	if err != nil {
-		error_response.NewErrorResponse(c, "invalid pageSize")
-		return
+		return error_response.NewErrorResponse(c, "invalid pageSize")
 	}
 
 	offset := (pageInt - 1) * pageSizeInt
@@ -50,23 +47,21 @@ func GetHistoryPageList(c *gin.Context) {
 		Limit(pageSizeInt)
 
 	serviceIdInt, _ := strconv.Atoi(serviceId)
-	clog.GetContextLogger(c).Info(fmt.Sprintf("serviceIdInt: %d", serviceIdInt))
+	clog.GetFiberContextLogger(c).Info(fmt.Sprintf("serviceIdInt: %d", serviceIdInt))
 	if serviceIdInt > 0 {
 		query = query.Where("deploy_history.service_id = ?", serviceIdInt)
 	}
 
 	if err := query.Find(&histories).Error; err != nil {
-		error_response.NewErrorResponse(c, "查询部署历史记录失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "查询部署历史记录失败: "+err.Error())
 	}
 
 	var total int64
 	if err := db.DB.Table("deploy_history").Count(&total).Error; err != nil {
-		error_response.NewErrorResponse(c, "查询部署历史记录总数失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "查询部署历史记录总数失败: "+err.Error())
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"data":  histories,
 		"total": total,
 	})

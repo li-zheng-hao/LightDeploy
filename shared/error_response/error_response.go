@@ -1,9 +1,7 @@
 package error_response
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type ErrorResponse struct {
@@ -15,8 +13,8 @@ func (e *ErrorResponse) Error() string {
 	return e.Message
 }
 
-func NewErrorResponse(c *gin.Context, message string) {
-	c.JSON(http.StatusBadRequest, &ErrorResponse{
+func NewErrorResponse(c *fiber.Ctx, message string) error {
+	return c.Status(fiber.StatusBadRequest).JSON(&ErrorResponse{
 		Code:    400,
 		Message: message,
 	})

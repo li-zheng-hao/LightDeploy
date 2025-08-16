@@ -4,14 +4,13 @@ import (
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // UpdateTargetRequest 更新部署目标的请求结构
 type UpdateTargetRequest struct {
-	Id          int    `json:"id" binding:"required"`
+	Id          int    `json:"id"`
 	ServiceId   int    `json:"serviceId"`
 	Host        string `json:"host"`
 	Port        int    `json:"port"`
@@ -28,18 +27,16 @@ type SuccessResponse struct {
 }
 
 // UpdateTarget 更新部署目标
-func UpdateTarget(c *gin.Context) {
+func UpdateTarget(c *fiber.Ctx) error {
 	var req UpdateTargetRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		error_response.NewErrorResponse(c, "参数无效")
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return error_response.NewErrorResponse(c, "参数无效")
 	}
 
 	// 验证记录是否存在
 	var existingTarget model.DeployTarget
 	if err := db.DB.First(&existingTarget, req.Id).Error; err != nil {
-		error_response.NewErrorResponse(c, "部署目标不存在")
-		return
+		return error_response.NewErrorResponse(c, "部署目标不存在")
 	}
 
 	// 构建更新对象
@@ -57,9 +54,8 @@ func UpdateTarget(c *gin.Context) {
 
 	// 更新记录
 	if err := db.DB.Save(&target).Error; err != nil {
-		error_response.NewErrorResponse(c, "更新部署目标失败")
-		return
+		return error_response.NewErrorResponse(c, "更新部署目标失败")
 	}
 
-	c.JSON(http.StatusOK, SuccessResponse{Message: "更新成功"})
+	return c.JSON(SuccessResponse{Message: "更新成功"})
 }

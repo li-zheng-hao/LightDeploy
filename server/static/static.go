@@ -16,3 +16,8 @@ func GetDistFS() http.FileSystem {
 	}
 	return http.FS(fsys)
 }
+
+// GetDistPath 返回嵌入文件的根路径
+func GetDistPath() string {
+	return "static/dist"
+}

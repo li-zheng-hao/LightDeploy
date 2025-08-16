@@ -3,9 +3,8 @@ package target
 import (
 	"ld_server/db"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GetAllHostsResponse 获取所有主机的响应结构
@@ -16,7 +15,7 @@ type GetAllHostsResponse struct {
 /*
 获取所有目标主机，去重
 */
-func GetAllHosts(c *gin.Context) {
+func GetAllHosts(c *fiber.Ctx) error {
 	var results []GetAllHostsResponse
 
 	// 查询所有不重复的主机地址
@@ -25,9 +24,8 @@ func GetAllHosts(c *gin.Context) {
 		Find(&results).Error
 
 	if err != nil {
-		error_response.NewErrorResponse(c, "获取主机列表失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "获取主机列表失败: "+err.Error())
 	}
 
-	c.JSON(http.StatusOK, results)
+	return c.JSON(results)
 }

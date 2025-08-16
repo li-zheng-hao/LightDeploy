@@ -7,13 +7,12 @@ import (
 	"ld_shared/sse"
 	"ld_shared/zip"
 	"mime/multipart"
-	"net/http"
 	"strings"
 	"time"
 
 	"log/slog"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -24,14 +23,20 @@ type DeployWindowsServiceRequest struct {
 	OnlyCopyFile bool                  `form:"onlyCopyFile"`
 }
 
-func DeployWindowsService(c *gin.Context) {
+func DeployWindowsService(c *fiber.Ctx) error {
 	slog.Info("开始部署 Windows 服务")
 	var request DeployWindowsServiceRequest
-	if err := c.ShouldBind(&request); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		slog.Error("请求参数绑定失败", "error", err)
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		slog.Error("未上传zip文件")
+		return error_response.NewErrorResponse(c, "请上传zip文件")
+	}
+	request.ZipFile = file
 
 	slog.Info("验证请求参数",
 		"serviceName", request.ServiceName,
@@ -39,31 +44,21 @@ func DeployWindowsService(c *gin.Context) {
 		"fileName", request.ZipFile.Filename,
 		"onlyCopyFile", request.OnlyCopyFile)
 
-	if request.ZipFile == nil {
-		slog.Error("未上传zip文件")
-		error_response.NewErrorResponse(c, "请上传zip文件")
-		return
-	}
 	if request.ServiceName == "" {
-		error_response.NewErrorResponse(c, "请输入服务名称")
-		return
+		return error_response.NewErrorResponse(c, "请输入服务名称")
 	}
 	if request.ServicePath == "" {
-		error_response.NewErrorResponse(c, "请输入服务路径")
-		return
+		return error_response.NewErrorResponse(c, "请输入服务路径")
 	}
 	if !strings.HasSuffix(request.ZipFile.Filename, ".zip") {
-		error_response.NewErrorResponse(c, "请上传zip文件")
-		return
+		return error_response.NewErrorResponse(c, "请上传zip文件")
 	}
 	var status *svc.State
-	var err error
 	if !request.OnlyCopyFile {
 		status, err = windows_service.GetServiceStatus(request.ServiceName)
 		if err != nil {
 			slog.Error("获取服务状态失败", "error", err)
-			error_response.NewErrorResponse(c, err.Error())
-			return
+			return error_response.NewErrorResponse(c, err.Error())
 		}
 	}
 
@@ -73,8 +68,7 @@ func DeployWindowsService(c *gin.Context) {
 		if err != nil {
 			slog.Error("停止服务失败", "error", err)
 			sse.SendMessage("停止服务失败: " + err.Error())
-			error_response.NewErrorResponse(c, err.Error())
-			return
+			return error_response.NewErrorResponse(c, err.Error())
 		}
 		slog.Info("服务已停止", "serviceName", request.ServiceName)
 	}
@@ -99,8 +93,7 @@ func DeployWindowsService(c *gin.Context) {
 	if unzipErr != nil {
 		slog.Error("解压文件最终失败", "error", unzipErr)
 		sse.SendMessage("解压文件最终失败")
-		error_response.NewErrorResponse(c, unzipErr.Error())
-		return
+		return error_response.NewErrorResponse(c, unzipErr.Error())
 	}
 	if !request.OnlyCopyFile {
 		maxRetries := 3
@@ -121,11 +114,10 @@ func DeployWindowsService(c *gin.Context) {
 		if startErr != nil {
 			slog.Error("启动服务最终失败", "error", startErr)
 			sse.SendMessage("启动服务最终失败: " + startErr.Error())
-			error_response.NewErrorResponse(c, startErr.Error())
-			return
+			return error_response.NewErrorResponse(c, startErr.Error())
 		}
 	}
 
 	slog.Info("部署完成")
-	c.JSON(http.StatusOK, nil)
+	return c.JSON(nil)
 }

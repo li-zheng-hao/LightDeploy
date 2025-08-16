@@ -4,32 +4,31 @@ import (
 	"ld_agent/controller/deploy"
 	"ld_agent/controller/sse"
 	"ld_agent/controller/version"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(r *gin.Engine) {
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+func RegisterRoutes(app *fiber.App) {
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
 			"message": "pong",
 		})
 	})
-	sseGroup := r.Group("/api/sse")
-	sseGroup.GET("/sse", sse.HandleSSE)
+	sseGroup := app.Group("/api/sse")
+	sseGroup.Get("/sse", sse.HandleSSE)
 
-	serviceGroup := r.Group("/api/service")
-	serviceGroup.GET("/get-windows-service-status", deploy.GetWindowsServiceStatus)
-	serviceGroup.POST("/install-service", deploy.InstallService)
-	serviceGroup.POST("/delete-service", deploy.DeleteService)
+	serviceGroup := app.Group("/api/service")
+	serviceGroup.Get("/get-windows-service-status", deploy.GetWindowsServiceStatus)
+	serviceGroup.Post("/install-service", deploy.InstallService)
+	serviceGroup.Post("/delete-service", deploy.DeleteService)
 
-	deployGroup := r.Group("/api/deploy")
-	deployGroup.POST("/deploy-windows-service", deploy.DeployWindowsService)
-	deployGroup.POST("/compare-files", deploy.CompareFiles)
-	deployGroup.POST("/start-service", deploy.StartService)
-	deployGroup.POST("/stop-service", deploy.StopService)
+	deployGroup := app.Group("/api/deploy")
+	deployGroup.Post("/deploy-windows-service", deploy.DeployWindowsService)
+	deployGroup.Post("/compare-files", deploy.CompareFiles)
+	deployGroup.Post("/start-service", deploy.StartService)
+	deployGroup.Post("/stop-service", deploy.StopService)
 
-	versionGroup := r.Group("/api/version")
-	versionGroup.GET("", version.GetVersion)
-	versionGroup.POST("/update", version.UpdateAgent)
+	versionGroup := app.Group("/api/version")
+	versionGroup.Get("", version.GetVersion)
+	versionGroup.Post("/update", version.UpdateAgent)
 }

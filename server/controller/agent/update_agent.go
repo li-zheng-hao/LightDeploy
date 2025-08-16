@@ -10,7 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type UpdateAgentRequest struct {
@@ -19,55 +19,61 @@ type UpdateAgentRequest struct {
 	TargetId         int                   `form:"targetId"`
 }
 
-func UpdateAgent(c *gin.Context) {
-	// 解析请求参数
-	var request UpdateAgentRequest
-	if err := c.ShouldBind(&request); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+func UpdateAgent(c *fiber.Ctx) error {
+	// 获取上传的文件
+	file, err := c.FormFile("file")
+	if err != nil {
+		return error_response.NewErrorResponse(c, "请上传更新文件")
 	}
 
-	if request.File == nil {
-		error_response.NewErrorResponse(c, "请上传更新文件")
-		return
+	// 获取其他表单参数
+	agentServiceName := c.FormValue("agentServiceName")
+	if agentServiceName == "" {
+		return error_response.NewErrorResponse(c, "请提供代理服务名称")
 	}
+
+	targetIdStr := c.FormValue("targetId")
+	if targetIdStr == "" {
+		return error_response.NewErrorResponse(c, "请提供目标机器ID")
+	}
+
+	// 解析目标ID
+	var targetId int
+	if _, err := fmt.Sscanf(targetIdStr, "%d", &targetId); err != nil {
+		return error_response.NewErrorResponse(c, "目标机器ID格式错误")
+	}
+
+	// 打开上传的文件
+	uploadedFile, err := file.Open()
+	if err != nil {
+		return error_response.NewErrorResponse(c, "打开文件失败: "+err.Error())
+	}
+	defer uploadedFile.Close()
 
 	// 获取目标机器信息
 	var target model.DeployTarget
-	if err := db.DB.First(&target, request.TargetId).Error; err != nil {
-		error_response.NewErrorResponse(c, "目标机器不存在")
-		return
+	if err := db.DB.First(&target, targetId).Error; err != nil {
+		return error_response.NewErrorResponse(c, "目标机器不存在")
 	}
-
-	// 上传新的agent文件到目标机器
-	file, err := request.File.Open()
-	if err != nil {
-		error_response.NewErrorResponse(c, "打开文件失败: "+err.Error())
-		return
-	}
-	defer file.Close()
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/api/version/update", target.Host, target.Port), nil)
 	if err != nil {
-		error_response.NewErrorResponse(c, "创建HTTP请求失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "创建HTTP请求失败: "+err.Error())
 	}
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", request.File.Filename)
+	part, err := writer.CreateFormFile("file", file.Filename)
 	if err != nil {
-		error_response.NewErrorResponse(c, "创建表单失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "创建表单失败: "+err.Error())
 	}
 
-	_, err = io.Copy(part, file)
+	_, err = io.Copy(part, uploadedFile)
 	if err != nil {
-		error_response.NewErrorResponse(c, "复制文件失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "复制文件失败: "+err.Error())
 	}
 
-	writer.WriteField("agentServiceName", request.AgentServiceName)
+	writer.WriteField("agentServiceName", agentServiceName)
 	writer.Close()
 
 	req.Body = io.NopCloser(body)
@@ -76,18 +82,16 @@ func UpdateAgent(c *gin.Context) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		error_response.NewErrorResponse(c, "发送更新请求失败: "+err.Error())
-		return
+		return error_response.NewErrorResponse(c, "发送更新请求失败: "+err.Error())
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		error_response.NewErrorResponse(c, fmt.Sprintf("更新失败，状态码：%d，错误：%s", resp.StatusCode, string(bodyBytes)))
-		return
+		return error_response.NewErrorResponse(c, fmt.Sprintf("更新失败，状态码：%d，错误：%s", resp.StatusCode, string(bodyBytes)))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "更新指令已发送",
 	})
 }

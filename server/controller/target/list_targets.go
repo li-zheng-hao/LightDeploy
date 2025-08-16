@@ -4,26 +4,23 @@ import (
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // ListTargets 获取部署目标列表
-func ListTargets(c *gin.Context) {
+func ListTargets(c *fiber.Ctx) error {
 	serviceId := c.Query("serviceId")
 	var targets []model.DeployTarget
 	if serviceId != "" {
 		if err := db.DB.Where("service_id = ?", serviceId).Find(&targets).Error; err != nil {
-			error_response.NewErrorResponse(c, "获取部署目标列表失败")
-			return
+			return error_response.NewErrorResponse(c, "获取部署目标列表失败")
 		}
 	} else {
 		if err := db.DB.Find(&targets).Error; err != nil {
-			error_response.NewErrorResponse(c, "获取部署目标列表失败")
-			return
+			return error_response.NewErrorResponse(c, "获取部署目标列表失败")
 		}
 	}
 
-	c.JSON(http.StatusOK, targets)
+	return c.JSON(targets)
 }

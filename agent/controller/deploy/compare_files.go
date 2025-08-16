@@ -4,22 +4,20 @@ import (
 	"ld_shared/dto"
 	"ld_shared/error_response"
 	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	"log/slog"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func CompareFiles(c *gin.Context) {
+func CompareFiles(c *fiber.Ctx) error {
 	slog.Info("开始比较文件")
 	var request dto.CompareFilesRequest
-	if err := c.ShouldBind(&request); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		slog.Error("请求参数绑定失败", "error", err)
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	slog.Info("开始文件对比",
@@ -27,12 +25,10 @@ func CompareFiles(c *gin.Context) {
 		"fileCount", len(request.FileInfos))
 
 	if request.ServicePath == "" {
-		error_response.NewErrorResponse(c, "服务路径不能为空")
-		return
+		return error_response.NewErrorResponse(c, "服务路径不能为空")
 	}
 	if len(request.FileInfos) == 0 {
-		error_response.NewErrorResponse(c, "文件信息不能为空")
-		return
+		return error_response.NewErrorResponse(c, "文件信息不能为空")
 	}
 	var differentFiles []dto.CompareFileInfo
 	for _, fileInfo := range request.FileInfos {
@@ -58,7 +54,7 @@ func CompareFiles(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, dto.CompareFilesResponse{
+	return c.JSON(dto.CompareFilesResponse{
 		FileInfos: differentFiles,
 	})
 }

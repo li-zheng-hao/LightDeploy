@@ -1,21 +1,18 @@
 package service
 
 import (
-	"net/http"
-
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // 创建部署服务
-func CreateDeployService(c *gin.Context) {
+func CreateDeployService(c *fiber.Ctx) error {
 	var service model.DeployService
-	if err := c.ShouldBindJSON(&service); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+	if err := c.BodyParser(&service); err != nil {
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	// 强制设置id为0，确保使用数据库自增id
@@ -23,11 +20,10 @@ func CreateDeployService(c *gin.Context) {
 
 	// 调用数据库创建
 	if err := db.DB.Create(&service).Error; err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"affected": 1,
 		"data":     service,
 	})

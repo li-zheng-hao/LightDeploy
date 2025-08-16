@@ -3,9 +3,8 @@ package target
 import (
 	"ld_server/db"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GetAllServiceResponse 获取所有服务的响应结构
@@ -20,7 +19,7 @@ type GetAllServiceResponse struct {
 /*
 获取指定目标主机上的所有服务，没传目标主机的话查询所有主机上的所有服务
 */
-func GetAllService(c *gin.Context) {
+func GetAllService(c *fiber.Ctx) error {
 	host := c.Query("host")
 
 	var results []GetAllServiceResponse
@@ -34,8 +33,7 @@ func GetAllService(c *gin.Context) {
 			Find(&results).Error
 
 		if err != nil {
-			error_response.NewErrorResponse(c, "获取服务列表失败: "+err.Error())
-			return
+			return error_response.NewErrorResponse(c, "获取服务列表失败: "+err.Error())
 		}
 	} else {
 		// 查询所有主机上的所有服务
@@ -45,10 +43,9 @@ func GetAllService(c *gin.Context) {
 			Find(&results).Error
 
 		if err != nil {
-			error_response.NewErrorResponse(c, "获取服务列表失败: "+err.Error())
-			return
+			return error_response.NewErrorResponse(c, "获取服务列表失败: "+err.Error())
 		}
 	}
 
-	c.JSON(http.StatusOK, results)
+	return c.JSON(results)
 }

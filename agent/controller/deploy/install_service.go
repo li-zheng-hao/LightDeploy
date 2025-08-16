@@ -6,9 +6,8 @@ import (
 	"ld_shared/zip"
 	"log/slog"
 	"mime/multipart"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type InstallServiceRequest struct {
@@ -24,25 +23,25 @@ type InstallServiceRequest struct {
 	ExeParams string `form:"exeParams"`
 }
 
-func InstallService(c *gin.Context) {
+func InstallService(c *fiber.Ctx) error {
 	slog.Info("开始安装服务")
 	var request InstallServiceRequest
-	if err := c.ShouldBind(&request); err != nil {
+	if err := c.BodyParser(&request); err != nil {
 		slog.Error("请求参数绑定失败", "error", err)
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return error_response.NewErrorResponse(c, "程序压缩包不能为空")
+	}
+	request.ZipFile = file
+
 	if request.ServiceName == "" {
-		error_response.NewErrorResponse(c, "服务名称不能为空")
-		return
-	}
-	if request.ZipFile == nil {
-		error_response.NewErrorResponse(c, "程序压缩包不能为空")
-		return
+		return error_response.NewErrorResponse(c, "服务名称不能为空")
 	}
 	if request.ExePath == "" {
-		error_response.NewErrorResponse(c, "程序路径不能为空")
-		return
+		return error_response.NewErrorResponse(c, "程序路径不能为空")
 	}
 
 	// 解压程序压缩包
@@ -51,7 +50,7 @@ func InstallService(c *gin.Context) {
 	// 安装服务
 	windows_service.InstallService(request.ServiceName, request.ExePath, request.ExeParams)
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "服务安装成功",
 	})
 }

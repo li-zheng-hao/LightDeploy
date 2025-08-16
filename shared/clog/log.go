@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -104,4 +105,17 @@ func SetContextLogger(c *gin.Context) {
 
 func GetContextLogger(c *gin.Context) *slog.Logger {
 	return c.Value("logger").(*slog.Logger)
+}
+
+func SetFiberContextLogger(c *fiber.Ctx) {
+	logger := slog.Default()
+	requestID := c.Get(fiber.HeaderXRequestID)
+	contextLogger := logger.With("requestID", requestID).
+		With("path", c.Path()).
+		With("method", c.Method())
+	c.Locals("logger", contextLogger)
+}
+
+func GetFiberContextLogger(c *fiber.Ctx) *slog.Logger {
+	return c.Locals("logger").(*slog.Logger)
 }

@@ -14,7 +14,7 @@ import (
 	"ld_shared/error_response"
 	"ld_shared/sse"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type InstallServiceRequest struct {
@@ -22,25 +22,22 @@ type InstallServiceRequest struct {
 	TargetIds []int `json:"targetIds"`
 }
 
-func InstallService(c *gin.Context) {
+func InstallService(c *fiber.Ctx) error {
 	var request InstallServiceRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+	if err := c.BodyParser(&request); err != nil {
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	// 验证服务和目标机器
 	deployService, targets, err := deploy.ValidateDeployRequest(request.ServiceId, request.TargetIds)
 	if err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	// 准备部署包
 	tempDir, zipFilePath, err := deploy.PrepareDeployPackage(deployService)
 	if err != nil {
-		error_response.NewErrorResponse(c, err.Error())
-		return
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 	defer os.RemoveAll(tempDir)
 
@@ -51,8 +48,7 @@ func InstallService(c *gin.Context) {
 		// 构建multipart请求
 		file, err := os.Open(zipFilePath)
 		if err != nil {
-			error_response.NewErrorResponse(c, fmt.Sprintf("打开文件失败: %v", err))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("打开文件失败: %v", err))
 		}
 		defer file.Close()
 
@@ -64,12 +60,10 @@ func InstallService(c *gin.Context) {
 		// 添加文件
 		part, err := writer.CreateFormFile("file", filepath.Base(zipFilePath))
 		if err != nil {
-			error_response.NewErrorResponse(c, fmt.Sprintf("创建form文件失败: %v", err))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("创建form文件失败: %v", err))
 		}
 		if _, err := io.Copy(part, file); err != nil {
-			error_response.NewErrorResponse(c, fmt.Sprintf("复制文件失败: %v", err))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("复制文件失败: %v", err))
 		}
 
 		// 添加其他字段
@@ -82,8 +76,7 @@ func InstallService(c *gin.Context) {
 		// 发送请求
 		req, err := http.NewRequest("POST", url, body)
 		if err != nil {
-			error_response.NewErrorResponse(c, fmt.Sprintf("创建请求失败: %v", err))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("创建请求失败: %v", err))
 		}
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
@@ -92,19 +85,17 @@ func InstallService(c *gin.Context) {
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			error_response.NewErrorResponse(c, fmt.Sprintf("请求失败: %v", err))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("请求失败: %v", err))
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			error_response.NewErrorResponse(c, fmt.Sprintf("安装服务失败: %s", string(bodyBytes)))
-			return
+			return error_response.NewErrorResponse(c, fmt.Sprintf("安装服务失败: %s", string(bodyBytes)))
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	return c.JSON(fiber.Map{
 		"message": "服务安装成功",
 	})
 }

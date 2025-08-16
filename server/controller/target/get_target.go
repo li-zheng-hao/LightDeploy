@@ -4,25 +4,22 @@ import (
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/error_response"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GetTarget 获取单个部署目标
-func GetTarget(c *gin.Context) {
-	id := c.Param("id")
+func GetTarget(c *fiber.Ctx) error {
+	id := c.Params("id")
 	var target model.DeployTarget
 	err := db.DB.First(&target, id).Error
 
 	if err != nil {
-		error_response.NewErrorResponse(c, "获取部署目标失败")
-		return
+		return error_response.NewErrorResponse(c, "获取部署目标失败")
 	}
 	if err != nil {
-		error_response.NewErrorResponse(c, "部署目标不存在")
-		return
+		return error_response.NewErrorResponse(c, "部署目标不存在")
 	}
 
-	c.JSON(http.StatusOK, target)
+	return c.JSON(target)
 }
