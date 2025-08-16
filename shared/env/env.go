@@ -11,7 +11,9 @@ func IsDebugMode() bool {
 	if err != nil {
 		return false
 	}
-
+	if strings.Contains(execPath, "debug") {
+		return true
+	}
 	// go run 会在临时目录中创建并执行程序
 	tempDir := os.TempDir()
 	return strings.HasPrefix(execPath, tempDir)
