@@ -4,6 +4,7 @@ import (
 	"ld_server/controller/agent"
 	"ld_server/controller/deploy"
 	"ld_server/controller/history"
+	"ld_server/controller/metric"
 	"ld_server/controller/service"
 	"ld_server/controller/sse"
 	"ld_server/controller/target"
@@ -52,5 +53,8 @@ func RegisterRoutes(app *fiber.App) {
 	agentGroup.Get("/version", agent.GetVersion)
 	agentGroup.Get("/all", agent.GetAllAgent)
 	agentGroup.Post("/update", agent.UpdateAgent)
+
+	metricGroup := app.Group("/api/metric")
+	metricGroup.Get("/overview", metric.GetOverview)
 
 }
