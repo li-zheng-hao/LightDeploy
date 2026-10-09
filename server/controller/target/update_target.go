@@ -19,6 +19,7 @@ type UpdateTargetRequest struct {
 	Comment     string `json:"comment"`
 	ExePath     string `json:"exePath"`
 	ExeParams   string `json:"exeParams"`
+	OsType      string `json:"osType"`
 }
 
 // SuccessResponse 成功响应结构
@@ -50,6 +51,7 @@ func UpdateTarget(c *fiber.Ctx) error {
 		Comment:     req.Comment,
 		ExePath:     req.ExePath,
 		ExeParams:   req.ExeParams,
+		OsType:      normalizeOsType(req.OsType),
 	}
 
 	// 更新记录

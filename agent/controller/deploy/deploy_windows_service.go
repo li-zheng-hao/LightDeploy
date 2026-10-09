@@ -2,7 +2,7 @@ package deploy
 
 import (
 	"fmt"
-	"ld_agent/internal/windows_service"
+	"ld_agent/internal/service"
 	"ld_shared/error_response"
 	"ld_shared/sse"
 	"ld_shared/zip"
@@ -13,18 +13,19 @@ import (
 	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/sys/windows/svc"
 )
 
 type DeployWindowsServiceRequest struct {
 	ServiceName  string                `form:"serviceName"`
 	ServicePath  string                `form:"servicePath"`
+	ExePath      string                `form:"exePath"`
 	ZipFile      *multipart.FileHeader `form:"file"`
 	OnlyCopyFile bool                  `form:"onlyCopyFile"`
 }
 
+// DeployWindowsService 部署服务（Windows/Linux 通用）
 func DeployWindowsService(c *fiber.Ctx) error {
-	slog.Info("开始部署 Windows 服务")
+	slog.Info("开始部署服务")
 	var request DeployWindowsServiceRequest
 	if err := c.BodyParser(&request); err != nil {
 		slog.Error("请求参数绑定失败", "error", err)
@@ -41,6 +42,7 @@ func DeployWindowsService(c *fiber.Ctx) error {
 	slog.Info("验证请求参数",
 		"serviceName", request.ServiceName,
 		"servicePath", request.ServicePath,
+		"exePath", request.ExePath,
 		"fileName", request.ZipFile.Filename,
 		"onlyCopyFile", request.OnlyCopyFile)
 
@@ -53,24 +55,24 @@ func DeployWindowsService(c *fiber.Ctx) error {
 	if !strings.HasSuffix(request.ZipFile.Filename, ".zip") {
 		return error_response.NewErrorResponse(c, "请上传zip文件")
 	}
-	var status *svc.State
+
+	manager := service.NewManager()
+
 	if !request.OnlyCopyFile {
-		status, err = windows_service.GetServiceStatus(request.ServiceName)
+		running, err := manager.IsRunning(request.ServiceName)
 		if err != nil {
 			slog.Error("获取服务状态失败", "error", err)
 			return error_response.NewErrorResponse(c, err.Error())
 		}
-	}
-
-	if !request.OnlyCopyFile && *status == svc.Running {
-		slog.Info("准备停止服务", "serviceName", request.ServiceName)
-		err := windows_service.StopService(request.ServiceName)
-		if err != nil {
-			slog.Error("停止服务失败", "error", err)
-			sse.SendMessage("停止服务失败: " + err.Error())
-			return error_response.NewErrorResponse(c, err.Error())
+		if running {
+			slog.Info("准备停止服务", "serviceName", request.ServiceName)
+			if err := manager.Stop(request.ServiceName); err != nil {
+				slog.Error("停止服务失败", "error", err)
+				sse.SendMessage("停止服务失败: " + err.Error())
+				return error_response.NewErrorResponse(c, err.Error())
+			}
+			slog.Info("服务已停止", "serviceName", request.ServiceName)
 		}
-		slog.Info("服务已停止", "serviceName", request.ServiceName)
 	}
 
 	// 添加解压文件的逻辑，带有重试机制
@@ -95,13 +97,21 @@ func DeployWindowsService(c *fiber.Ctx) error {
 		sse.SendMessage("解压文件最终失败")
 		return error_response.NewErrorResponse(c, unzipErr.Error())
 	}
+
+	// Linux 下 zip 不保留可执行权限，需要重新赋予
+	if request.ExePath != "" {
+		if err := service.EnsureExecutable(request.ExePath); err != nil {
+			slog.Warn("设置可执行权限失败", "exePath", request.ExePath, "error", err)
+		}
+	}
+
 	if !request.OnlyCopyFile {
 		maxRetries := 3
 		retryInterval := 2 * time.Second
 		var startErr error
 		for i := 0; i < maxRetries; i++ {
 			slog.Info("准备启动服务", "serviceName", request.ServiceName, "attempt", i+1)
-			startErr = windows_service.StartService(request.ServiceName)
+			startErr = manager.Start(request.ServiceName)
 			if startErr == nil {
 				slog.Info("服务已启动", "serviceName", request.ServiceName)
 				break

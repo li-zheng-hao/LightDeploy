@@ -10,9 +10,8 @@ type DeployService struct {
 	ProjectPath string `gorm:"column:project_path;type:text;not null" json:"projectPath"`
 	// 端口
 	Port int `gorm:"column:port;type:integer;not null" json:"port"`
-	// 项目类型
-	// 1 .NET Core Projet项目 2. 文件夹发布
-	ProjectType int `gorm:"column:project_type;type:integer;not null" json:"projectType"`
+	// 遗留字段：历史数据库 project_type 为 NOT NULL，保留列以保证兼容，已不再使用
+	ProjectType int `gorm:"column:project_type;type:integer;not null" json:"projectType,omitempty"`
 	// 备注说明
 	Comment string `gorm:"column:comment;type:text" json:"comment"`
 	// 环境 开发、测试、预发、生产等
@@ -22,11 +21,6 @@ type DeployService struct {
 	// 忽略文件列表，支持正则表达式，多个用|分割
 	IgnoreFileRegex string `gorm:"column:ignore_file_regex;type:text" json:"ignoreFileRegex"`
 }
-
-const (
-	ProjectTypeNetCore = 1
-	ProjectTypeFolder  = 2
-)
 
 // TableName 指定表名
 func (DeployService) TableName() string {

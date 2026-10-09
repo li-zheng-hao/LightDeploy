@@ -9,7 +9,6 @@ import (
 	"ld_server/db"
 	"ld_server/model"
 	"ld_shared/dto"
-	"ld_shared/process"
 	"ld_shared/sse"
 	"ld_shared/zip"
 	"mime/multipart"
@@ -129,23 +128,15 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 
 	zipFilePath := filepath.Join(tempDir, "deploy.zip")
 
-	if service.ProjectType == model.ProjectTypeNetCore {
-		sse.SendMessage("开始构建项目")
-		process.ExecuteWindowsCommand("dotnet publish " + service.ProjectPath + " -o " + tempDir)
-		sse.SendMessage("构建完成")
-		sse.SendMessage("开始压缩文件")
-		zip.CompressFolderWithLevel(tempDir, zipFilePath, 3)
-	} else {
-		sse.SendMessage("开始压缩文件")
-		// 对于文件夹发布，先过滤文件再压缩
-		filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex, tempDir)
-		if err != nil {
-			return "", "", fmt.Errorf("准备过滤目录失败: %v", err)
-		}
-		defer os.RemoveAll(filteredDir)
-
-		zip.CompressFolderWithLevel(filteredDir, zipFilePath, 3)
+	sse.SendMessage("开始压缩文件")
+	// 先过滤文件再压缩
+	filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex, tempDir)
+	if err != nil {
+		return "", "", fmt.Errorf("准备过滤目录失败: %v", err)
 	}
+	defer os.RemoveAll(filteredDir)
+
+	zip.CompressFolderWithLevel(filteredDir, zipFilePath, 3)
 	sse.SendMessage("压缩完成")
 
 	if fileInfo, err := os.Stat(zipFilePath); err == nil {
@@ -303,6 +294,7 @@ func DeployToTarget(target model.DeployTarget, service *model.DeployService, zip
 
 	writer.WriteField("serviceName", service.ServiceName)
 	writer.WriteField("servicePath", target.ServicePath)
+	writer.WriteField("exePath", target.ExePath)
 	writer.WriteField("onlyCopyFile", fmt.Sprintf("%v", service.OnlyCopyFile))
 	writer.Close()
 

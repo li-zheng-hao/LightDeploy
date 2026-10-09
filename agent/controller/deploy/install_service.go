@@ -1,7 +1,7 @@
 package deploy
 
 import (
-	"ld_agent/internal/windows_service"
+	"ld_agent/internal/service"
 	"ld_shared/error_response"
 	"ld_shared/zip"
 	"log/slog"
@@ -45,10 +45,16 @@ func InstallService(c *fiber.Ctx) error {
 	}
 
 	// 解压程序压缩包
-	zip.UncompressZipFileHeader(request.ZipFile, request.ServicePath)
+	if err := zip.UncompressZipFileHeader(request.ZipFile, request.ServicePath); err != nil {
+		slog.Error("解压程序压缩包失败", "error", err)
+		return error_response.NewErrorResponse(c, "解压程序压缩包失败: "+err.Error())
+	}
 
-	// 安装服务
-	windows_service.InstallService(request.ServiceName, request.ExePath, request.ExeParams)
+	// 安装服务（Windows 使用 SCM，Linux 使用 systemd）
+	if err := service.NewManager().Install(request.ServiceName, request.ExePath, request.ExeParams, request.ServicePath); err != nil {
+		slog.Error("安装服务失败", "error", err)
+		return error_response.NewErrorResponse(c, "安装服务失败: "+err.Error())
+	}
 
 	return c.JSON(fiber.Map{
 		"message": "服务安装成功",

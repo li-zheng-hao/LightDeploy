@@ -1,0 +1,2 @@
+# Linux shell 脚本强制使用 LF 行尾，避免在 Windows 检出为 CRLF 后无法执行
+*.sh text eol=lf

@@ -2,10 +2,8 @@ package deploy
 
 import (
 	"fmt"
-	"ld_server/model"
 	"ld_server/service/deploy"
 	"ld_shared/error_response"
-	"ld_shared/process"
 	"os"
 	"path/filepath"
 
@@ -44,13 +42,8 @@ func DeployService(c *fiber.Ctx) error {
 		}
 		defer os.RemoveAll(tempDir)
 
-		if deployService.ProjectType == model.ProjectTypeNetCore {
-			sse_utils.SendMessage("开始构建项目")
-			process.ExecuteWindowsCommand("dotnet publish " + deployService.ProjectPath + " -o " + tempDir)
-			sse_utils.SendMessage("构建完成")
-		} else {
-			tempDir = deployService.ProjectPath
-		}
+		// 快速模式直接使用项目文件夹作为源目录
+		tempDir = deployService.ProjectPath
 
 		// 快速模式部署到所有目标机器
 		for _, target := range *targets {

@@ -1,14 +1,12 @@
 package version
 
 import (
-	"fmt"
-	"ld_shared/error_response"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"syscall"
 	"time"
+
+	"ld_shared/error_response"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -36,44 +34,20 @@ func UpdateAgent(c *fiber.Ctx) error {
 
 	// 创建临时目录
 	tempDir := filepath.Join(filepath.Dir(exePath), "temp")
-	os.MkdirAll(tempDir, 0755)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return error_response.NewErrorResponse(c, "创建临时目录失败: "+err.Error())
+	}
 
 	// 保存新文件到临时目录
-	newExePath := filepath.Join(tempDir, "agent_new.exe")
+	newExePath := filepath.Join(tempDir, newAgentFileName())
 	if err := c.SaveFile(file, newExePath); err != nil {
 		return error_response.NewErrorResponse(c, "保存更新文件失败: "+err.Error())
 	}
 
-	// 创建更新批处理文件
-	batContent := fmt.Sprintf(`@echo off
-net stop %s
-timeout /t 2 /nobreak
-copy /y "%s" "%s"
-net start %s
-del "%s"
-del "%%~f0"
-`, request.AgentServiceName, newExePath, exePath, request.AgentServiceName, newExePath)
-	batPath := filepath.Join(tempDir, "update.bat")
-	if err := os.WriteFile(batPath, []byte(batContent), 0755); err != nil {
-		return error_response.NewErrorResponse(c, "创建更新脚本失败: "+err.Error())
-	}
-
-	// 执行更新批处理
-	cmd := exec.Command("cmd", "/c", batPath)
-	// 设置进程属性，使用新进程组
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
-	}
-
-	if err := cmd.Start(); err != nil {
+	// 启动平台相关的更新流程（Windows 批处理 / Linux shell 脚本）
+	if err := startUpdateProcess(request.AgentServiceName, exePath, newExePath, tempDir); err != nil {
 		slog.Error("启动更新脚本失败", "error", err)
-		return error_response.NewErrorResponse(c, "启动更新脚本失败: "+err.Error())
-	}
-
-	// 释放子进程，使其独立运行
-	if err := cmd.Process.Release(); err != nil {
-		slog.Error("释放更新进程失败", "error", err)
-		return error_response.NewErrorResponse(c, "释放更新进程失败: "+err.Error())
+		return error_response.NewErrorResponse(c, err.Error())
 	}
 
 	go func() {

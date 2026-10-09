@@ -115,12 +115,6 @@
             placeholder="请输入端口号"
           />
         </n-form-item>
-        <n-form-item label="项目类型" path="projectType">
-          <n-select
-            v-model:value="formData.projectType"
-            :options="ProjectTypeOptions"
-          />
-        </n-form-item>
         <n-form-item label="备注" path="comment">
           <n-input
             v-model:value="formData.comment"
@@ -202,16 +196,31 @@
                 placeholder="请输入端口号"
               />
             </n-form-item>
+            <n-form-item label="操作系统" path="osType">
+              <n-select
+                v-model:value="targetFormData.osType"
+                :options="OsTypeOptions"
+                placeholder="请选择操作系统"
+              />
+            </n-form-item>
             <n-form-item label="服务路径" path="servicePath">
               <n-input
                 v-model:value="targetFormData.servicePath"
-                placeholder="请输入目标服务器服务所在文件夹"
+                :placeholder="
+                  targetFormData.osType === 'linux'
+                    ? '如：/opt/myapp'
+                    : '如：C:\\myapp'
+                "
               />
             </n-form-item>
             <n-form-item label="程序执行路径" path="exePath">
               <n-input
                 v-model:value="targetFormData.exePath"
-                placeholder="请输入服务程序执行完整路径"
+                :placeholder="
+                  targetFormData.osType === 'linux'
+                    ? '如：/opt/myapp/myapp 或 /opt/myapp/App.dll'
+                    : '如：C:\\myapp\\myapp.exe'
+                "
               />
             </n-form-item>
             <n-form-item label="程序执行参数" path="exeParams">
@@ -254,7 +263,6 @@ import {
   updateDeployService,
   deleteDeployService,
   type DeployService,
-  ProjectTypeOptions,
 } from "../api/service";
 import {
   getTargetList,
@@ -355,16 +363,6 @@ const columns: DataTableColumns<DeployService> = [
     },
   },
   {
-    title: "项目类型",
-    key: "projectType",
-    render(row) {
-      const option = ProjectTypeOptions.find(
-        (opt) => opt.value === row.projectType
-      );
-      return option ? option.label : "未知";
-    },
-  },
-  {
     title: "备注",
     key: "comment",
   },
@@ -423,7 +421,6 @@ const formData = ref<Partial<DeployService>>({
   serviceName: "",
   projectPath: "",
   port: undefined,
-  projectType: undefined,
   comment: "",
   onlyCopyFile: false,
   ignoreFileRegex: "",
@@ -463,13 +460,13 @@ const rules = {
       return true;
     },
   },
-  projectType: {
-    required: true,
-    message: "请选择项目类型",
-    trigger: "change",
-    type: "number",
-  },
 };
+
+// 操作系统选项
+const OsTypeOptions = [
+  { label: "Windows", value: "windows" },
+  { label: "Linux", value: "linux" },
+];
 
 // 发布目标相关
 const showTargetModal = ref(false);
@@ -484,6 +481,7 @@ const targetFormData = ref<Partial<DeployTarget>>({
   secretKey: "",
   servicePath: "",
   comment: "",
+  osType: "windows",
 });
 const targetTableData = ref<DeployTarget[]>([]);
 
@@ -517,6 +515,13 @@ const targetRules = {
 const targetColumns: DataTableColumns<DeployTarget> = [
   { title: "主机", key: "host" },
   { title: "端口", key: "port" },
+  {
+    title: "操作系统",
+    key: "osType",
+    render(row) {
+      return row.osType === "linux" ? "Linux" : "Windows";
+    },
+  },
   { title: "服务路径", key: "servicePath" },
   { title: "备注", key: "comment" },
   {
@@ -582,7 +587,6 @@ const handleAdd = () => {
     serviceName: "",
     projectPath: "",
     port: undefined,
-    projectType: undefined,
     comment: "",
     onlyCopyFile: false,
     ignoreFileRegex: "",
@@ -657,6 +661,7 @@ const handleAddTarget = () => {
     secretKey: "",
     servicePath: "",
     comment: "",
+    osType: "windows",
   };
   showTargetFormModal.value = true;
 };

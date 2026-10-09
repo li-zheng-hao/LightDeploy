@@ -18,6 +18,7 @@ type CreateTargetRequest struct {
 	Comment     string `json:"comment"`
 	ExePath     string `json:"exePath"`
 	ExeParams   string `json:"exeParams"`
+	OsType      string `json:"osType"`
 }
 
 // CreateTarget 创建部署目标
@@ -42,6 +43,7 @@ func CreateTarget(c *fiber.Ctx) error {
 		Comment:     req.Comment,
 		ExePath:     req.ExePath,
 		ExeParams:   req.ExeParams,
+		OsType:      normalizeOsType(req.OsType),
 	}
 
 	// 插入数据库
@@ -50,4 +52,12 @@ func CreateTarget(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(target)
+}
+
+// normalizeOsType 归一化操作系统类型，默认为 windows
+func normalizeOsType(osType string) string {
+	if osType == model.OsTypeLinux {
+		return model.OsTypeLinux
+	}
+	return model.OsTypeWindows
 }

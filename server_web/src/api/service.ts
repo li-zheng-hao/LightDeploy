@@ -7,7 +7,6 @@ export interface DeployService {
     serviceName: string;
     projectPath: string;
     port: number;
-    projectType: number;
     comment?: string;
     environment?: string;
     onlyCopyFile?: boolean;
@@ -15,11 +14,6 @@ export interface DeployService {
 }
 
 
-
-export const ProjectTypeOptions = [
-    { label: '.NET项目', value: 1 },
-    { label: '文件夹', value: 2 },
-]
 
 // 目标状态
 export interface TargetStatus {

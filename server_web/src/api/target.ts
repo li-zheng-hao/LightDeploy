@@ -12,6 +12,8 @@ export interface DeployTarget {
 	exePath?: string;
     // 程序执行参数
     exeParams?: string;
+    // 目标操作系统类型 windows / linux
+    osType?: string;
     // 目标状态
     status?: string; //状态
     message?: string; //消息

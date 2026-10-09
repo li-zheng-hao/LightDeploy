@@ -18,7 +18,14 @@ type DeployTarget struct {
 	ExePath string `gorm:"column:exe_path;type:text" json:"exePath"`
 	// 程序执行参数
 	ExeParams string `gorm:"column:exe_params;type:text" json:"exeParams"`
+	// 目标操作系统类型 windows / linux
+	OsType string `gorm:"column:os_type;type:text;default:windows" json:"osType"`
 }
+
+const (
+	OsTypeWindows = "windows"
+	OsTypeLinux   = "linux"
+)
 
 // TableName 指定表名
 func (DeployTarget) TableName() string {

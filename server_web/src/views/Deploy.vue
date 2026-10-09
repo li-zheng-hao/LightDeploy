@@ -63,7 +63,7 @@
                 :disabled="!selectedServiceId || !hasSelectedTargets"
                 type="error"
               >
-                删除Windows服务
+                删除Windows/Linux服务
               </n-button>
               <n-button
                 @click="
@@ -452,19 +452,19 @@ const handleStop = async () => {
   }
 };
 
-// 删除Windows服务
+// 删除服务（Windows/Linux 通用）
 const handleDeleteWindowsService = async () => {
   if (!selectedServiceName.value || checkedRowKeys.value.length === 0) return;
   try {
     deployLogs.value = [];
-    deployLogs.value.push("开始删除Windows服务");
+    deployLogs.value.push("开始删除Windows/Linux服务");
     await deleteService(selectedServiceName.value, checkedRowKeys.value);
     await handleServiceChange(selectedServiceId.value);
-    deployLogs.value.push("删除Windows服务成功");
-    message.success("删除Windows服务成功");
+    deployLogs.value.push("删除Windows/Linux服务成功");
+    message.success("删除Windows/Linux服务成功");
   } catch (error) {
-    deployLogs.value.push("删除Windows服务失败 error: " + error);
-    message.error("删除Windows服务失败");
+    deployLogs.value.push("删除Windows/Linux服务失败 error: " + error);
+    message.error("删除Windows/Linux服务失败");
   }
 };
 

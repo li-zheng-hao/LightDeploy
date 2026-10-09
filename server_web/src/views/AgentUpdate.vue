@@ -6,16 +6,15 @@
           :columns="columns"
           :data="agents"
           :row-key="(row: Agent) => row.id"
-          :pagination="{ pageSize: 10 }"
+          :pagination="pagination"
           :loading="loading"
           @update:checked-row-keys="handleSelectionChange"
         />
         <n-space vertical>
           <n-alert type="info">
-            请选择要更新的Agent，并上传新版本的exe文件
+            请选择要更新的Agent，并上传新版本的程序文件
           </n-alert>
           <n-upload
-            accept=".exe"
             :max="1"
             :disabled="!selectedAgentIds.length"
             @change="handleUpload"
@@ -41,7 +40,7 @@ import type { DataTableColumns } from "naive-ui";
 import { getAgentVersion, getAllAgent, updateAgent } from "@/api/agent";
 
 interface Agent {
-  id: string;
+  id: number;
   name: string;
   version: string;
   status: string;
@@ -53,6 +52,26 @@ const dialog = useDialog();
 const loading = ref(false);
 const agents = ref<Agent[]>([]);
 const selectedAgentIds = ref<number[]>([]);
+
+// 记录已成功加载版本的 Agent id，避免重复请求
+const versionLoaded = new Set<number>();
+
+// 分页配置：仅加载当前页 Agent 的版本号
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  showSizePicker: true,
+  pageSizes: [10, 20, 50],
+  onUpdatePage: (page: number) => {
+    pagination.value.page = page;
+    loadVersionsForCurrentPage();
+  },
+  onUpdatePageSize: (pageSize: number) => {
+    pagination.value.pageSize = pageSize;
+    pagination.value.page = 1;
+    loadVersionsForCurrentPage();
+  },
+});
 
 const columns: DataTableColumns<Agent> = [
   {
@@ -68,6 +87,32 @@ const columns: DataTableColumns<Agent> = [
   },
 ];
 
+// 仅加载当前分页内的 Agent 版本号
+const loadVersionsForCurrentPage = async () => {
+  const start = (pagination.value.page - 1) * pagination.value.pageSize;
+  const end = start + pagination.value.pageSize;
+  const pageAgents = agents.value.slice(start, end);
+
+  await Promise.all(
+    pageAgents.map(async (agent, offset) => {
+      const idx = start + offset;
+      if (!agents.value[idx] || versionLoaded.has(agent.id)) return;
+
+      // 标记为加载中（重新进入该页时可见）
+      agents.value[idx].version = "加载中...";
+      versionLoaded.add(agent.id);
+      try {
+        const versionResponse = await getAgentVersion(agent.id);
+        agents.value[idx].version = versionResponse.data.version;
+      } catch (error) {
+        agents.value[idx].version = "获取失败";
+        // 失败不缓存，允许下次重试
+        versionLoaded.delete(agent.id);
+      }
+    })
+  );
+};
+
 const fetchAgents = async () => {
   loading.value = true;
   try {
@@ -78,17 +123,12 @@ const fetchAgents = async () => {
       ...agent,
       version: "加载中...",
     }));
-    loading.value = false; // 这里提前关闭loading
+    versionLoaded.clear();
+    pagination.value.page = 1;
+    loading.value = false; // 基础信息渲染后提前关闭 loading
 
-    // 异步逐个获取版本号
-    agentsData.forEach(async (agent: any, idx: number) => {
-      try {
-        const versionResponse = await getAgentVersion(agent.id);
-        agents.value[idx].version = versionResponse.data.version;
-      } catch (error) {
-        agents.value[idx].version = "获取失败";
-      }
-    });
+    // 仅异步获取当前页的版本号
+    await loadVersionsForCurrentPage();
   } catch (error) {
     message.error("获取Agent列表失败");
     loading.value = false;

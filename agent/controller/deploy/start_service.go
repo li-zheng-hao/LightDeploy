@@ -1,7 +1,7 @@
 package deploy
 
 import (
-	"ld_agent/internal/windows_service"
+	"ld_agent/internal/service"
 	"ld_shared/error_response"
 
 	"log/slog"
@@ -15,7 +15,7 @@ func StartService(c *fiber.Ctx) error {
 	if serviceName == "" {
 		return error_response.NewErrorResponse(c, "服务名称不能为空")
 	}
-	err := windows_service.StartService(serviceName)
+	err := service.NewManager().Start(serviceName)
 	if err != nil {
 		return error_response.NewErrorResponse(c, err.Error())
 	}
