@@ -11,6 +11,8 @@ export interface DeployService {
     environment?: string;
     onlyCopyFile?: boolean;
     ignoreFileRegex?: string;
+    wecomWebhookKey?: string;
+    wecomNotifyUsers?: string;
 }
 
 

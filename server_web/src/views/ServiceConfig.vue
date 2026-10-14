@@ -134,6 +134,18 @@
             type="textarea"
           />
         </n-form-item>
+        <n-form-item label="企业微信机器人Key" path="wecomWebhookKey">
+          <n-input
+            v-model:value="formData.wecomWebhookKey"
+            placeholder="请输入企业微信群机器人 Webhook 的 key（机器人地址 ?key= 后面的值）"
+          />
+        </n-form-item>
+        <n-form-item label="企业微信@成员" path="wecomNotifyUsers">
+          <n-input
+            v-model:value="formData.wecomNotifyUsers"
+            placeholder="请输入需要@的成员 userid，多个用逗号分隔（如：LiZhengHao,YangTing）"
+          />
+        </n-form-item>
       </n-form>
       <template #action>
         <n-space>
@@ -367,6 +379,13 @@ const columns: DataTableColumns<DeployService> = [
     key: "comment",
   },
   {
+    title: "企业微信通知",
+    key: "wecomWebhookKey",
+    render(row) {
+      return row.wecomWebhookKey ? "已配置" : "-";
+    },
+  },
+  {
     title: "操作",
     key: "actions",
     render(row) {
@@ -424,6 +443,8 @@ const formData = ref<Partial<DeployService>>({
   comment: "",
   onlyCopyFile: false,
   ignoreFileRegex: "",
+  wecomWebhookKey: "",
+  wecomNotifyUsers: "",
 });
 
 // 表单校验规则
@@ -590,6 +611,8 @@ const handleAdd = () => {
     comment: "",
     onlyCopyFile: false,
     ignoreFileRegex: "",
+    wecomWebhookKey: "",
+    wecomNotifyUsers: "",
   };
   showModal.value = true;
 };

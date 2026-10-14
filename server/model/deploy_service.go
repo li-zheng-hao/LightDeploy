@@ -20,6 +20,10 @@ type DeployService struct {
 	OnlyCopyFile bool `gorm:"column:only_copy_file;type:boolean" json:"onlyCopyFile"`
 	// 忽略文件列表，支持正则表达式，多个用|分割
 	IgnoreFileRegex string `gorm:"column:ignore_file_regex;type:text" json:"ignoreFileRegex"`
+	// 企业微信机器人Webhook Key（?key= 后面的那串）
+	WecomWebhookKey string `gorm:"column:wecom_webhook_key;type:text" json:"wecomWebhookKey"`
+	// 企业微信通知需要@的成员 userid，多个用逗号或空格分隔
+	WecomNotifyUsers string `gorm:"column:wecom_notify_users;type:text" json:"wecomNotifyUsers"`
 }
 
 // TableName 指定表名

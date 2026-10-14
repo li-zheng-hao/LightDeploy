@@ -14,8 +14,8 @@ export const getDeployHistory = (serviceId: string|number) => {
 }
 
 // 部署服务
-export const deployService = (serviceId: number, targetIds: number[],comment:string,useFastMode:boolean) => {
-  return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds,comment,useFastMode })
+export const deployService = (serviceId: number, targetIds: number[], comment: string, useFastMode: boolean, sendWecomNotify: boolean) => {
+  return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds, comment, useFastMode, sendWecomNotify })
 }
 
 

@@ -139,11 +139,23 @@
           showDeployModal = false;
           deployComment = '';
           useFastMode = false;
+          sendWecomNotify = false;
         }
       "
     >
       <n-checkbox v-model:checked="useFastMode">
         使用快速发布模式(仅对比文件大小和修改时间)
+      </n-checkbox>
+      <n-checkbox
+        v-model:checked="sendWecomNotify"
+        :disabled="!selectedServiceHasWecomKey"
+        style="margin-top: 8px"
+      >
+        发送企业微信通知{{
+          selectedServiceHasWecomKey
+            ? ""
+            : "（请先在服务配置中填写机器人Key）"
+        }}
       </n-checkbox>
       <n-input
         v-model:value="deployComment"
@@ -237,6 +249,13 @@ onMounted(async () => {
   }
 });
 const hasSelectedTargets = computed(() => checkedRowKeys.value.length > 0);
+
+// 当前选中服务是否配置了企业微信机器人Key
+const selectedServiceHasWecomKey = computed(() => {
+  if (!selectedServiceId.value) return false;
+  const service = allServices.value.find((s) => s.id === selectedServiceId.value);
+  return !!service?.wecomWebhookKey;
+});
 
 // 选项数据
 const environmentOptions = computed(() => {
@@ -375,6 +394,7 @@ const handleServiceChange = async (value: number | null) => {
 const showDeployModal = ref(false);
 const deployComment = ref("");
 const useFastMode = ref(false);
+const sendWecomNotify = ref(false);
 
 // 修改部署操作处理函数
 const handleDeploy = async () => {
@@ -392,10 +412,12 @@ const confirmDeploy = async () => {
       selectedServiceId.value!,
       checkedRowKeys.value,
       deployComment.value,
-      useFastMode.value
+      useFastMode.value,
+      sendWecomNotify.value
     );
     deployComment.value = "";
     useFastMode.value = false;
+    sendWecomNotify.value = false;
     // 重新加载数据
     await handleServiceChange(selectedServiceId.value);
     deployLogs.value.push("部署成功");
