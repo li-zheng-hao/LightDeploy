@@ -8,7 +8,7 @@ import (
 
 func SendMessage(c *fiber.Ctx) error {
 	message := c.Query("message")
-	sse.MessageChan <- message
+	sse.SendMessage(message)
 	return c.JSON(fiber.Map{
 		"message": "message sent",
 	})

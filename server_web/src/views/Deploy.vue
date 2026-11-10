@@ -144,7 +144,7 @@
       "
     >
       <n-checkbox v-model:checked="useFastMode">
-        使用快速发布模式(仅对比文件大小和修改时间)
+        使用快速发布模式（按需校验内容，仅更新变化文件）
       </n-checkbox>
       <n-checkbox
         v-model:checked="sendWecomNotify"

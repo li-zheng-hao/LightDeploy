@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"ld_shared/sse"
 
@@ -34,25 +35,37 @@ func HandleSSE(c *fiber.Ctx) error {
 
 	c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		defer slog.Info("SSE connection closed", "connectionID", connID)
+		messages, unsubscribe := sse.Subscribe()
+		defer unsubscribe()
+		heartbeat := time.NewTicker(15 * time.Second)
+		defer heartbeat.Stop()
 
 		// 发送一个初始化消息
 		fmt.Fprintf(w, "event: message\ndata: %s\n\n", "SSE连接已建立")
-		w.Flush()
+		if err := w.Flush(); err != nil {
+			return
+		}
 
 		for {
 			select {
 			case <-shutdownChan:
 				slog.Info("服务器关闭，关闭所有SSE连接")
-				sse.ClearAllMessage()
 				return
-			case message := <-sse.MessageChan:
+			case <-heartbeat.C:
+				fmt.Fprint(w, ": keep-alive\n\n")
+				if err := w.Flush(); err != nil {
+					return
+				}
+			case message, ok := <-messages:
+				if !ok {
+					return
+				}
 				// 发送消息
 				slog.Info("发送SSE消息：", "message", message)
 				fmt.Fprintf(w, "event: message\ndata: %s\n\n", message)
 				err := w.Flush()
 				if err != nil {
 					slog.Error("SSE write error", "error", err, "connectionID", connID)
-					sse.ClearAllMessage()
 					return
 				}
 			}

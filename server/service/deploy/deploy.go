@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -206,15 +207,13 @@ func prepareFilteredDirectory(projectPath string, ignoreFileRegex string, tempDi
 
 // agentSSEConnection 用于管理agent SSE连接
 type agentSSEConnection struct {
-	done chan struct{}
+	done      chan struct{}
+	body      io.ReadCloser
+	closeOnce sync.Once
 }
 
 // connectToAgentSSE 连接到agent的SSE接口
 func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
-	conn := &agentSSEConnection{
-		done: make(chan struct{}),
-	}
-
 	client := &http.Client{
 		Timeout: time.Minute * 5,
 	}
@@ -222,9 +221,17 @@ func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("连接agent SSE失败: %v", err)
 	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("连接agent SSE失败，状态码: %d", resp.StatusCode)
+	}
+	conn := &agentSSEConnection{
+		done: make(chan struct{}),
+		body: resp.Body,
+	}
 
 	go func() {
-		defer resp.Body.Close()
+		defer closeAgentSSE(conn)
 		reader := bufio.NewReader(resp.Body)
 		for {
 			select {
@@ -233,6 +240,11 @@ func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
 			default:
 				line, err := reader.ReadString('\n')
 				if err != nil {
+					select {
+					case <-conn.done:
+						return
+					default:
+					}
 					if err != io.EOF {
 						sse.SendMessage(fmt.Sprintf("agent SSE连接断开: %v", err))
 					}
@@ -253,7 +265,10 @@ func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
 // closeAgentSSE 关闭agent SSE连接
 func closeAgentSSE(conn *agentSSEConnection) {
 	if conn != nil {
-		close(conn.done)
+		conn.closeOnce.Do(func() {
+			close(conn.done)
+			conn.body.Close()
+		})
 	}
 }
 
@@ -366,6 +381,7 @@ func CollectSourceFileInfos(sourceDir string, ignoreFileRegex string) ([]dto.Com
 					FileRelativePath: relPath,
 					FileSize:         info.Size(),
 					ModifyTimeStamp:  info.ModTime().Unix(),
+					ModifyTimeNano:   info.ModTime().UnixNano(),
 				})
 			}
 		}
@@ -377,8 +393,9 @@ func CollectSourceFileInfos(sourceDir string, ignoreFileRegex string) ([]dto.Com
 // CompareFilesWithTarget 与目标机器比较文件差异
 func CompareFilesWithTarget(target model.DeployTarget, fileInfos []dto.CompareFileInfo) (*dto.CompareFilesResponse, error) {
 	compareRequest := dto.CompareFilesRequest{
-		ServicePath: target.ServicePath,
-		FileInfos:   fileInfos,
+		ServicePath:    target.ServicePath,
+		FileInfos:      fileInfos,
+		UseContentHash: true,
 	}
 
 	jsonData, err := json.Marshal(compareRequest)
@@ -397,7 +414,8 @@ func CompareFilesWithTarget(target model.DeployTarget, fileInfos []dto.CompareFi
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("compare files failed with status: %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("compare files failed with status: %d: %s", resp.StatusCode, body)
 	}
 
 	var compareResult dto.CompareFilesResponse
@@ -441,24 +459,10 @@ func PrepareUpdateFiles(sourceDir string, compareResult *dto.CompareFilesRespons
 	return newTempDir, nil
 }
 
-// FastDeployToTarget 快速模式部署到目标机器
-func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployService, sourceDir string) error {
-	// 连接agent的SSE
-	conn, err := connectToAgentSSE(target.Host, target.Port)
-	if err != nil {
-		sse.SendMessage(fmt.Sprintf("警告：无法连接到agent的SSE接口: %v", err))
-	}
-	// 确保在函数返回时关闭SSE连接
-	defer closeAgentSSE(conn)
-
-	// 收集文件信息
-	fileInfos, err := CollectSourceFileInfos(sourceDir, deployService.IgnoreFileRegex)
-	if err != nil {
-		return fmt.Errorf("收集文件信息失败: %v", err)
-	}
-
+// DeployToTarget 快速部署到目标机器，复用本次发布的源文件清单和哈希缓存。
+func (source *FastDeploySource) DeployToTarget(target *model.DeployTarget, deployService *model.DeployService) error {
 	// 比较文件
-	compareResult, err := CompareFilesWithTarget(*target, fileInfos)
+	compareResult, err := source.CompareWithTarget(*target)
 	if err != nil {
 		return fmt.Errorf("比较文件失败: %v", err)
 	}
@@ -469,7 +473,7 @@ func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployS
 	}
 
 	// 准备更新文件
-	filteredDir, err := PrepareUpdateFiles(sourceDir, compareResult)
+	filteredDir, err := PrepareUpdateFiles(source.sourceDir, compareResult)
 	if err != nil {
 		return fmt.Errorf("准备更新文件失败: %v", err)
 	}
@@ -479,7 +483,7 @@ func FastDeployToTarget(target *model.DeployTarget, deployService *model.DeployS
 	defer os.RemoveAll(filteredDir)
 
 	// 打包文件
-	zipFilePath := filepath.Join(filepath.Dir(sourceDir), fmt.Sprintf("deploy_%s.zip", uuid.New().String()))
+	zipFilePath := filepath.Join(filepath.Dir(source.sourceDir), fmt.Sprintf("deploy_%s.zip", uuid.New().String()))
 	if err := zip.CompressFolderWithLevel(filteredDir, zipFilePath, 3); err != nil {
 		return fmt.Errorf("压缩文件失败: %v", err)
 	}

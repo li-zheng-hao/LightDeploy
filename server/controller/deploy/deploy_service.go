@@ -6,19 +6,17 @@ import (
 	"ld_server/service/notify"
 	"ld_shared/error_response"
 	"os"
-	"path/filepath"
 
 	sse_utils "ld_shared/sse"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type DeployServiceRequest struct {
 	ServiceId int    `json:"serviceId"`
 	TargetIds []int  `json:"targetIds"`
 	Comment   string `json:"comment"`
-	// 快速模式，仅对比文件大小和修改时间
+	// 快速模式，元数据初筛后按需校验文件内容
 	UseFastMode bool `json:"useFastMode"`
 	// 是否发送企业微信通知
 	SendWecomNotify bool `json:"sendWecomNotify"`
@@ -44,23 +42,16 @@ func DeployService(c *fiber.Ctx) error {
 	deployErr := func() error {
 		if request.UseFastMode {
 			sse_utils.SendMessage("开始快速模式部署")
-			executablePath, err := os.Executable()
+			// 所有目标共用一次目录扫描和源文件哈希缓存。
+			source, err := deploy.NewFastDeploySource(deployService.ProjectPath, deployService.IgnoreFileRegex)
 			if err != nil {
 				return err
 			}
-			tempDir := filepath.Join(filepath.Dir(executablePath), "ld_deploy_temp", uuid.New().String())
-			if err := os.MkdirAll(tempDir, 0755); err != nil {
-				return err
-			}
-			defer os.RemoveAll(tempDir)
-
-			// 快速模式直接使用项目文件夹作为源目录
-			tempDir = deployService.ProjectPath
 
 			// 快速模式部署到所有目标机器
 			for _, target := range *targets {
 				sse_utils.SendMessage(fmt.Sprintf("开始处理目标机器: %s", target.Host))
-				if err := deploy.FastDeployToTarget(&target, deployService, tempDir); err != nil {
+				if err := source.DeployToTarget(&target, deployService); err != nil {
 					return err
 				}
 			}
