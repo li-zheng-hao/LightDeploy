@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient'
+import type { LogEvent } from '@/util/sse'
 
 // 部署历史记录类型
 export interface DeployHistory {
@@ -14,8 +15,16 @@ export const getDeployHistory = (serviceId: string|number) => {
 }
 
 // 部署服务
-export const deployService = (serviceId: number, targetIds: number[], comment: string, useFastMode: boolean, sendWecomNotify: boolean) => {
-  return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds, comment, useFastMode, sendWecomNotify })
+export const deployService = (serviceId: number, targetIds: number[], comment: string, useFastMode: boolean, sendWecomNotify: boolean, taskId: string) => {
+  return apiClient.post('/api/deploy/deploy-service', { serviceId, targetIds, comment, useFastMode, sendWecomNotify, taskId })
+}
+
+export const createDeployTask = () => {
+  return apiClient.post<{ taskId: string }>('/api/deploy/tasks', {}, { timeout: 10000 })
+}
+
+export const getTaskLogs = (taskId: string, after = 0) => {
+  return apiClient.get<{ events: LogEvent[], truncated: boolean, finished: boolean }>(`/api/deploy/tasks/${taskId}/logs`, { params: { after }, timeout: 10000 })
 }
 
 

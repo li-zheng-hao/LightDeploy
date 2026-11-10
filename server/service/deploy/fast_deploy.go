@@ -5,7 +5,6 @@ import (
 	"ld_server/model"
 	"ld_shared/dto"
 	"ld_shared/filehash"
-	"ld_shared/sse"
 	"os"
 	"path/filepath"
 )
@@ -14,13 +13,14 @@ var sourceFileHashes = filehash.NewCache(10000)
 
 // FastDeploySource 在一次发布中共用源文件清单和按需计算的哈希。
 type FastDeploySource struct {
-	sourceDir string
-	fileInfos []dto.CompareFileInfo
-	files     map[string]dto.CompareFileInfo
-	hashes    *filehash.Cache
+	sourceDir   string
+	fileInfos   []dto.CompareFileInfo
+	files       map[string]dto.CompareFileInfo
+	hashes      *filehash.Cache
+	sendMessage func(string)
 }
 
-func NewFastDeploySource(sourceDir, ignoreFileRegex string) (*FastDeploySource, error) {
+func NewFastDeploySource(sourceDir, ignoreFileRegex string, senders ...func(string)) (*FastDeploySource, error) {
 	fileInfos, err := CollectSourceFileInfos(sourceDir, ignoreFileRegex)
 	if err != nil {
 		return nil, fmt.Errorf("收集文件信息失败: %w", err)
@@ -30,10 +30,11 @@ func NewFastDeploySource(sourceDir, ignoreFileRegex string) (*FastDeploySource, 
 		files[info.FileRelativePath] = info
 	}
 	return &FastDeploySource{
-		sourceDir: sourceDir,
-		fileInfos: fileInfos,
-		files:     files,
-		hashes:    sourceFileHashes,
+		sourceDir:   sourceDir,
+		fileInfos:   fileInfos,
+		files:       files,
+		hashes:      sourceFileHashes,
+		sendMessage: deployLogger(senders),
 	}, nil
 }
 
@@ -47,7 +48,7 @@ func (s *FastDeploySource) CompareWithTarget(target model.DeployTarget) (*dto.Co
 		return nil, err
 	}
 	if !result.SupportsContentHash {
-		sse.SendMessage(fmt.Sprintf("目标机器 %s 的 agent 不支持内容校验，使用原有大小和时间比较；升级 agent 后可避免时间变化导致的重复复制", target.Host))
+		s.sendMessage(fmt.Sprintf("目标机器 %s 的 agent 不支持内容校验，使用原有大小和时间比较；升级 agent 后可避免时间变化导致的重复复制", target.Host))
 		return result, nil
 	}
 	if len(result.HashRequiredFileInfos) == 0 {

@@ -28,9 +28,13 @@ type DeployNotifyInfo struct {
 
 // SendDeployNotification 向企业微信机器人发送部署结果通知（markdown 类型）。
 // key 为空时直接返回 nil（表示未配置，无需发送）。发送失败仅记录 SSE 日志，不影响部署流程。
-func SendDeployNotification(info DeployNotifyInfo) error {
+func SendDeployNotification(info DeployNotifyInfo, senders ...func(string)) error {
+	sendMessage := sse.SendMessage
+	if len(senders) > 0 && senders[0] != nil {
+		sendMessage = senders[0]
+	}
 	if strings.TrimSpace(info.WebhookKey) == "" {
-		sse.SendMessage("未配置企业微信机器人Key，跳过通知")
+		sendMessage("未配置企业微信机器人Key，跳过通知")
 		return nil
 	}
 
@@ -61,7 +65,7 @@ func SendDeployNotification(info DeployNotifyInfo) error {
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		sse.SendMessage(fmt.Sprintf("企业微信通知序列化失败: %v", err))
+		sendMessage(fmt.Sprintf("企业微信通知序列化失败: %v", err))
 		return err
 	}
 
@@ -69,7 +73,7 @@ func SendDeployNotification(info DeployNotifyInfo) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Post(url, "application/json", bytes.NewReader(body))
 	if err != nil {
-		sse.SendMessage(fmt.Sprintf("企业微信通知发送失败: %v", err))
+		sendMessage(fmt.Sprintf("企业微信通知发送失败: %v", err))
 		return err
 	}
 	defer resp.Body.Close()
@@ -79,15 +83,15 @@ func SendDeployNotification(info DeployNotifyInfo) error {
 		ErrMsg  string `json:"errmsg"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&resultResp); err != nil {
-		sse.SendMessage(fmt.Sprintf("企业微信通知响应解析失败: %v", err))
+		sendMessage(fmt.Sprintf("企业微信通知响应解析失败: %v", err))
 		return err
 	}
 	if resultResp.ErrCode != 0 {
 		err := fmt.Errorf("企业微信返回错误: errcode=%d errmsg=%s", resultResp.ErrCode, resultResp.ErrMsg)
-		sse.SendMessage(err.Error())
+		sendMessage(err.Error())
 		return err
 	}
-	sse.SendMessage("企业微信通知已发送")
+	sendMessage("企业微信通知已发送")
 	return nil
 }
 

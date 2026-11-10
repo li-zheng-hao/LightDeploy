@@ -11,6 +11,7 @@
                 v-model:value="selectedEnvironment"
                 :options="environmentOptions"
                 placeholder="请选择环境"
+                :disabled="isDeploying"
                 @update:value="handleEnvironmentChange"
               />
             </n-form-item>
@@ -19,7 +20,7 @@
                 v-model:value="selectedGroup"
                 :options="groupOptions"
                 placeholder="请选择服务分组"
-                :disabled="!selectedEnvironment"
+                :disabled="!selectedEnvironment || isDeploying"
                 @update:value="handleGroupChange"
               />
             </n-form-item>
@@ -28,7 +29,7 @@
                 v-model:value="selectedServiceName"
                 :options="serviceNameOptions"
                 placeholder="请选择服务名称"
-                :disabled="!selectedGroup"
+                :disabled="!selectedGroup || isDeploying"
                 @update:value="handleServiceNameChange"
               />
             </n-form-item>
@@ -36,31 +37,32 @@
               <n-button
                 type="primary"
                 @click="handleDeploy"
-                :disabled="!selectedServiceId || !hasSelectedTargets"
+                :disabled="!selectedServiceId || !hasSelectedTargets || isDeploying"
+                :loading="isDeploying"
               >
                 开始部署
               </n-button>
               <n-button
                 @click="handleInstall"
-                :disabled="!selectedServiceId || !hasSelectedTargets"
+                :disabled="!selectedServiceId || !hasSelectedTargets || isDeploying"
               >
                 安装服务
               </n-button>
               <n-button
                 @click="handleStart"
-                :disabled="!selectedServiceId || !hasSelectedTargets"
+                :disabled="!selectedServiceId || !hasSelectedTargets || isDeploying"
               >
                 启动服务
               </n-button>
               <n-button
                 @click="handleStop"
-                :disabled="!selectedServiceId || !hasSelectedTargets"
+                :disabled="!selectedServiceId || !hasSelectedTargets || isDeploying"
               >
                 停止服务
               </n-button>
               <n-button
                 @click="handleDeleteWindowsService"
-                :disabled="!selectedServiceId || !hasSelectedTargets"
+                :disabled="!selectedServiceId || !hasSelectedTargets || isDeploying"
                 type="error"
               >
                 删除Windows/Linux服务
@@ -115,6 +117,14 @@
 
         <!-- 部署日志 -->
         <n-card title="部署日志" class="mt-4">
+          <template #header-extra>
+            <n-tag :type="logConnectionState === 'connected' ? 'success' : 'warning'" size="small">
+              {{ logConnectionText }}
+            </n-tag>
+          </template>
+          <n-alert v-if="logConnectionState !== 'connected'" type="warning" class="mb-3" :show-icon="false">
+            {{ isDeploying ? '日志连接正在恢复，部署提交后将继续执行，恢复连接后会自动补齐日志。' : '日志连接未就绪，确认部署后会先尝试恢复连接。' }}
+          </n-alert>
           <div
             class="h-[300px] overflow-auto bg-black p-4 rounded"
             ref="logContainer"
@@ -173,6 +183,8 @@ import { useMessage } from "naive-ui"; // 添加 NInput, NModal
 import type { DataTableColumns } from "naive-ui";
 import {
   getDeployHistory,
+  createDeployTask,
+  getTaskLogs,
   deployService,
   startService,
   stopService,
@@ -186,7 +198,7 @@ import {
   deleteService,
 } from "../api/service";
 import { getTargetList, type DeployTarget } from "@/api/target";
-import { SSEClient } from "@/util/sse";
+import { SSEClient, type SSEState } from "@/util/sse";
 
 const message = useMessage();
 
@@ -395,35 +407,79 @@ const showDeployModal = ref(false);
 const deployComment = ref("");
 const useFastMode = ref(false);
 const sendWecomNotify = ref(false);
+const isDeploying = ref(false);
+const logConnectionState = ref<SSEState>('connecting');
+const logConnectionText = computed(() => ({
+  connecting: '日志连接中',
+  connected: '日志已连接',
+  reconnecting: '日志重连中',
+  disconnected: '日志已断开',
+}[logConnectionState.value]));
 
 // 修改部署操作处理函数
 const handleDeploy = async () => {
-  if (!selectedServiceId.value || checkedRowKeys.value.length === 0) return;
+  if (isDeploying.value || !selectedServiceId.value || checkedRowKeys.value.length === 0) return;
   showDeployModal.value = true;
 };
 
 // 添加实际的部署处理函数
 const confirmDeploy = async () => {
+  if (isDeploying.value || !selectedServiceId.value || checkedRowKeys.value.length === 0) return;
+  isDeploying.value = true;
+  const serviceId = selectedServiceId.value;
+  const targetIds = [...checkedRowKeys.value];
+  const comment = deployComment.value;
+  const fastMode = useFastMode.value;
+  const notify = sendWecomNotify.value;
+  let taskId: string | null = null;
+  let taskClient: SSEClient | null = null;
+  let submitted = false;
+  let taskFinished = false;
   try {
     deployLogs.value = [];
     showDeployModal.value = false;
+    deployLogs.value.push("正在建立部署日志连接");
+    const response = await createDeployTask();
+    if (isUnmounted) return;
+    taskId = response.data.taskId;
+    taskClient = connectLogs(`/api/sse/connect?taskId=${encodeURIComponent(taskId)}`, () => {
+      taskFinished = true;
+      if (!isDeploying.value && !isUnmounted && sseClient === taskClient) connectLogs();
+    });
+    await taskClient.ensureConnected();
+    if (isUnmounted) return;
     deployLogs.value.push("开始部署服务");
+    submitted = true;
     await deployService(
-      selectedServiceId.value!,
-      checkedRowKeys.value,
-      deployComment.value,
-      useFastMode.value,
-      sendWecomNotify.value
+      serviceId,
+      targetIds,
+      comment,
+      fastMode,
+      notify,
+      taskId
     );
     deployComment.value = "";
     useFastMode.value = false;
     sendWecomNotify.value = false;
     // 重新加载数据
-    await handleServiceChange(selectedServiceId.value);
-    deployLogs.value.push("部署成功");
+    if (!isUnmounted && selectedServiceId.value === serviceId) await handleServiceChange(serviceId);
   } catch (error) {
     console.error(error);
-    deployLogs.value.push("部署失败 error: " + error);
+    deployLogs.value.push((submitted ? "部署请求失败: " : "部署尚未提交: ") + error);
+  } finally {
+    // HTTP 结果与 SSE 独立返回，即使日志流仍在重连，也主动补取遗漏的文件列表。
+    if (!isUnmounted && submitted && taskId && taskClient) {
+      try {
+        const response = await getTaskLogs(taskId, taskClient.lastEventID);
+        if (response.data.truncated) taskClient.reportGap();
+        taskClient.replay(response.data.events);
+        taskFinished ||= response.data.finished;
+      } catch (error) {
+        deployLogs.value.push('补取部署日志失败，恢复连接后将自动重试: ' + error);
+      }
+    }
+    isDeploying.value = false;
+    if (!isUnmounted && sseClient === taskClient && (!submitted || taskFinished)) connectLogs();
   }
 };
 
@@ -434,6 +490,7 @@ const handleInstall = async () => {
   try {
     deployLogs.value = [];
     deployLogs.value.push("开始安装服务");
+    connectLogs();
 
     await installService(selectedServiceId.value, checkedRowKeys.value);
 
@@ -451,6 +508,7 @@ const handleStart = async () => {
   try {
     deployLogs.value = [];
     deployLogs.value.push("开始启动服务");
+    connectLogs();
     await startService(selectedServiceId.value, checkedRowKeys.value);
     await handleServiceChange(selectedServiceId.value);
     deployLogs.value.push("启动服务成功");
@@ -466,6 +524,7 @@ const handleStop = async () => {
   try {
     deployLogs.value = [];
     deployLogs.value.push("开始停止服务");
+    connectLogs();
     await stopService(selectedServiceId.value, checkedRowKeys.value);
     await handleServiceChange(selectedServiceId.value);
     deployLogs.value.push("停止服务成功");
@@ -480,6 +539,7 @@ const handleDeleteWindowsService = async () => {
   try {
     deployLogs.value = [];
     deployLogs.value.push("开始删除Windows/Linux服务");
+    connectLogs();
     await deleteService(selectedServiceName.value, checkedRowKeys.value);
     await handleServiceChange(selectedServiceId.value);
     deployLogs.value.push("删除Windows/Linux服务成功");
@@ -490,29 +550,37 @@ const handleDeleteWindowsService = async () => {
   }
 };
 
-var sseClient: SSEClient | null = null;
-onMounted(() => {
+let sseClient: SSEClient | null = null;
+let isUnmounted = false;
+const connectLogs = (url = '/api/sse/connect', onComplete = () => {}) => {
+  sseClient?.stop();
   sseClient = new SSEClient(
-    "/api/sse/connect",
+    url,
     (message: string) => {
-      console.log("sse message", message);
-      deployLogs.value.push(message);
+      if (!isUnmounted) deployLogs.value.push(message);
     },
     (error: Event) => {
       console.error(error);
-    }
+    },
+    (state: SSEState) => { logConnectionState.value = state; },
+    onComplete
   );
-  sseClient.start();
+  if (!isUnmounted) sseClient.start();
+  return sseClient;
+};
+onMounted(() => {
+  connectLogs();
 });
 
 onUnmounted(() => {
+  isUnmounted = true;
   sseClient?.stop();
 });
 
 const logContainer = ref<HTMLElement | null>(null);
 
 // 监听 deployLogs 变化
-watch(deployLogs, () => {
+watch(() => deployLogs.value.length, () => {
   nextTick(() => {
     if (logContainer.value) {
       logContainer.value.scrollTop = logContainer.value.scrollHeight;

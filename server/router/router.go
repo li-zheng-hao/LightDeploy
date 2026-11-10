@@ -41,6 +41,8 @@ func RegisterRoutes(app *fiber.App) {
 	targetGroup.Get("/:id", target.GetTarget)
 
 	deployGroup := app.Group("/api/deploy")
+	deployGroup.Post("/tasks", deploy.CreateDeployTask)
+	deployGroup.Get("/tasks/:taskId/logs", deploy.GetTaskLogs)
 	deployGroup.Post("/deploy-service", deploy.DeployService)
 	deployGroup.Post("/start-service", deploy.StartService)
 	deployGroup.Post("/stop-service", deploy.StopService)

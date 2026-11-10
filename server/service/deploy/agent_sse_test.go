@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestCloseAgentSSEClosesHTTPStream(t *testing.T) {
@@ -64,6 +66,12 @@ func TestFastDeployReportsUpdatedFilesToEverySubscriber(t *testing.T) {
 	defer unsubscribeFirst()
 	second, unsubscribeSecond := sse.Subscribe()
 	defer unsubscribeSecond()
+	taskID := uuid.NewString()
+	if err := sse.DeploymentLogs.Start(taskID); err != nil {
+		t.Fatal(err)
+	}
+	defer sse.DeploymentLogs.Finish(taskID)
+	source.sendMessage = sse.TaskSender(taskID)
 	var connections atomic.Int32
 	release := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +134,19 @@ func TestFastDeployReportsUpdatedFilesToEverySubscriber(t *testing.T) {
 	}
 	if got := connections.Load(); got != 1 {
 		t.Errorf("agent SSE connections = %d, want 1", got)
+	}
+	snapshot, err := sse.DeploymentLogs.Snapshot(taskID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundCachedFileList := false
+	for _, event := range snapshot.Events {
+		if strings.Contains(event.Message, "需要更新 1 个文件: app.dll") {
+			foundCachedFileList = true
+		}
+	}
+	if !foundCachedFileList {
+		t.Fatal("actual deployed file list was not retained for disconnected clients")
 	}
 	for i, messages := range []<-chan string{first, second} {
 		foundFileList := false

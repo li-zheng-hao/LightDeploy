@@ -116,7 +116,8 @@ func ValidateDeployRequest(serviceId int, targetIds []int) (*model.DeployService
 }
 
 // PrepareDeployPackage 准备部署包
-func PrepareDeployPackage(service *model.DeployService) (string, string, error) {
+func PrepareDeployPackage(service *model.DeployService, senders ...func(string)) (string, string, error) {
+	sendMessage := deployLogger(senders)
 	executablePath, err := os.Executable()
 	if err != nil {
 		return "", "", fmt.Errorf("获取当前程序路径失败: %v", err)
@@ -129,7 +130,7 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 
 	zipFilePath := filepath.Join(tempDir, "deploy.zip")
 
-	sse.SendMessage("开始压缩文件")
+	sendMessage("开始压缩文件")
 	// 先过滤文件再压缩
 	filteredDir, err := prepareFilteredDirectory(service.ProjectPath, service.IgnoreFileRegex, tempDir)
 	if err != nil {
@@ -138,11 +139,11 @@ func PrepareDeployPackage(service *model.DeployService) (string, string, error) 
 	defer os.RemoveAll(filteredDir)
 
 	zip.CompressFolderWithLevel(filteredDir, zipFilePath, 3)
-	sse.SendMessage("压缩完成")
+	sendMessage("压缩完成")
 
 	if fileInfo, err := os.Stat(zipFilePath); err == nil {
 		sizeMB := float64(fileInfo.Size()) / 1024 / 1024
-		sse.SendMessage(fmt.Sprintf("压缩包大小: %.4f MB", sizeMB))
+		sendMessage(fmt.Sprintf("压缩包大小: %.4f MB", sizeMB))
 	}
 
 	return tempDir, zipFilePath, nil
@@ -213,7 +214,8 @@ type agentSSEConnection struct {
 }
 
 // connectToAgentSSE 连接到agent的SSE接口
-func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
+func connectToAgentSSE(host string, port int, senders ...func(string)) (*agentSSEConnection, error) {
+	sendMessage := deployLogger(senders)
 	client := &http.Client{
 		Timeout: time.Minute * 5,
 	}
@@ -246,14 +248,14 @@ func connectToAgentSSE(host string, port int) (*agentSSEConnection, error) {
 					default:
 					}
 					if err != io.EOF {
-						sse.SendMessage(fmt.Sprintf("agent SSE连接断开: %v", err))
+						sendMessage(fmt.Sprintf("agent SSE连接断开: %v", err))
 					}
 					return
 				}
 				if strings.HasPrefix(line, "data: ") {
 					message := strings.TrimPrefix(line, "data: ")
 					message = strings.TrimSpace(message)
-					sse.SendMessage("Agent消息:" + message)
+					sendMessage("Agent消息:" + message)
 				}
 			}
 		}
@@ -273,13 +275,14 @@ func closeAgentSSE(conn *agentSSEConnection) {
 }
 
 // DeployToTarget 部署到目标机器
-func DeployToTarget(target model.DeployTarget, service *model.DeployService, zipFilePath string) error {
-	sse.SendMessage("开始部署到:" + target.Host)
+func DeployToTarget(target model.DeployTarget, service *model.DeployService, zipFilePath string, senders ...func(string)) error {
+	sendMessage := deployLogger(senders)
+	sendMessage("开始部署到:" + target.Host)
 
 	// 连接agent的SSE
-	conn, err := connectToAgentSSE(target.Host, target.Port)
+	conn, err := connectToAgentSSE(target.Host, target.Port, sendMessage)
 	if err != nil {
-		sse.SendMessage(fmt.Sprintf("警告：无法连接到agent的SSE接口: %v", err))
+		sendMessage(fmt.Sprintf("警告：无法连接到agent的SSE接口: %v", err))
 	}
 	// 确保在函数返回时关闭SSE连接
 	defer closeAgentSSE(conn)
@@ -328,7 +331,7 @@ func DeployToTarget(target model.DeployTarget, service *model.DeployService, zip
 		return fmt.Errorf("部署失败，状态码：%d，错误：%s", resp.StatusCode, string(bodyBytes))
 	}
 
-	sse.SendMessage("部署完成:" + target.Host)
+	sendMessage("部署完成:" + target.Host)
 	return nil
 }
 
@@ -468,7 +471,7 @@ func (source *FastDeploySource) DeployToTarget(target *model.DeployTarget, deplo
 	}
 
 	if len(compareResult.FileInfos) == 0 {
-		sse.SendMessage(fmt.Sprintf("目标机器 %s 没有需要更新的文件", target.Host))
+		source.sendMessage(fmt.Sprintf("目标机器 %s 没有需要更新的文件", target.Host))
 		return nil
 	}
 
@@ -492,10 +495,10 @@ func (source *FastDeploySource) DeployToTarget(target *model.DeployTarget, deplo
 	for _, fileInfo := range compareResult.FileInfos {
 		fileNames = append(fileNames, fileInfo.FileRelativePath)
 	}
-	sse.SendMessage(fmt.Sprintf("目标机器 %s 需要更新 %d 个文件: %s", target.Host, len(compareResult.FileInfos), strings.Join(fileNames, ", ")))
+	source.sendMessage(fmt.Sprintf("目标机器 %s 需要更新 %d 个文件: %s", target.Host, len(compareResult.FileInfos), strings.Join(fileNames, ", ")))
 
 	// 部署到目标机器
-	if err := DeployToTarget(*target, deployService, zipFilePath); err != nil {
+	if err := DeployToTarget(*target, deployService, zipFilePath, source.sendMessage); err != nil {
 		return fmt.Errorf("部署到目标机器 %s 失败: %v", target.Host, err)
 	}
 
